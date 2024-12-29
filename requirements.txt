@@ -4,3 +4,4 @@ tabulate>=0.8.0
 click-completion>=0.5.2
 pyyaml>=5.1
 bce-python-sdk-next>=100.9.19.19
+questionary>=1.10.0

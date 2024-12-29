@@ -1,10 +1,12 @@
 import json
 import click
-from typing import Optional
+from typing import Optional, List, Tuple, Dict
 from .client import expando_to_dict, get_client, AIJobConfig
 from tabulate import tabulate
 import yaml
 import time
+import questionary
+from click.shell_completion import CompletionItem
 
 def get_pool_id(pool: Optional[str] = None) -> str:
     """获取资源池ID，优先使用参数传入的值，否则使用配置文件中的值"""
@@ -31,23 +33,201 @@ def get_framework_type(framework: Optional[str] = None) -> str:
 
     return 'PyTorchJob'
 
+def get_pool_options() -> List[Tuple[str, str]]:
+    """获取资源池列表，返回 [(name, id)] 格式"""
+    client = get_client()
+    res = client.get_all_pools()
+    pools = []
+    for pool in res.result.resourcePools:
+        pools.append((
+            f"{pool.metadata.name} ({pool.metadata.id})",
+            pool.metadata.id
+        ))
+    return pools
+
+def get_queue_options(pool_id: str) -> List[Tuple[str, str]]:
+    """获取队列列表，返回 [(name, name)] 格式"""
+    client = get_client()
+    res = client.get_all_queues(resourcePoolId=pool_id)
+    queues = [
+        ('default', 'default')
+    ]
+    for queue in res.result.queues:
+        queues.append((
+            f"{queue.name} ({queue.queueType})",
+            queue.name
+        ))
+    return queues
+
+def get_job_id_options(ctx, args, incomplete):
+    """获取任务ID列表，用于自动补全"""
+    try:
+        client = get_client()
+        pool_id = get_pool_id()
+        resp = client.get_all_aijobs(pool_id)
+        jobs = resp.result.jobs
+        
+        # 返回所有匹配前缀的任务ID
+        return [
+            CompletionItem(
+                value=job.jobId,
+                help=f"{job.name} ({job.status})"
+            )
+            for job in jobs
+            if job.jobId.startswith(incomplete)  # 这里实现了前缀匹配
+        ]
+    except Exception as e:
+        # 出错时返回空列表
+        print(f"Error getting completions: {e}", file=sys.stderr)
+        return []
+
+def get_pool_id_options(ctx, args, incomplete):
+    """获取资源池ID列表，用于自动补全"""
+    try:
+        client = get_client()
+        res = client.get_all_pools()
+        pools = res.result.resourcePools
+        
+        # 返回 CompletionItem 对象列表
+        return [
+            CompletionItem(
+                value=pool.metadata.id,
+                help=f"{pool.metadata.name} ({pool.status.phase})"
+            )
+            for pool in pools
+            if pool.metadata.id.startswith(incomplete)
+        ]
+    except Exception as e:
+        print(f"Error getting pool completions: {e}", file=sys.stderr)
+        return []
+
+def get_queue_name_options(ctx, args, incomplete):
+    """获取队列名称列表，用于自动补全"""
+    try:
+        client = get_client()
+        pool_id = get_pool_id()
+        res = client.get_all_queues(resourcePoolId=pool_id)
+        queues = res.result.queues
+        
+        return [
+            CompletionItem(
+                value=queue.name,
+                help=f"{queue.queueType} ({queue.state})"
+            )
+            for queue in queues
+            if queue.name.startswith(incomplete)
+        ]
+    except Exception as e:
+        print(f"Error getting queue completions: {e}", file=sys.stderr)
+        return []
+
+def get_pod_name_options(ctx, args, incomplete):
+    """获取Pod名称列表，用于自动补全"""
+    try:
+        client = get_client()
+        pool_id = get_pool_id()
+        # 需要从上下文中获取job_id
+        job_id = ctx.params.get('id')
+        if not job_id:
+            return []
+            
+        resp = client.get_aijob(pool_id, job_id)
+        pods = resp.result.podList.pods
+        
+        return [
+            CompletionItem(
+                value=pod.objectMeta.name,
+                help=f"{pod.podStatus.status}"
+            )
+            for pod in pods
+            if pod.objectMeta.name.startswith(incomplete)
+        ]
+    except Exception as e:
+        print(f"Error getting pod completions: {e}", file=sys.stderr)
+        return []
+
+@click.command()
+@click.argument('id', required=False)
+def set_pool(id):
+    """设置默认资源池和队列
+    
+    如果不指定资源池ID，进入交互式选择模式
+    """
+    config = AIJobConfig()
+
+    if not id:
+        # 获取资源池列表供选择
+        pools = get_pool_options()
+        if not pools:
+            click.echo("未找到可用的资源池")
+            return
+
+        # 选择资源池
+        pool_choices = [p[0] for p in pools]
+        pool_choice = questionary.select(
+            "请选择默认资源池:",
+            choices=pool_choices,
+        ).ask()
+        
+        if not pool_choice:
+            return
+            
+        # 获取选中的资源池ID
+        pool_id = next(p[1] for p in pools if p[0] == pool_choice)
+        
+        # 获取该资源池下的队列列表供选择 
+        queues = get_queue_options(pool_id)
+        if not queues:
+            click.echo("未找到可用的队列")
+            return
+
+        # 选择队列
+        queue_choices = [q[0] for q in queues]
+        print(queue_choices)
+        # 添加一个 Default队列在队列列表的最前面
+        # queue_choices.insert(0, 'Default')
+
+        queue_choice = questionary.select(
+            "请选择默认队列:",
+            choices=queue_choices,
+        ).ask()
+        
+        if not queue_choice:
+            return
+            
+        # 获取选中的队列名称
+        queue_name = next(q[1] for q in queues if q[0] == queue_choice)
+    else:
+        pool_id = id
+        queue_name = 'default'
+
+    # 保存配置
+    config.set('pool', pool_id)
+    config.set('queue', queue_name)
+    
+    click.echo(f"已设置默认资源池: {pool_id}")
+    click.echo(f"已设置默认队列: {queue_name}")
+
 @click.command()
 @click.option('--host', help='设置API域名')
 @click.option('--access-key', help='设置AK')
 @click.option('--secret-key', help='设置SK')
 @click.option('--pool', help='默认资源池')
+@click.option('--queue', help='默认队列')
 @click.option('--path', help='默认文件保存路径')
 @click.option('--show', is_flag=True, help='显示当前配置')
-def config(host, access_key, secret_key, pool, show, path):
+def config(host, access_key, secret_key, pool, queue, show, path):
     """配置CLI工具"""
     config = AIJobConfig()
     
     if show:
         click.echo("当前配置:")
-        click.echo(f"Pool: {config.get('pool')}")
         click.echo(f"Host: {config.get('host')}")
         click.echo(f"Access Key: {config.get('access_key')}")
         click.echo(f"Secret Key: {'*' * 8 if config.get('secret_key') else 'Not Set'}")
+        click.echo(f"Pool: {config.get('pool')}")
+        click.echo(f"Queue: {config.get('queue')}")
+        click.echo(f"Path: {config.get('path')}")
         return
         
     if host:
@@ -69,6 +249,10 @@ def config(host, access_key, secret_key, pool, show, path):
     if path:
         config.set('path', path)
         click.echo(f"已设置Path: {path}")
+
+    if queue:
+        config.set('queue', queue)
+        click.echo("已设置Queue")
 
 # 列出资源池
 @click.command()
@@ -92,7 +276,7 @@ def list_pool():
 
 # 获取资源池详情
 @click.command()
-@click.argument('id', required=False)
+@click.argument('id', required=False, shell_complete=get_pool_id_options)
 def get_pool(id):
     """获取资源池详情
     
@@ -114,7 +298,7 @@ def get_pool(id):
 
 # 列出节点列表
 @click.command()
-@click.option('--pool', help='资源池ID(可选)')
+@click.option('--pool', help='资源池ID(可选)', shell_complete=get_pool_id_options)
 def list_node(pool):
     """列出资源池节点列表"""
     client = get_client()
@@ -144,7 +328,7 @@ def list_node(pool):
 
 # 获取队列列表
 @click.command()
-@click.option('--pool', help='资源池ID(可选)')
+@click.option('--pool', help='资源池ID(可选)', shell_complete=get_pool_id_options)
 def list_queue(pool):
     """列出队列列表"""
     client = get_client()
@@ -169,8 +353,8 @@ def list_queue(pool):
 
 # 获取队列详情
 @click.command()
-@click.argument('name', required=False)
-@click.option('--pool', help='资源池ID(可选)')
+@click.argument('name', required=False, shell_complete=get_queue_name_options)
+@click.option('--pool', help='资源池ID(可选)', shell_complete=get_pool_id_options)
 def get_queue(pool, name):
     """获取队列详情"""
     client = get_client()
@@ -208,12 +392,36 @@ def list_job(pool, order, page, size):
 
 # 获取任务详情
 @click.command()
-@click.argument('id')
+@click.argument('id', required=False, shell_complete=get_job_id_options)
 @click.option('--pool', help='资源池ID(可选)')
 def get_job(id, pool):
-    """获取训练任务详情"""
+    """获取训练任务详情
+    
+    如果不指定任务ID，则显示任务列表供选择
+    """
     client = get_client()
     pool_id = get_pool_id(pool)
+    
+    if not id:
+        # 如果未指定ID，则获取并显示任务列表
+        resp = client.get_all_aijobs(pool_id)
+        jobs = resp.result.jobs
+        job_list = []
+        for job in jobs:
+            job_info = {
+                'NAME': job.name,
+                'ID': job.jobId,
+                'STATUS': job.status,
+                'CREATED_AT': job.createdAt
+            }
+            job_list.append(job_info)
+        
+        # 显示任务列表
+        click.echo("可用的任务列表:")
+        click.echo(tabulate(job_list, headers="keys", tablefmt="plain"))
+        return
+    
+    # 获取指定任务的详情
     resp = client.get_aijob(pool_id, id)
     job_info = expando_to_dict(resp.result)
     job_info = yaml.dump(job_info, allow_unicode=True)
@@ -221,7 +429,7 @@ def get_job(id, pool):
 
 # 查询任务状态
 @click.command()
-@click.argument('id')
+@click.argument('id', shell_complete=get_job_id_options)
 @click.option('--pool', help='资源池ID(可选)')
 def get_job_status(id, pool):
     """获取训练任务状态"""
@@ -266,7 +474,7 @@ def create_job(name, pool, file):
 
 # 删除任务
 @click.command()
-@click.argument('id')
+@click.argument('id', shell_complete=get_job_id_options)
 @click.option('--pool', help='资源池ID(可选)')
 def delete_job(id, pool):
     """删除训练任务"""
@@ -279,7 +487,7 @@ def delete_job(id, pool):
 
 # 停止任务
 @click.command()
-@click.argument('id')
+@click.argument('id', shell_complete=get_job_id_options)
 @click.option('--pool', help='资源池ID(可选)')
 def stop_job(id, pool):
     """停止训练任务"""
@@ -307,7 +515,7 @@ def update_job(id, pool, priority):
 
 # 导出任务配置
 @click.command()
-@click.argument('id')
+@click.argument('id', shell_complete=get_job_id_options)
 @click.option('--pool', help='资源池ID(可选)')
 @click.option('--path', help='保存路径')
 def job_export(id, pool, path):
@@ -381,9 +589,9 @@ def job_export(id, pool, path):
 
 # 查看任务日志
 @click.command()
-@click.argument('id')
+@click.argument('id', shell_complete=get_job_id_options)
 @click.option('--pool', help='资源池ID(可选)')
-@click.option('--podname', required=True, help='Pod名称')
+@click.option('--podname', required=True, help='Pod名称', shell_complete=get_pod_name_options)
 def job_logs(id, pool, podname):
     """查看任务日志"""
     client = get_client()
@@ -412,9 +620,9 @@ def get_aijob_pod_events(id, pool, podName, jobFramework):
 # 查询任务事件
 @click.command()
 @click.argument('id')
-@click.option('--pool', help='资源池ID(可选)')
+@click.option('--pool', help='资源池ID(可选)', shell_complete=get_pool_id_options)
 @click.option('--framework', required=False, help='训练任务框架类型，当前支持 "PyTorchJob"')
-@click.option('--podname', required=False, help='Pod名称')
+@click.option('--podname', required=False, help='Pod名称', shell_complete=get_pod_name_options)
 def job_events(id, pool, framework, podname):
     """查询任务事件"""
     pool_id = get_pool_id(pool)
@@ -426,7 +634,7 @@ def job_events(id, pool, framework, podname):
 
 # 列出任务的Pod列表
 @click.command()
-@click.argument('id')
+@click.argument('id', shell_complete=get_job_id_options)
 @click.option('--pool', help='资源池ID(可选)')
 def list_pod(id, pool):
     """列出任务的Pod列表"""
@@ -450,9 +658,9 @@ def list_pod(id, pool):
 # 连接到任务实例
 @click.command()
 @click.argument('id')
-@click.option('--pool', help='资源池ID(可选)')
+@click.option('--pool', help='资源池ID(可选)', shell_complete=get_pool_id_options)
 @click.option('-it', '--interactive', is_flag=True, help='交互式终端')
-@click.option('--podname', required=True, help='Pod名称')
+@click.option('--podname', required=True, help='Pod名称', shell_complete=get_pod_name_options)
 @click.option('-c', '--container', help='容器名称')
 @click.argument('cmd', nargs=-1)
 def job_exec(id, pool, interactive, podname, container, cmd):
@@ -461,4 +669,5 @@ def job_exec(id, pool, interactive, podname, container, cmd):
     pool_id = get_pool_id(pool)
     resp = client.get_webterminal(pool_id, id, podname)
     terminal_info = expando_to_dict(resp.result)
+    click.echo('直接连接实例能力暂未实现，当前仅返回连接信息:')
     click.echo(yaml.dump(terminal_info, allow_unicode=True))

@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name="aihcx",
-    version="0.1.0",
+    version="0.1.1",
     packages=find_packages(),
     include_package_data=True,
     install_requires=[
@@ -11,7 +11,8 @@ setup(
         "tabulate>=0.8.0",
         "click-completion>=0.5.2",
         "pyyaml>=5.1",
-        "bce-python-sdk-next>=100.9.19.19"
+        "bce-python-sdk-next>=100.9.19.19",
+        "questionary>=1.10.0",
     ],
     entry_points={
         "console_scripts": [

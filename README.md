@@ -213,6 +213,12 @@ aihcx [TYPE] [COMMAND] [NAME] [FLAGS]
 - NAME: 资源名称（部分命令需要）
 - FLAGS: 命令参数
 
+### 版本信息
+
+```bash
+aihcx version  # 显示版本信息
+```
+
 ## 环境变量支持
 
 可以通过环境变量设置常用配置：

@@ -1,11 +1,17 @@
 import click
 from . import commands
 import os
+from . import __version__  # 导入版本号
 
 @click.group()
 def cli():
     """AI训练平台命令行工具"""
     pass
+
+@cli.command()
+def version():
+    """显示版本信息"""
+    click.echo(f"aihcx v{__version__}")
 
 @cli.command()
 @click.argument('shell', required=False, type=click.Choice(['bash', 'zsh', 'fish']))
@@ -71,6 +77,7 @@ job.add_command(commands.job_events, name='events')
 # 将命令添加到pool子命令组
 pool.add_command(commands.list_pool, name='list') 
 pool.add_command(commands.get_pool, name='get')
+pool.add_command(commands.set_pool, name='set')  # 添加set命令
 
 # 将命令添加到queue子命令组
 queue.add_command(commands.list_queue, name='list')
