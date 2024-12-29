@@ -11,8 +11,9 @@ name: Upload Python Package
 on:
   release:
     types: [published]
-#  push:
-#    branches: [ main, master ]
+  push:
+    tags:
+      - 'v*'  # 当推送 v 开头的 tag 时触发
 
 permissions:
   contents: read
@@ -25,19 +26,20 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     - name: Set up Python
-      uses: actions/setup-python@v3
+      uses: actions/setup-python@v4
       with:
-        python-version: '3.x'
+        python-version: '3.8'
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
         pip install build
-        pip install setuptools
-        pip install twine
+        pip install setuptools wheel twine
     - name: Build package
-      run: bash build.sh
+      run: |
+        python setup.py sdist bdist_wheel
     - name: Publish package
-      uses: pypa/gh-action-pypi-publish@27b31702a0e7fc50959f5ad993c78deac1bdfc29
+      uses: pypa/gh-action-pypi-publish@release/v1
       with:
         user: __token__
         password: ${{ secrets.PYPI_API_TOKEN }}
+        skip_existing: true

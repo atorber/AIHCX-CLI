@@ -34,6 +34,45 @@ pip install -e .
     aihcx
     ```
 
+### 发布新版本
+
+1. 更新版本号
+   编辑 setup.py 中的 version 字段
+
+2. 创建新的 tag
+   ```bash
+   git tag v0.1.0
+   git push origin v0.1.0
+   ```
+
+3. 构建分发包
+   ```bash
+   # 安装构建工具
+   pip install build wheel
+   
+   # 构建源码包和wheel包
+   python setup.py sdist bdist_wheel
+   ```
+
+4. 发布到PyPI（可选）
+   ```bash
+   # 安装发布工具
+   pip install twine
+   
+   # 检查分发包
+   twine check dist/*
+   
+   # 上传到 PyPI
+   twine upload dist/*
+   ```
+
+   或者创建 GitHub Release，CI 会自动发布到 PyPI。
+
+5. 安装新版本
+   ```bash
+   pip install --upgrade aihcx
+   ```
+
 ### 发布到 PyPI（可选）
 	
 1.	安装 twine：
@@ -65,7 +104,7 @@ aihcx config \
     --secret-key <your-secret-key> \
     --pool <default-pool-id>
 
-# 查���当前配置
+# 查看当前配置
 aihcx config --show
 ```
 
