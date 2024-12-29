@@ -99,7 +99,7 @@ pip install -e .
 ```bash
 # 设置配置信息
 aihcx config \
-    --host https://aihc.bj.baidubce.com \
+    --host aihc.bj.baidubce.com \
     --access-key <your-access-key> \
     --secret-key <your-secret-key> \
     --pool <default-pool-id>
@@ -218,7 +218,7 @@ aihcx [TYPE] [COMMAND] [NAME] [FLAGS]
 可以通过环境变量设置常用配置：
 
 ```bash
-export AIHC_HOST=https://aihc.bj.baidubce.com
+export AIHC_HOST=aihc.bj.baidubce.com
 export AIHC_ACCESS_KEY=your-access-key
 export AIHC_SECRET_KEY=your-secret-key
 export AIHC_DEFAULT_POOL=your-default-pool
