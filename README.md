@@ -1,6 +1,6 @@
 # AI训练平台命令行工具
 
-一个用于管理百度AI训练平台的命令行工具。
+一个用于管理AI训练平台的命令行工具。
 
 ## 使用源码安装
 
@@ -197,7 +197,7 @@ export AIHC_DEFAULT_POOL=your-default-pool
 ## 项目结构
 
 ```
-cli/
+aihcx-cli/
 ├── README.md           # 本文档
 ├── requirements.txt    # 依赖包
 ├── setup.py           # 安装配置

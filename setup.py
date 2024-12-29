@@ -18,7 +18,7 @@ setup(
             "aihcx=aihcx.cli:cli",
         ],
     },
-    description="百度AI训练平台命令行工具",
+    description="AI训练平台命令行工具",
     author="Baidu AIHC Team",
     python_requires=">=3.6",
     package_data={
