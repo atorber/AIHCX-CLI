@@ -180,6 +180,60 @@ pyinstaller --onefile -n aihcx aihcx/cli.py
 - 若有命令补全等 shell 脚本功能，需额外打包或在文档中说明。
 - 如需为 Windows、Linux、macOS 分别打包，建议在对应系统下分别运行 PyInstaller，或使用 CI/CD 自动化打包。
 
+## 安装可执行程序
+
+### Linux环境
+
+1. 下载对应平台的可执行文件（如 `aihcx`），并赋予执行权限：
+
+```bash
+chmod +x aihcx
+```
+
+2. 直接运行：
+
+```bash
+./aihcx
+```
+
+3. （可选）将可执行文件移动到 `/usr/local/bin` 目录，便于全局调用：
+
+```bash
+sudo mv aihcx /usr/local/bin/
+```
+
+### Mac环境
+
+1. 下载对应平台的可执行文件（如 `aihcx`），并赋予执行权限：
+
+```bash
+chmod +x aihcx
+```
+
+2. 直接运行：
+
+```bash
+./aihcx
+```
+
+3. （可选）将可执行文件移动到 `/usr/local/bin` 目录，便于全局调用：
+
+```bash
+sudo mv aihcx /usr/local/bin/
+```
+
+### Windows环境
+
+1. 下载 `aihcx.exe` 到任意目录。
+
+2. 直接双击运行，或在命令行中进入该目录后运行：
+
+```bat
+aihcx.exe
+```
+
+3. （可选）将 `aihcx.exe` 所在目录加入系统 PATH 环境变量，便于全局调用。
+
 ## 配置
 
 ### 基本配置
