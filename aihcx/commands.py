@@ -675,7 +675,7 @@ def job_exec(id, pool, interactive, podname, container, cmd):
 
 @click.command()
 @click.option('--host', default='127.0.0.1', help='监听地址')
-@click.option('--port', default=8000, help='监听端口')
+@click.option('--port', default=38765, help='监听端口')
 def web(host, port):
     """启动Web服务进行参数配置"""
     run_webserver(host, port)

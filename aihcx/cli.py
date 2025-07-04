@@ -11,7 +11,7 @@ def cli():
 @cli.command()
 def version():
     """显示版本信息"""
-    click.echo(f"aihcx v{__version__}")
+    click.echo(f"aihcx {__version__}")
 
 @cli.command()
 @click.argument('shell', required=False, type=click.Choice(['bash', 'zsh', 'fish']))
