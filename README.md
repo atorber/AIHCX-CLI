@@ -110,34 +110,64 @@ pip install -e .
 
 如果希望用户无需安装 Python 环境即可直接使用 CLI 工具，可以将本项目打包为独立的可执行文件。推荐使用 [PyInstaller](https://pyinstaller.org/) 工具。
 
-### 1. 安装 PyInstaller
+### 1. 使用 build.sh 脚本一键打包（Linux/macOS）
 
-在开发环境中安装 PyInstaller：
+项目已提供自动识别平台并打包的脚本 `build.sh`，会根据当前系统自动将可执行文件输出到 `dist/平台` 目录下。
+
+#### 步骤：
+
+```bash
+# 赋予脚本执行权限（首次使用）
+chmod +x build.sh
+
+# 运行打包脚本
+./build.sh
+```
+
+打包完成后，目录结构如下：
+
+```
+dist/
+  ├── mac-arm/aihcx
+  ├── mac-x86/aihcx
+  ├── linux-x86/aihcx
+  ├── linux-arm/aihcx
+  └── win/aihcx.exe
+```
+
+你只需将对应平台下的可执行文件分发给用户即可，用户无需安装 Python，直接运行即可。
+
+### 2. Windows 下一键打包
+
+Windows 用户可直接运行 `build.bat` 脚本，自动完成打包并将可执行文件输出到 `dist\win` 目录下。
+
+#### 步骤：
+
+```bat
+build.bat
+```
+
+打包完成后，目录结构如下：
+
+```
+dist\win\aihcx.exe
+```
+
+同样，用户无需安装 Python，直接运行 `aihcx.exe` 即可。
+
+### 3. 手动打包（可选）
+
+如需手动打包，也可参考以下命令：
 
 ```bash
 pip install pyinstaller
-```
-
-### 2. 生成可执行文件
-
-假设 CLI 入口文件为 `aihcx/cli.py`，在项目根目录下运行：
-
-```bash
 pyinstaller --onefile -n aihcx aihcx/cli.py
 ```
 
 - `--onefile`：打包成单一可执行文件
 - `-n aihcx`：指定生成的可执行文件名为 aihcx
 
-打包完成后，可执行文件会在 `dist/` 目录下生成，例如：`dist/aihcx`。
-
-### 3. 分发可执行文件
-
-将 `dist/aihcx` 文件分发给用户，用户无需安装 Python，直接运行即可：
-
-```bash
-./aihcx
-```
+打包完成后，可执行文件会在 `dist/` 目录下生成。
 
 ### 4. 注意事项
 

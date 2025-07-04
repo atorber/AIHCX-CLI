@@ -2,4 +2,4 @@ aihcx/__pycache__/*
 userdata/*
 aihcx.egg-info/*
 docs/*
-dist/*
+.DS_Store
