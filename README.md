@@ -112,7 +112,7 @@ pip install -e .
 
 ### 1. 使用 build.sh 脚本一键打包（Linux/macOS）
 
-项目已提供自动识别平台并打包的脚本 `build.sh`，会根据当前系统自动将可执行文件输出到 `dist/平台` 目录下。
+项目已提供自动识别平台并打包的脚本 `build.sh`，会根据当前系统自动将可执行文件输出到 `dist/版本号/平台` 目录下。
 
 #### 步骤：
 
@@ -128,18 +128,19 @@ chmod +x build.sh
 
 ```
 dist/
-  ├── mac-arm/aihcx
-  ├── mac-x86/aihcx
-  ├── linux-x86/aihcx
-  ├── linux-arm/aihcx
-  └── win/aihcx.exe
+  └── 0.1.0/           # 版本号（以 setup.py 中 version 字段为准）
+      ├── mac-arm/aihcx
+      ├── mac-x86/aihcx
+      ├── linux-x86/aihcx
+      ├── linux-arm/aihcx
+      └── win/aihcx.exe
 ```
 
 你只需将对应平台下的可执行文件分发给用户即可，用户无需安装 Python，直接运行即可。
 
 ### 2. Windows 下一键打包
 
-Windows 用户可直接运行 `build.bat` 脚本，自动完成打包并将可执行文件输出到 `dist\win` 目录下。
+Windows 用户可直接运行 `build.bat` 脚本，自动完成打包并将可执行文件输出到 `dist\版本号\win` 目录下。
 
 #### 步骤：
 
@@ -150,7 +151,7 @@ build.bat
 打包完成后，目录结构如下：
 
 ```
-dist\win\aihcx.exe
+dist\0.1.0\win\aihcx.exe
 ```
 
 同样，用户无需安装 Python，直接运行 `aihcx.exe` 即可。
