@@ -2,6 +2,20 @@
 
 一个用于管理AI训练平台的命令行工具。
 
+## 项目结构
+
+```
+aihcx-cli/
+├── README.md           # 本文档
+├── requirements.txt    # 依赖包
+├── setup.py           # 安装配置
+└── aihcx/             # 源代码
+    ├── __init__.py    # 包初始化
+    ├── cli.py         # CLI入口
+    ├── commands.py    # 命令实现
+    └── client.py      # API客户端
+```
+
 ## 使用源码安装
 
 ```bash
@@ -73,6 +87,8 @@ pip install -e .
    pip install --upgrade aihcx
    ```
 
+6. 使用 --help 查看每个命令的详细用法
+
 ### 发布到 PyPI（可选）
 	
 1.	安装 twine：
@@ -89,6 +105,46 @@ pip install -e .
     ```
     pip install aihcx
     ```
+
+## 编译为可执行程序
+
+如果希望用户无需安装 Python 环境即可直接使用 CLI 工具，可以将本项目打包为独立的可执行文件。推荐使用 [PyInstaller](https://pyinstaller.org/) 工具。
+
+### 1. 安装 PyInstaller
+
+在开发环境中安装 PyInstaller：
+
+```bash
+pip install pyinstaller
+```
+
+### 2. 生成可执行文件
+
+假设 CLI 入口文件为 `aihcx/cli.py`，在项目根目录下运行：
+
+```bash
+pyinstaller --onefile -n aihcx aihcx/cli.py
+```
+
+- `--onefile`：打包成单一可执行文件
+- `-n aihcx`：指定生成的可执行文件名为 aihcx
+
+打包完成后，可执行文件会在 `dist/` 目录下生成，例如：`dist/aihcx`。
+
+### 3. 分发可执行文件
+
+将 `dist/aihcx` 文件分发给用户，用户无需安装 Python，直接运行即可：
+
+```bash
+./aihcx
+```
+
+### 4. 注意事项
+
+- 打包平台和目标平台需一致（如在 macOS 打包只能用于 macOS）。
+- 如有依赖外部资源（如配置文件、数据文件），可用 `--add-data` 参数指定。
+- 若有命令补全等 shell 脚本功能，需额外打包或在文档中说明。
+- 如需为 Windows、Linux、macOS 分别打包，建议在对应系统下分别运行 PyInstaller，或使用 CI/CD 自动化打包。
 
 ## 配置
 
@@ -238,17 +294,3 @@ export AIHC_DEFAULT_POOL=your-default-pool
 4. 大型任务配置建议使用配置文件
 5. 导出任务配置后可用于快速复制任务
 6. 使用 --help 查看每个命令的详细用法
-
-## 项目结构
-
-```
-aihcx-cli/
-├── README.md           # 本文档
-├── requirements.txt    # 依赖包
-├── setup.py           # 安装配置
-└── aihcx/             # 源代码
-    ├── __init__.py    # 包初始化
-    ├── cli.py         # CLI入口
-    ├── commands.py    # 命令实现
-    └── client.py      # API客户端
-```
