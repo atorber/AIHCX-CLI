@@ -6,3 +6,4 @@ pyyaml>=5.1
 bce-python-sdk-next>=100.9.19.19
 questionary>=1.10.0
 Flask>=2.0.0
+pyinstaller>=5.10.0
