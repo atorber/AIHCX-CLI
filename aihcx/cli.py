@@ -88,6 +88,7 @@ node.add_command(commands.list_node, name='list')
 
 # 配置命令放在顶层
 cli.add_command(commands.config)
+cli.add_command(commands.web)
 
 if __name__ == '__main__':
     cli()
