@@ -7,6 +7,7 @@ import yaml
 import time
 import questionary
 from click.shell_completion import CompletionItem
+from .webserver import run_webserver
 
 def get_pool_id(pool: Optional[str] = None) -> str:
     """获取资源池ID，优先使用参数传入的值，否则使用配置文件中的值"""
@@ -671,3 +672,10 @@ def job_exec(id, pool, interactive, podname, container, cmd):
     terminal_info = expando_to_dict(resp.result)
     click.echo('直接连接实例能力暂未实现，当前仅返回连接信息:')
     click.echo(yaml.dump(terminal_info, allow_unicode=True))
+
+@click.command()
+@click.option('--host', default='127.0.0.1', help='监听地址')
+@click.option('--port', default=8000, help='监听端口')
+def web(host, port):
+    """启动Web服务进行参数配置"""
+    run_webserver(host, port)
