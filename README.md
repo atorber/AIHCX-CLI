@@ -5,15 +5,18 @@
 ## 项目结构
 
 ```
-aihcx-cli/
+cli/
 ├── README.md           # 本文档
 ├── requirements.txt    # 依赖包
-├── setup.py           # 安装配置
-└── aihcx/             # 源代码
-    ├── __init__.py    # 包初始化
-    ├── cli.py         # CLI入口
-    ├── commands.py    # 命令实现
-    └── client.py      # API客户端
+├── setup.py            # 安装配置
+├── aihcx.spec          # PyInstaller 打包配置
+├── build.bat           # Windows 打包脚本
+├── build.sh            # Linux/macOS 打包脚本
+└── aihcx/              # 源代码
+    ├── __init__.py     # 包初始化
+    ├── cli.py          # CLI 入口
+    ├── commands.py     # 命令实现
+    └── client.py       # API 客户端
 ```
 
 ## 使用源码安装
