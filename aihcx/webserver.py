@@ -3,6 +3,60 @@ import os
 import sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from client import AIJobConfig
+from flask import jsonify
+# from baidubce.services.aihc_v2.aihc_client import AIHCV2Client
+from baidubce.services.aihc.aihc_client import AIHCClient
+import logging
+from baidubce.bce_client_configuration import BceClientConfiguration
+from baidubce.auth.bce_credentials import BceCredentials
+from baidubce.http import http_methods
+import json
+from baidubce.utils import Expando
+
+def parse_json(http_response, response):
+    body = http_response.read()
+    if body:
+        response.__dict__.update(json.loads(
+            body, object_hook=dict_to_python_object).__dict__)
+        
+        # 移除metadata key（如果存在）
+        if 'metadata' in response.__dict__:
+            del response.__dict__['metadata']
+    http_response.close()
+    return True
+
+def dict_to_python_object(d):
+    """
+
+    :param d:
+    :return:
+    """
+    attr = {}
+    for k, v in list(d.items()):
+        k = str(k)
+        attr[k] = v
+    return Expando(attr)
+
+def to_dict(obj):
+    if isinstance(obj, dict):
+        return {k: to_dict(v) for k, v in obj.items()}
+    elif hasattr(obj, '__dict__'):
+        return {k: to_dict(v) for k, v in obj.__dict__.items()}
+    elif isinstance(obj, list):
+        return [to_dict(i) for i in obj]
+    else:
+        return obj
+
+
+logger = logging.getLogger('baidubce.http.bce_http_client')
+fh = logging.FileHandler('sample.log')
+fh.setLevel(logging.DEBUG)
+
+formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+fh.setFormatter(formatter)
+logger.setLevel(logging.DEBUG)
+logger.addHandler(fh)
+
 
 app = Flask(__name__)
 
@@ -79,7 +133,7 @@ HTML = """
 </html>
 """
 
-@app.route('/', methods=['GET', 'POST'])
+@app.route('/config', methods=['GET', 'POST'])
 def config():
     cfg = AIJobConfig()
     saved = False
@@ -93,6 +147,68 @@ def config():
     config_data = {k: cfg.get(k) or '' for k in ['host', 'access_key', 'secret_key', 'pool', 'queue', 'path']}
     return render_template_string(HTML, saved=saved, **config_data)
 
+# 代理aihc api，透传请求
+@app.route('/', methods=['POST', 'GET'])
+def proxy_aihc():
+    try:
+        # 从配置文件中读取host, ak, sk
+        cfg = AIJobConfig()
+        HOST = cfg.get('host')
+        AK = cfg.get('access_key')
+        SK = cfg.get('secret_key')
+        print('HOST', HOST)
+        print('AK', AK)
+        print('SK', SK)
+        aihc_sample_conf = BceClientConfiguration(credentials=BceCredentials(AK, SK), endpoint=HOST)
+        print('aihc_sample_conf', aihc_sample_conf)
+        print('proxy_aihc....')
+
+        # 解析请求参数
+        http_method = http_methods.GET if request.method == 'GET' else http_methods.POST
+        path = b'/'
+        params = request.args
+        
+        # 安全地获取JSON body
+        try:
+            body = request.get_json()
+        except Exception as e:
+            print('获取JSON body失败:', e)
+            body = {}
+
+        print('http_method', http_method)
+        print('path', path)
+        print('body', body)
+        print('params', params)
+        print('params keys:', list(params.keys()))
+
+        # 如果query参数中包含action，则透传到aihc api
+        if 'action' in params:
+            print('找到action参数，开始透传请求...')
+            # 透传请求
+            aihc_client = AIHCClient(aihc_sample_conf)
+            response = aihc_client._send_request(
+                http_method=http_method,
+                path=path,
+                body=body,
+                params=params,
+                headers={
+                    b'version': b'v2'
+                },
+                body_parser=parse_json
+            )
+
+            print('请求response', response)
+
+            # 返回响应
+            return jsonify(to_dict(response)), 200
+        else:
+            print('未找到action参数，返回404')
+            # 返回404
+            return jsonify({'error': 'Not Found'}), 404
+    except Exception as e:
+        print('proxy_aihc函数发生异常:', e)
+        return jsonify({'error': str(e)}), 500
+
 def run_webserver(host='127.0.0.1', port=38765):
-    print(f"Web服务已启动，请在浏览器中访问: http://{host}:{port}")
-    app.run(host=host, port=port) 
+    print(f"Web服务已启动，请在浏览器中访问配置页面: http://{host}:{port}/config")
+    app.run(host=host, port=port, debug=True) 
