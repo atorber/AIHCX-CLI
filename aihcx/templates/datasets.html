@@ -1,0 +1,881 @@
+{% extends "base.html" %}
+{% from "components/navigation.html" import navigation %}
+
+{% block title %}AIHCX 数据集列表{% endblock %}
+
+{% block header_title %}📊 数据集列表{% endblock %}
+{% block header_subtitle %}查看和管理您的数据集{% endblock %}
+
+{% block extra_css %}
+<style>
+.loading {
+  text-align: center;
+  padding: 60px 20px;
+  color: #666;
+  font-size: 16px;
+}
+.error {
+  background: #fff2f0;
+  color: #dc3545;
+  padding: 16px;
+  border-radius: 8px;
+  margin: 20px 0;
+  border: 1px solid #ffccc7;
+  font-size: 14px;
+}
+.datasets-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 20px;
+  background: white;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+  border: 1px solid #e9ecef;
+}
+.datasets-table th {
+  background: #f8f9fa;
+  padding: 16px 20px;
+  text-align: left;
+  font-weight: 600;
+  color: #333;
+  border-bottom: 2px solid #dee2e6;
+  cursor: pointer;
+  user-select: none;
+  transition: background 0.2s ease;
+  font-size: 14px;
+}
+.datasets-table th.owner-column {
+  width: 120px;
+  min-width: 120px;
+  max-width: 120px;
+}
+.datasets-table th.permission-column {
+  width: 80px;
+  min-width: 80px;
+  max-width: 80px;
+}
+.datasets-table th.visibility-column {
+  width: 100px;
+  min-width: 100px;
+  max-width: 100px;
+}
+.datasets-table th.storage-column {
+  width: 100px;
+  min-width: 100px;
+  max-width: 100px;
+}
+.datasets-table th:hover {
+  background: #e9ecef;
+}
+.datasets-table td {
+  padding: 16px 20px;
+  border-bottom: 1px solid #f1f3f4;
+  vertical-align: top;
+  font-size: 14px;
+}
+.datasets-table td.owner-column {
+  width: 120px;
+  min-width: 120px;
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.datasets-table td.permission-column {
+  width: 80px;
+  min-width: 80px;
+  max-width: 80px;
+  text-align: center;
+}
+.datasets-table td.visibility-column {
+  width: 100px;
+  min-width: 100px;
+  max-width: 100px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.datasets-table td.storage-column {
+  width: 100px;
+  min-width: 100px;
+  max-width: 100px;
+  text-align: center;
+}
+.datasets-table td.description-cell {
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  position: relative;
+  cursor: help;
+}
+.datasets-table td.description-cell::before {
+  content: attr(data-tooltip);
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #2c3e50;
+  color: white;
+  padding: 10px 14px;
+  border-radius: 8px;
+  font-size: 13px;
+  white-space: normal;
+  word-wrap: break-word;
+  max-width: 350px;
+  min-width: 200px;
+  z-index: 1000;
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.3s ease;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.25);
+  line-height: 1.5;
+  text-align: left;
+  margin-bottom: 8px;
+  font-weight: 400;
+  border: 1px solid rgba(255,255,255,0.1);
+}
+.datasets-table td.description-cell::after {
+  content: '';
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 6px solid transparent;
+  border-top-color: #2c3e50;
+  margin-bottom: 2px;
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.3s ease;
+}
+.datasets-table td.description-cell:hover::before,
+.datasets-table td.description-cell:hover::after {
+  opacity: 1;
+  visibility: visible;
+}
+.datasets-table tr:hover {
+  background: #f8f9fa;
+  transition: background 0.2s ease;
+}
+.status {
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  display: inline-block;
+  min-width: 60px;
+  text-align: center;
+}
+.status.active {
+  background: #f6ffed;
+  color: #52c41a;
+  border: 1px solid #b7eb8f;
+}
+.status.inactive {
+  background: #fff2f0;
+  color: #dc3545;
+  border: 1px solid #ffccc7;
+}
+.refresh-btn {
+  background: #28a745;
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
+}
+.refresh-btn:hover {
+  background: #218838;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(40, 167, 69, 0.3);
+}
+.refresh-btn:disabled {
+  background: #6c757d;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+.empty-state {
+  text-align: center;
+  padding: 80px 20px;
+  color: #666;
+}
+.empty-state h3 {
+  margin-bottom: 15px;
+  color: #333;
+  font-size: 20px;
+}
+.search-box {
+  margin-bottom: 24px;
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+.search-input {
+  flex: 1;
+  padding: 12px 16px;
+  border: 2px solid #e9ecef;
+  border-radius: 8px;
+  font-size: 14px;
+  transition: all 0.3s ease;
+  background: #fafbfc;
+}
+.search-input:focus {
+  border-color: #409eff;
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(64, 158, 255, 0.1);
+  background: #fff;
+}
+.stats {
+  display: flex;
+  gap: 24px;
+  margin-bottom: 24px;
+  padding: 20px;
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  border-radius: 12px;
+  border: 1px solid #dee2e6;
+}
+.stat-item {
+  text-align: center;
+  flex: 1;
+}
+.stat-number {
+  font-size: 28px;
+  font-weight: bold;
+  color: #409eff;
+  margin-bottom: 4px;
+}
+.stat-label {
+  font-size: 13px;
+  color: #666;
+  font-weight: 500;
+}
+.pagination {
+  margin-top: 24px;
+  text-align: center;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 16px;
+}
+.pagination button {
+  background: #409eff;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.3s ease;
+  min-width: 80px;
+}
+.pagination button:hover:not(:disabled) {
+  background: #3076c9;
+  transform: translateY(-1px);
+}
+.pagination button:disabled {
+  background: #6c757d;
+  cursor: not-allowed;
+  transform: none;
+}
+.pagination span {
+  font-size: 14px;
+  color: #666;
+  font-weight: 500;
+}
+.drawer-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 9999;
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.3s ease;
+}
+.drawer-overlay.show {
+  opacity: 1;
+  visibility: visible;
+}
+.drawer {
+  position: fixed;
+  top: 0;
+  right: -500px;
+  width: 500px;
+  height: 100vh;
+  background: white;
+  box-shadow: -5px 0 25px rgba(0, 0, 0, 0.15);
+  z-index: 10000;
+  transition: right 0.3s ease;
+  overflow-y: auto;
+}
+.drawer.show {
+  right: 0;
+}
+.drawer-header {
+  padding: 20px 24px;
+  border-bottom: 1px solid #e9ecef;
+  background: #f8f9fa;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+.drawer-title {
+  font-size: 20px;
+  font-weight: 600;
+  color: #333;
+  margin: 0 0 8px 0;
+}
+.drawer-subtitle {
+  font-size: 14px;
+  color: #666;
+  margin: 0;
+}
+.drawer-close {
+  position: absolute;
+  top: 20px;
+  right: 24px;
+  background: none;
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+  color: #666;
+  padding: 0;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+}
+.drawer-close:hover {
+  background: #e9ecef;
+  color: #333;
+}
+.drawer-content {
+  padding: 24px;
+}
+.drawer-section {
+  margin-bottom: 24px;
+}
+.drawer-section-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #333;
+  margin: 0 0 12px 0;
+  padding-bottom: 8px;
+  border-bottom: 2px solid #409eff;
+}
+.drawer-field {
+  margin-bottom: 16px;
+}
+.drawer-field-label {
+  font-size: 13px;
+  color: #666;
+  margin-bottom: 4px;
+  font-weight: 500;
+}
+.drawer-field-value {
+  font-size: 14px;
+  color: #333;
+  line-height: 1.5;
+  word-break: break-word;
+}
+.drawer-field-value.status {
+  display: inline-block;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 500;
+}
+.drawer-field-value.status.active {
+  background: #f6ffed;
+  color: #52c41a;
+  border: 1px solid #b7eb8f;
+}
+.drawer-field-value.status.inactive {
+  background: #fff2f0;
+  color: #dc3545;
+  border: 1px solid #ffccc7;
+}
+.dataset-name {
+  color: #409eff;
+  cursor: pointer;
+  text-decoration: underline;
+  font-weight: 500;
+  transition: color 0.2s ease;
+}
+.dataset-name:hover {
+  color: #3076c9;
+}
+.dataset-id {
+  color: #666;
+  font-size: 12px;
+  font-weight: 500;
+}
+.copy-icon {
+  color: #409eff;
+  cursor: pointer;
+  margin-left: 8px;
+  font-size: 12px;
+  transition: all 0.2s ease;
+  opacity: 0.7;
+}
+.copy-icon:hover {
+  color: #3076c9;
+  opacity: 1;
+  transform: scale(1.1);
+}
+</style>
+{% endblock %}
+
+{% block navigation %}
+{{ navigation() }}
+{% endblock %}
+
+{% block content %}
+<div id="app">
+  <!-- 统计信息 -->
+  <div class="stats" v-if="!loading && !error">
+    <div class="stat-item">
+      <div class="stat-number">[[ totalCount ]]</div>
+      <div class="stat-label">总数据集</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-number">[[ activeCount ]]</div>
+      <div class="stat-label">可读写</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-number">[[ pfsCount ]]</div>
+      <div class="stat-label">PFS存储</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-number">[[ bosCount ]]</div>
+      <div class="stat-label">BOS存储</div>
+    </div>
+  </div>
+
+  <!-- 搜索和刷新 -->
+  <div class="search-box">
+    <input 
+      type="text" 
+      class="search-input" 
+      v-model="searchQuery" 
+      placeholder="搜索数据集名称、描述或所有者..."
+    >
+    <button 
+      class="refresh-btn" 
+      @click="loadDatasets" 
+      :disabled="loading"
+    >
+      <span v-if="loading">🔄 加载中...</span>
+      <span v-else>🔄 刷新列表</span>
+    </button>
+  </div>
+
+  <!-- 加载状态 -->
+  <div class="loading" v-if="loading">
+    <p>正在加载数据集列表...</p>
+  </div>
+
+  <!-- 错误状态 -->
+  <div class="error" v-if="error">
+    <p>[[ error ]]</p>
+  </div>
+
+  <!-- 数据集表格 -->
+  <div v-if="!loading && !error && filteredDatasets.length > 0">
+    <table class="datasets-table">
+                    <thead>
+                <tr>
+                  <th @click="sortBy('name')">
+                    数据集名称/ID 
+                    <span v-if="sortKey === 'name'">[[ sortOrder === 'asc' ? '↑' : '↓' ]]</span>
+                  </th>
+                  <th class="owner-column" @click="sortBy('ownerName')">
+                    所有者
+                    <span v-if="sortKey === 'ownerName'">[[ sortOrder === 'asc' ? '↑' : '↓' ]]</span>
+                  </th>
+                  <th class="permission-column">权限</th>
+                  <th class="visibility-column">可见性</th>
+                  <th class="storage-column" @click="sortBy('storageType')">
+                    存储类型
+                    <span v-if="sortKey === 'storageType'">[[ sortOrder === 'asc' ? '↑' : '↓' ]]</span>
+                  </th>
+                  <th @click="sortBy('description')">
+                    描述
+                    <span v-if="sortKey === 'description'">[[ sortOrder === 'asc' ? '↑' : '↓' ]]</span>
+                  </th>
+                  <th @click="sortBy('createdAt')">
+                    创建时间
+                    <span v-if="sortKey === 'createdAt'">[[ sortOrder === 'asc' ? '↑' : '↓' ]]</span>
+                  </th>
+                  <th @click="sortBy('updatedAt')">
+                    更新时间
+                    <span v-if="sortKey === 'updatedAt'">[[ sortOrder === 'asc' ? '↑' : '↓' ]]</span>
+                  </th>
+                </tr>
+              </thead>
+      <tbody>
+                <tr v-for="dataset in paginatedDatasets" :key="dataset.id">
+          <td>
+            <span class="dataset-name" @click="showDatasetDetail(dataset)">[[ dataset.name || 'N/A' ]]</span>
+            <br>
+            <span class="dataset-id">[[ dataset.id || 'N/A' ]]</span> <i class="fa-solid fa-copy copy-icon" @click="copyDatasetId(dataset.id)" title="复制数据集ID"></i>
+          </td>
+          <td class="owner-column" :title="dataset.ownerName || 'N/A'">[[ dataset.ownerName || 'N/A' ]]</td>
+          <td class="permission-column">
+            <span :class="['status', dataset.permission === 'rw' ? 'active' : 'inactive']">
+              [[ dataset.permission || 'N/A' ]]
+            </span>
+          </td>
+          <td class="visibility-column" :title="formatVisibility(dataset.visibilityScope)">[[ formatVisibility(dataset.visibilityScope) ]]</td>
+          <td class="storage-column">[[ dataset.storageType || 'N/A' ]]</td>
+          <td class="description-cell" :data-tooltip="dataset.description || '暂无描述'">[[ dataset.description || '暂无描述' ]]</td>
+          <td>[[ formatDate(dataset.createdAt) ]]</td>
+          <td>[[ formatDate(dataset.updatedAt) ]]</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <!-- 分页 -->
+    <div class="pagination">
+      <button 
+        @click="prevPage" 
+        :disabled="currentPage === 1"
+      >
+        ← 上一页
+      </button>
+      <span>第 [[ currentPage ]] 页，共 [[ totalPages ]] 页</span>
+      <button 
+        @click="nextPage" 
+        :disabled="currentPage === totalPages"
+      >
+        下一页 →
+      </button>
+    </div>
+  </div>
+
+  <!-- 空状态 -->
+  <div class="empty-state" v-if="!loading && !error && filteredDatasets.length === 0">
+    <h3>暂无数据集</h3>
+    <p v-if="searchQuery">没有找到匹配"[[ searchQuery ]]"的数据集</p>
+    <p v-else>您还没有创建任何数据集</p>
+  </div>
+
+  <!-- 数据集详情抽屉 -->
+  <div class="drawer-overlay" :class="{ show: showDrawer }" @click="closeDrawer"></div>
+  <div class="drawer" :class="{ show: showDrawer }">
+    <div class="drawer-header">
+      <h2 class="drawer-title">[[ selectedDataset?.name || '数据集详情' ]]</h2>
+      <p class="drawer-subtitle">[[ selectedDataset?.id || '' ]]</p>
+      <button class="drawer-close" @click="closeDrawer">×</button>
+    </div>
+    <div class="drawer-content" v-if="selectedDataset">
+      <!-- 基本信息 -->
+      <div class="drawer-section">
+        <h3 class="drawer-section-title">基本信息</h3>
+        <div class="drawer-field">
+          <div class="drawer-field-label">数据集名称</div>
+          <div class="drawer-field-value">[[ selectedDataset.name || 'N/A' ]]</div>
+        </div>
+        <div class="drawer-field">
+          <div class="drawer-field-label">数据集ID</div>
+          <div class="drawer-field-value">[[ selectedDataset.id || 'N/A' ]]</div>
+        </div>
+        <div class="drawer-field">
+          <div class="drawer-field-label">描述</div>
+          <div class="drawer-field-value">[[ selectedDataset.description || '暂无描述' ]]</div>
+        </div>
+        <div class="drawer-field">
+          <div class="drawer-field-label">所有者</div>
+          <div class="drawer-field-value">[[ selectedDataset.ownerName || 'N/A' ]]</div>
+        </div>
+      </div>
+
+      <!-- 权限和可见性 -->
+      <div class="drawer-section">
+        <h3 class="drawer-section-title">权限和可见性</h3>
+        <div class="drawer-field">
+          <div class="drawer-field-label">权限</div>
+          <div class="drawer-field-value status" :class="selectedDataset?.permission === 'rw' ? 'active' : 'inactive'">
+            [[ selectedDataset?.permission || 'N/A' ]]
+          </div>
+        </div>
+        <div class="drawer-field">
+          <div class="drawer-field-label">可见性</div>
+          <div class="drawer-field-value">[[ formatVisibility(selectedDataset.visibilityScope) ]]</div>
+        </div>
+      </div>
+
+      <!-- 存储信息 -->
+      <div class="drawer-section">
+        <h3 class="drawer-section-title">存储信息</h3>
+        <div class="drawer-field">
+          <div class="drawer-field-label">存储类型</div>
+          <div class="drawer-field-value">[[ selectedDataset.storageType || 'N/A' ]]</div>
+        </div>
+        <div class="drawer-field" v-if="selectedDataset?.storagePath">
+          <div class="drawer-field-label">存储路径</div>
+          <div class="drawer-field-value">[[ selectedDataset?.storagePath || 'N/A' ]]</div>
+        </div>
+      </div>
+
+      <!-- 时间信息 -->
+      <div class="drawer-section">
+        <h3 class="drawer-section-title">时间信息</h3>
+        <div class="drawer-field">
+          <div class="drawer-field-label">创建时间</div>
+          <div class="drawer-field-value">[[ formatDate(selectedDataset.createdAt) ]]</div>
+        </div>
+        <div class="drawer-field">
+          <div class="drawer-field-label">更新时间</div>
+          <div class="drawer-field-value">[[ formatDate(selectedDataset.updatedAt) ]]</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const { createApp } = Vue;
+
+createApp({
+  delimiters: ['[[', ']]'],
+  data() {
+    return {
+      datasets: [],
+      loading: false,
+      error: null,
+      searchQuery: '',
+      sortKey: 'createdAt',
+      sortOrder: 'desc',
+      currentPage: 1,
+      pageSize: 20,
+      showDrawer: false,
+      selectedDataset: null
+    }
+  },
+  computed: {
+    filteredDatasets() {
+      if (!this.searchQuery) {
+        return this.datasets;
+      }
+      const query = this.searchQuery.toLowerCase();
+      return this.datasets.filter(dataset => 
+        (dataset.name && dataset.name.toLowerCase().includes(query)) ||
+        (dataset.description && dataset.description.toLowerCase().includes(query)) ||
+        (dataset.ownerName && dataset.ownerName.toLowerCase().includes(query))
+      );
+    },
+    sortedDatasets() {
+      return [...this.filteredDatasets].sort((a, b) => {
+        let aVal = a[this.sortKey] || '';
+        let bVal = b[this.sortKey] || '';
+        
+        if (this.sortKey === 'createdAt' || this.sortKey === 'updatedAt') {
+          aVal = new Date(aVal);
+          bVal = new Date(bVal);
+        } else {
+          aVal = aVal.toString().toLowerCase();
+          bVal = bVal.toString().toLowerCase();
+        }
+        
+        if (this.sortOrder === 'asc') {
+          return aVal > bVal ? 1 : -1;
+        } else {
+          return aVal < bVal ? 1 : -1;
+        }
+      });
+    },
+    paginatedDatasets() {
+      const start = (this.currentPage - 1) * this.pageSize;
+      const end = start + this.pageSize;
+      return this.sortedDatasets.slice(start, end);
+    },
+    totalPages() {
+      return Math.ceil(this.filteredDatasets.length / this.pageSize);
+    },
+    totalCount() {
+      return this.datasets.length;
+    },
+    activeCount() {
+      return this.datasets.filter(d => d.permission === 'rw').length;
+    },
+    pfsCount() {
+      return this.datasets.filter(d => d.storageType === 'PFS').length;
+    },
+    bosCount() {
+      return this.datasets.filter(d => d.storageType === 'BOS').length;
+    }
+  },
+  methods: {
+    async loadDatasets() {
+      console.log('loadDatasets called');
+      this.loading = true;
+      this.error = null;
+      
+      try {
+        console.log('Making API request...');
+        const response = await axios.get('/api?action=DescribeDatasets');
+        console.log('API response received:', response.data);
+        const data = response.data;
+        
+        if (data.error) {
+          this.error = data.error;
+          return;
+        }
+        
+        this.datasets = data.datasets || data.Datasets || [];
+        console.log('Datasets loaded:', this.datasets.length);
+        this.currentPage = 1; // 重置到第一页
+      } catch (err) {
+        console.error('Error loading datasets:', err);
+        this.error = '加载数据集列表失败: ' + err.message;
+      } finally {
+        this.loading = false;
+      }
+    },
+    sortBy(key) {
+      if (this.sortKey === key) {
+        this.sortOrder = this.sortOrder === 'asc' ? 'desc' : 'asc';
+      } else {
+        this.sortKey = key;
+        this.sortOrder = 'asc';
+      }
+    },
+    prevPage() {
+      if (this.currentPage > 1) {
+        this.currentPage--;
+      }
+    },
+    nextPage() {
+      if (this.currentPage < this.totalPages) {
+        this.currentPage++;
+      }
+    },
+    formatDate(dateStr) {
+      if (!dateStr) return 'N/A';
+      try {
+        const date = new Date(dateStr);
+        return date.toLocaleString('zh-CN');
+      } catch (e) {
+        return dateStr;
+      }
+    },
+    formatVisibility(visibilityScope) {
+      if (!visibilityScope) return 'N/A';
+      const visibilityMap = {
+        'ALL_PEOPLE': '所有人可见',
+        'USER_GROUP': '用户组可见',
+        'ONLY_OWNER': '仅所有者可见'
+      };
+      return visibilityMap[visibilityScope] || visibilityScope;
+    },
+    showDatasetDetail(dataset) {
+      this.selectedDataset = dataset;
+      this.showDrawer = true;
+      // 防止body滚动
+      document.body.style.overflow = 'hidden';
+    },
+    closeDrawer() {
+      this.showDrawer = false;
+      this.selectedDataset = null;
+      // 恢复body滚动
+      document.body.style.overflow = '';
+    },
+    copyDatasetId(id) {
+      if (!id) return;
+      
+      // 使用现代浏览器的Clipboard API
+      if (navigator.clipboard && window.isSecureContext) {
+        navigator.clipboard.writeText(id).then(() => {
+          this.showCopySuccess();
+        }).catch(err => {
+          console.error('复制失败:', err);
+          this.fallbackCopy(id);
+        });
+      } else {
+        // 降级方案
+        this.fallbackCopy(id);
+      }
+    },
+    fallbackCopy(text) {
+      // 创建临时文本区域
+      const textArea = document.createElement('textarea');
+      textArea.value = text;
+      textArea.style.position = 'fixed';
+      textArea.style.left = '-999999px';
+      textArea.style.top = '-999999px';
+      document.body.appendChild(textArea);
+      textArea.focus();
+      textArea.select();
+      
+      try {
+        document.execCommand('copy');
+        this.showCopySuccess();
+      } catch (err) {
+        console.error('复制失败:', err);
+      }
+      
+      document.body.removeChild(textArea);
+    },
+    showCopySuccess() {
+      // 显示复制成功提示
+      const toast = document.createElement('div');
+      toast.textContent = '数据集ID已复制到剪贴板';
+      toast.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background: #52c41a;
+        color: white;
+        padding: 12px 20px;
+        border-radius: 6px;
+        z-index: 10000;
+        font-size: 14px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        animation: slideIn 0.3s ease;
+      `;
+      
+      // 添加动画样式
+      const style = document.createElement('style');
+      style.textContent = `
+        @keyframes slideIn {
+          from { transform: translateX(100%); opacity: 0; }
+          to { transform: translateX(0); opacity: 1; }
+        }
+      `;
+      document.head.appendChild(style);
+      
+      document.body.appendChild(toast);
+      
+      // 3秒后自动移除
+      setTimeout(() => {
+        if (toast.parentNode) {
+          toast.parentNode.removeChild(toast);
+        }
+      }, 3000);
+    }
+  },
+  mounted() {
+    console.log('Vue app mounted, loading datasets...');
+    this.loadDatasets();
+  }
+}).mount('#app');
+</script>
+{% endblock %} 

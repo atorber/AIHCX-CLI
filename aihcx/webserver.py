@@ -1,4 +1,4 @@
-from flask import Flask, render_template_string, request, redirect, url_for
+from flask import Flask, render_template, request, redirect, url_for
 from flask_cors import CORS
 import os
 import sys
@@ -59,81 +59,14 @@ logger.setLevel(logging.DEBUG)
 logger.addHandler(fh)
 
 
-app = Flask(__name__)
+app = Flask(__name__, template_folder='templates')
 CORS(app, resources={r"/*": {"origins": "*"}})
 
-HTML = """
-<!doctype html>
-<html lang='zh-CN'>
-<head>
-  <meta charset='utf-8'>
-  <title>AIHCX 参数配置</title>
-  <style>
-    body { font-family: 'Segoe UI', 'PingFang SC', Arial, sans-serif; background: #f7f7f9; margin: 0; padding: 0; }
-    .container { max-width: 420px; margin: 60px auto; background: #fff; border-radius: 10px; box-shadow: 0 2px 12px rgba(0,0,0,0.08); padding: 32px 36px 24px 36px; }
-    h2 { text-align: center; color: #333; margin-bottom: 28px; }
-    form { display: flex; flex-direction: column; gap: 18px; }
-    label { color: #555; font-size: 15px; margin-bottom: 4px; }
-    input[type=text], input[type=password] {
-      padding: 8px 12px; border: 1px solid #d0d0d5; border-radius: 5px; font-size: 15px; background: #fafbfc;
-      transition: border 0.2s;
-    }
-    input[type=text]:focus, input[type=password]:focus {
-      border: 1.5px solid #409eff; outline: none;
-    }
-    .btn-row { display: flex; gap: 12px; }
-    input[type=submit], button[type=button] {
-      background: #409eff; color: #fff; border: none; border-radius: 5px; padding: 10px 0; font-size: 16px; cursor: pointer; margin-top: 10px;
-      transition: background 0.2s;
-      flex: 1;
-    }
-    input[type=submit]:hover, button[type=button]:hover {
-      background: #3076c9;
-    }
-    .msg { text-align: center; color: #52c41a; margin-top: 18px; font-size: 15px; }
-    .field { display: flex; flex-direction: column; }
-  </style>
-</head>
-<body>
-  <div class="container">
-    <h2>参数配置</h2>
-    <form method="post">
-      <div class="field">
-        <label for="host">Host</label>
-        <input type="text" id="host" name="host" value="{{ host|default('') }}">
-      </div>
-      <div class="field">
-        <label for="access_key">Access Key</label>
-        <input type="text" id="access_key" name="access_key" value="{{ access_key|default('') }}">
-      </div>
-      <div class="field">
-        <label for="secret_key">Secret Key</label>
-        <input type="password" id="secret_key" name="secret_key" value="{{ secret_key|default('') }}">
-      </div>
-      <div class="field">
-        <label for="pool">Pool</label>
-        <input type="text" id="pool" name="pool" value="{{ pool|default('') }}">
-      </div>
-      <div class="field">
-        <label for="queue">Queue</label>
-        <input type="text" id="queue" name="queue" value="{{ queue|default('') }}">
-      </div>
-      <div class="field">
-        <label for="path">Path</label>
-        <input type="text" id="path" name="path" value="{{ path|default('') }}">
-      </div>
-      <div class="btn-row">
-        <input type="submit" value="保存">
-        <button type="button" onclick="window.location.href='{{ url_for('config') }}'">重置</button>
-      </div>
-    </form>
-    {% if saved %}
-    <div class="msg">参数已保存！</div>
-    {% endif %}
-  </div>
-</body>
-</html>
-"""
+
+
+
+
+
 
 @app.route('/config', methods=['GET', 'POST'])
 def config():
@@ -147,28 +80,84 @@ def config():
         saved = True
     # 读取最新配置
     config_data = {k: cfg.get(k) or '' for k in ['host', 'access_key', 'secret_key', 'pool', 'queue', 'path']}
-    return render_template_string(HTML, saved=saved, **config_data)
+    return render_template('config.html', saved=saved, **config_data)
+
+@app.route('/datasets', methods=['GET'])
+def datasets():
+    return render_template('datasets.html')
+
+@app.route('/models', methods=['GET'])
+def models():
+    return render_template('models.html')
+
+@app.route('/resourcepools', methods=['GET'])
+def resourcepools():
+    return render_template('resourcepools.html')
+
+@app.route('/', methods=['GET'])
+def welcome():
+    try:
+        # 读取README文件内容
+        readme_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'README.md')
+        with open(readme_path, 'r', encoding='utf-8') as f:
+            readme_content = f.read()
+        
+        # 将Markdown转换为HTML（简单的转换）
+        import re
+        # 转换标题
+        readme_content = re.sub(r'^# (.*?)$', r'<h1>\1</h1>', readme_content, flags=re.MULTILINE)
+        readme_content = re.sub(r'^## (.*?)$', r'<h2>\1</h2>', readme_content, flags=re.MULTILINE)
+        readme_content = re.sub(r'^### (.*?)$', r'<h3>\1</h3>', readme_content, flags=re.MULTILINE)
+        readme_content = re.sub(r'^#### (.*?)$', r'<h4>\1</h4>', readme_content, flags=re.MULTILINE)
+        
+        # 转换代码块
+        readme_content = re.sub(r'```(.*?)\n(.*?)```', r'<pre><code class="\1">\2</code></pre>', readme_content, flags=re.DOTALL)
+        
+        # 转换行内代码
+        readme_content = re.sub(r'`([^`]+)`', r'<code>\1</code>', readme_content)
+        
+        # 转换列表
+        readme_content = re.sub(r'^\* (.*?)$', r'<li>\1</li>', readme_content, flags=re.MULTILINE)
+        readme_content = re.sub(r'^- (.*?)$', r'<li>\1</li>', readme_content, flags=re.MULTILINE)
+        readme_content = re.sub(r'^\d+\. (.*?)$', r'<li>\1</li>', readme_content, flags=re.MULTILINE)
+        
+        # 转换粗体和斜体
+        readme_content = re.sub(r'\*\*(.*?)\*\*', r'<strong>\1</strong>', readme_content)
+        readme_content = re.sub(r'\*(.*?)\*', r'<em>\1</em>', readme_content)
+        
+        # 转换链接
+        readme_content = re.sub(r'\[([^\]]+)\]\(([^)]+)\)', r'<a href="\2" target="_blank">\1</a>', readme_content)
+        
+        # 转换段落
+        readme_content = re.sub(r'\n\n([^<].*?)\n\n', r'<p>\1</p>', readme_content, flags=re.DOTALL)
+        
+        # 清理多余的换行
+        readme_content = re.sub(r'\n{3,}', r'\n\n', readme_content)
+        
+        return render_template('welcome.html', readme_content=readme_content)
+    except Exception as e:
+        print(f'读取README文件失败: {e}')
+        return render_template('welcome.html', readme_content='<p>无法加载README内容，请检查文件是否存在。</p>')
 
 # 代理aihc api，透传请求
-@app.route('/', methods=['POST', 'GET'])
-def proxy_aihc():
+@app.route('/api', methods=['POST', 'GET'])
+@app.route('/api/<path:subpath>', methods=['POST', 'GET'])
+def proxy_aihc(subpath=None):
+    logger.info('proxy_aihc')
     try:
         # 从配置文件中读取host, ak, sk
         cfg = AIJobConfig()
         HOST = cfg.get('host')
         AK = cfg.get('access_key')
         SK = cfg.get('secret_key')
-        print('HOST', HOST)
-        print('AK', AK)
-        print('SK', SK)
         aihc_sample_conf = BceClientConfiguration(credentials=BceCredentials(AK, SK), endpoint=HOST)
-        print('aihc_sample_conf', aihc_sample_conf)
-        print('proxy_aihc....')
 
         # 解析请求参数
         http_method = http_methods.GET if request.method == 'GET' else http_methods.POST
         path = b'/'
         params = request.args
+        url = request.url
+        logger.info('url: %s', url)
         
         # 安全地获取JSON body
         try:
@@ -185,6 +174,10 @@ def proxy_aihc():
         print('params', params)
         print('params keys:', list(params.keys()))
 
+        # 检查URL路径是否包含v1或v2
+        url_path = request.path
+        logger.info('url_path: %s', url_path)
+        
         # 如果query参数中包含action，则透传到aihc api
         if 'action' in params:
             print('找到action参数，开始透传请求...')
@@ -196,7 +189,47 @@ def proxy_aihc():
                 body=body,
                 params=params,
                 headers={
-                    # b'version': b'v2',
+                    b'version': b'v2',
+                    b'X-API-Version': b'v2',
+                },
+                body_parser=parse_json
+            )
+
+            print('请求response', response)
+
+            # 返回响应
+            return jsonify(to_dict(response)), 200
+        elif '/v1/' in url_path:
+            logger.info('找到v1路径，开始透传请求...')
+            # 透传请求
+            aihc_client = AIHCClient(aihc_sample_conf)
+            response = aihc_client._send_request(
+                http_method=http_method,
+                path=url_path.encode('utf-8'),
+                body=body,
+                params=params,
+                headers={
+                    b'version': b'v1',
+                    b'X-API-Version': b'v1',
+                },
+                body_parser=parse_json
+            )
+
+            print('请求response', response)
+
+            # 返回响应
+            return jsonify(to_dict(response)), 200
+        elif '/v2/' in url_path:
+            logger.info('找到v2路径，开始透传请求...')
+            # 透传请求
+            aihc_client = AIHCClient(aihc_sample_conf)
+            response = aihc_client._send_request(
+                http_method=http_method,
+                path=url_path.encode('utf-8'),
+                body=body,
+                params=params,
+                headers={
+                    b'version': b'v2',
                     b'X-API-Version': b'v2',
                 },
                 body_parser=parse_json
@@ -207,7 +240,7 @@ def proxy_aihc():
             # 返回响应
             return jsonify(to_dict(response)), 200
         else:
-            print('未找到action参数，返回404')
+            print('未找到action参数或v1/v2路径，返回404')
             # 返回404
             return jsonify({'error': 'Not Found'}), 404
     except Exception as e:

@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+
+{% block title %}AIHCX 欢迎页面{% endblock %}
+
+{% block header_title %}🤖 AIHCX{% endblock %}
+{% block header_subtitle %}机器学习平台命令行工具{% endblock %}
+
+{% block content %}
+{{ readme_content | safe }}
+{% endblock %} 
