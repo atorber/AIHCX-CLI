@@ -1,4 +1,5 @@
 from flask import Flask, render_template_string, request, redirect, url_for
+from flask_cors import CORS
 import os
 import sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -59,6 +60,7 @@ logger.addHandler(fh)
 
 
 app = Flask(__name__)
+CORS(app, resources={r"/*": {"origins": "*"}})
 
 HTML = """
 <!doctype html>
@@ -171,9 +173,11 @@ def proxy_aihc():
         # 安全地获取JSON body
         try:
             body = request.get_json()
+            print('body', body)
+            body = json.dumps(body)
         except Exception as e:
             print('获取JSON body失败:', e)
-            body = {}
+            body = json.dumps({})
 
         print('http_method', http_method)
         print('path', path)
@@ -192,7 +196,8 @@ def proxy_aihc():
                 body=body,
                 params=params,
                 headers={
-                    b'version': b'v2'
+                    # b'version': b'v2',
+                    b'X-API-Version': b'v2',
                 },
                 body_parser=parse_json
             )
