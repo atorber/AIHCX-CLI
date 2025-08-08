@@ -94,6 +94,12 @@ def models():
 def resourcepools():
     return render_template('resourcepools.html')
 
+@app.route('/jobs', methods=['GET'])
+def jobs():
+    cfg = AIJobConfig()
+    default_pool_id = cfg.get('pool') or ''
+    return render_template('jobs.html', default_pool_id=default_pool_id)
+
 @app.route('/', methods=['GET'])
 def welcome():
     try:

@@ -9,92 +9,74 @@
 {% block extra_css %}
 <style>
 .config-container {
-  max-width: 600px;
+  max-width: 800px;
   margin: 0 auto;
-  padding: 40px;
+  padding: 28px 0;
 }
-h2 { text-align: center; color: #333; margin-bottom: 28px; font-size: 2em; }
-form { display: flex; flex-direction: column; gap: 20px; }
-label { color: #555; font-size: 15px; margin-bottom: 6px; font-weight: 500; }
+h2 { text-align: center; color: #111827; margin-bottom: 22px; font-size: 22px; font-weight: 600; }
+form { display: flex; flex-direction: column; gap: 16px; }
+
+/* 左右结构 */
+.field-row { 
+  display: grid; 
+  grid-template-columns: 180px 1fr; 
+  align-items: start; 
+  column-gap: 16px; 
+}
+.field-row + .field-row { margin-top: 6px; }
+.field-row label { 
+  color: #374151; 
+  font-size: 14px; 
+  font-weight: 600; 
+  text-align: right; 
+  margin: 0; 
+  padding-top: 6px; 
+}
+.field-row .control { display: flex; flex-direction: column; gap: 6px; }
+
 input[type=text], input[type=password] {
-  padding: 12px 16px; 
-  border: 2px solid #e9ecef; 
-  border-radius: 8px; 
-  font-size: 15px; 
-  background: #fafbfc;
-  transition: all 0.3s ease;
+  padding: 10px 12px; 
+  border: 1.5px solid #e5e7eb; 
+  border-radius: 10px; 
+  font-size: 14px; 
+  background: #fff;
+  transition: box-shadow 0.15s ease, border-color 0.15s ease;
   width: 100%;
   box-sizing: border-box;
 }
 input[type=text]:focus, input[type=password]:focus {
-  border-color: #409eff; 
+  border-color: #2b6def; 
   outline: none;
-  box-shadow: 0 0 0 3px rgba(64, 158, 255, 0.1);
-  background: #fff;
+  box-shadow: 0 0 0 3px rgba(43, 109, 239, 0.12);
 }
-.btn-row { display: flex; gap: 15px; margin-top: 10px; }
+
+/* 校验态 */
+.field-row.error input { border-color: #dc3545; background: #fff5f5; }
+.field-row.error label { color: #dc3545; }
+.small-error { color: #dc3545; font-size: 13px; }
+
+.help-text { font-size: 13px; color: #6b7280; line-height: 1.5; }
+.required { color: #dc3545; margin-left: 4px; }
+
+.btn-row { display: flex; gap: 12px; margin-top: 8px; margin-left: 180px; }
 button {
-  background: #409eff; 
+  background: #2b6def; 
   color: #fff; 
   border: none; 
-  border-radius: 8px; 
-  padding: 12px 24px; 
-  font-size: 16px; 
-  font-weight: 500;
+  border-radius: 10px; 
+  padding: 10px 16px; 
+  font-size: 14px; 
+  font-weight: 600;
   cursor: pointer; 
-  transition: all 0.3s ease;
-  flex: 1;
-  min-height: 48px;
+  transition: all 0.15s ease;
+  min-height: 40px;
 }
-button:hover {
-  background: #3076c9;
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(64, 158, 255, 0.3);
-}
-button:disabled {
-  background: #6c757d;
-  cursor: not-allowed;
-  transform: none;
-  box-shadow: none;
-}
-.msg { 
-  text-align: center; 
-  color: #52c41a; 
-  margin-top: 20px; 
-  font-size: 15px; 
-  padding: 12px;
-  background: #f6ffed;
-  border: 1px solid #b7eb8f;
-  border-radius: 6px;
-}
-.error-msg { 
-  text-align: center; 
-  color: #dc3545; 
-  margin-top: 20px; 
-  font-size: 15px; 
-  padding: 12px;
-  background: #fff2f0;
-  border: 1px solid #ffccc7;
-  border-radius: 6px;
-}
-.field { display: flex; flex-direction: column; }
-.field.error input {
-  border-color: #dc3545;
-  background: #fff5f5;
-}
-.field.error label {
-  color: #dc3545;
-}
-.help-text {
-  font-size: 13px;
-  color: #666;
-  margin-top: 6px;
-  line-height: 1.4;
-}
-.required {
-  color: #dc3545;
-  margin-left: 4px;
-}
+button:hover { background: #1f5bd8; box-shadow: 0 4px 12px rgba(43, 109, 239, 0.25); }
+button:disabled { background: #9ca3af; cursor: not-allowed; }
+
+.msg { text-align: left; color: #16a34a; margin-top: 12px; font-size: 14px; padding: 10px; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; }
+.error-msg { text-align: left; color: #dc3545; margin-top: 12px; font-size: 14px; padding: 10px; background: #fff1f2; border: 1px solid #fecdd3; border-radius: 8px; }
+
 </style>
 {% endblock %}
 
@@ -104,79 +86,91 @@ button:disabled {
 
 {% block content %}
 <div id="app" class="config-container">
-  <h2>⚙️ 参数配置</h2>
+  <!-- <h2>⚙️ 参数配置</h2> -->
   
   <form @submit.prevent="saveConfig">
-    <div class="field" :class="{ error: errors.host }">
+    <div class="field-row" :class="{ error: errors.host }">
       <label for="host">Host <span class="required">*</span></label>
-      <input 
-        type="text" 
-        id="host" 
-        v-model="config.host" 
-        placeholder="例如: aihc.bj.baidubce.com"
-        required
-      >
-      <div class="help-text">AIHC服务的访问地址</div>
-      <div v-if="errors.host" class="error-msg">[[ errors.host ]]</div>
+      <div class="control">
+        <input 
+          type="text" 
+          id="host" 
+          v-model="config.host" 
+          placeholder="例如: aihc.bj.baidubce.com"
+          required
+        >
+        <div class="help-text">AIHC服务的访问地址</div>
+        <div v-if="errors.host" class="small-error">[[ errors.host ]]</div>
+      </div>
     </div>
     
-    <div class="field" :class="{ error: errors.access_key }">
+    <div class="field-row" :class="{ error: errors.access_key }">
       <label for="access_key">Access Key <span class="required">*</span></label>
-      <input 
-        type="text" 
-        id="access_key" 
-        v-model="config.access_key" 
-        placeholder="请输入您的Access Key"
-        required
-      >
-      <div class="help-text">用于身份验证的Access Key</div>
-      <div v-if="errors.access_key" class="error-msg">[[ errors.access_key ]]</div>
+      <div class="control">
+        <input 
+          type="text" 
+          id="access_key" 
+          v-model="config.access_key" 
+          placeholder="请输入您的Access Key"
+          required
+        >
+        <div class="help-text">用于身份验证的Access Key</div>
+        <div v-if="errors.access_key" class="small-error">[[ errors.access_key ]]</div>
+      </div>
     </div>
     
-    <div class="field" :class="{ error: errors.secret_key }">
+    <div class="field-row" :class="{ error: errors.secret_key }">
       <label for="secret_key">Secret Key <span class="required">*</span></label>
-      <input 
-        type="password" 
-        id="secret_key" 
-        v-model="config.secret_key" 
-        placeholder="请输入您的Secret Key"
-        required
-      >
-      <div class="help-text">用于身份验证的Secret Key</div>
-      <div v-if="errors.secret_key" class="error-msg">[[ errors.secret_key ]]</div>
+      <div class="control">
+        <input 
+          type="password" 
+          id="secret_key" 
+          v-model="config.secret_key" 
+          placeholder="请输入您的Secret Key"
+          required
+        >
+        <div class="help-text">用于身份验证的Secret Key</div>
+        <div v-if="errors.secret_key" class="small-error">[[ errors.secret_key ]]</div>
+      </div>
     </div>
     
-    <div class="field">
+    <div class="field-row">
       <label for="pool">Pool</label>
-      <input 
-        type="text" 
-        id="pool" 
-        v-model="config.pool" 
-        placeholder="默认资源池ID"
-      >
-      <div class="help-text">默认使用的资源池ID（可选）</div>
+      <div class="control">
+        <input 
+          type="text" 
+          id="pool" 
+          v-model="config.pool" 
+          placeholder="默认资源池ID"
+        >
+        <div class="help-text">默认使用的资源池ID（可选）</div>
+      </div>
     </div>
     
-    <div class="field">
+    <div class="field-row">
       <label for="queue">Queue</label>
-      <input 
-        type="text" 
-        id="queue" 
-        v-model="config.queue" 
-        placeholder="默认队列名称"
-      >
-      <div class="help-text">默认使用的队列名称（可选）</div>
+      <div class="control">
+        <input 
+          type="text" 
+          id="queue" 
+          v-model="config.queue" 
+          placeholder="默认队列名称"
+        >
+        <div class="help-text">默认使用的队列名称（可选）</div>
+      </div>
     </div>
     
-    <div class="field">
+    <div class="field-row">
       <label for="path">Path</label>
-      <input 
-        type="text" 
-        id="path" 
-        v-model="config.path" 
-        placeholder="默认路径"
-      >
-      <div class="help-text">默认使用的路径（可选）</div>
+      <div class="control">
+        <input 
+          type="text" 
+          id="path" 
+          v-model="config.path" 
+          placeholder="默认路径"
+        >
+        <div class="help-text">默认使用的路径（可选）</div>
+      </div>
     </div>
     
     <div class="btn-row">

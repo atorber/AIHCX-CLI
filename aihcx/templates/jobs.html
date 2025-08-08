@@ -1,0 +1,227 @@
+{% extends "base.html" %}
+{% from "components/navigation.html" import navigation %}
+
+{% block title %}AIHCX 任务列表{% endblock %}
+
+{% block header_title %}📋 任务列表{% endblock %}
+{% block header_subtitle %}按资源池查看与筛选训练任务{% endblock %}
+
+{% block extra_css %}
+<style>
+.select-row {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  margin-bottom: 10px;
+}
+.select {
+  padding: 10px 12px;
+  border: 2px solid #e9ecef;
+  border-radius: 8px;
+  font-size: 14px;
+  background: #fafbfc;
+}
+.jobs-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 12px;
+  background: white;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+  border: 1px solid #e9ecef;
+}
+.jobs-table th, .jobs-table td {
+  padding: 12px 16px;
+  border-bottom: 1px solid #f1f3f4;
+  font-size: 14px;
+}
+.jobs-table th {
+  background: #f8f9fa;
+  text-align: left;
+  font-weight: 600;
+  color: #333;
+}
+.status {
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  display: inline-block;
+}
+.status.running { background: #f6ffed; color: #52c41a; border: 1px solid #b7eb8f; }
+.status.pending { background: #fff7e6; color: #fa8c16; border: 1px solid #ffd591; }
+.status.failed { background: #fff2f0; color: #dc3545; border: 1px solid #ffccc7; }
+.status.succeeded { background: #e6fffb; color: #13c2c2; border: 1px solid #87e8de; }
+.loading { text-align: center; padding: 40px 0; color: #666; }
+.error { background:#fff2f0; color:#dc3545; padding:12px; border-radius:8px; margin:12px 0; border:1px solid #ffccc7; }
+.search-input { flex:1; padding: 10px 12px; border:2px solid #e9ecef; border-radius:8px; font-size:14px; background:#fafbfc; }
+.refresh-btn { background:#409eff; color:#fff; border:none; padding:10px 16px; border-radius:8px; cursor:pointer; }
+.refresh-btn:disabled { background:#6c757d; cursor:not-allowed; }
+.inline-loading { display:flex; align-items:center; gap:8px; color:#6b7280; font-size:13px; margin-bottom: 12px; }
+</style>
+{% endblock %}
+
+{% block navigation %}
+{{ navigation() }}
+{% endblock %}
+
+{% block content %}
+<div id="app">
+  <div class="select-row">
+    <select class="select" v-model="selectedPoolId" @change="loadJobs" :disabled="poolsLoading">
+      <option value="" disabled>请选择资源池</option>
+      <option v-if="poolsLoading" value="" disabled>资源池列表加载中...</option>
+      <option v-for="pool in pools" :key="pool.metadata.id" :value="pool.metadata.id">
+        [[ pool.metadata.name ]] ([[ pool.metadata.id ]])
+      </option>
+    </select>
+    <input class="search-input" v-model="searchQuery" placeholder="搜索任务名称或ID..." />
+    <button class="refresh-btn" @click="loadJobs" :disabled="loading || poolsLoading">[[ loading ? '加载中...' : '刷新' ]]</button>
+  </div>
+
+  <div class="inline-loading" v-if="poolsLoading">
+    <i class="fa-solid fa-spinner fa-spin"></i>
+    <span>正在加载资源池列表...</span>
+  </div>
+
+  <div class="loading" v-if="loading">正在加载任务列表...</div>
+  <div class="error" v-if="error">[[ error ]]</div>
+
+  <table class="jobs-table" v-if="!loading && !error && filteredJobs.length">
+    <thead>
+      <tr>
+        <th>任务名称</th>
+        <th>任务ID</th>
+        <th>状态</th>
+        <th>创建时间</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr v-for="job in filteredJobs" :key="job.jobId">
+        <td>[[ job.name || 'N/A' ]]</td>
+        <td>[[ job.jobId ]]</td>
+        <td>
+          <span class="status" :class="statusClass(job.status)">[[ statusText(job.status) ]]</span>
+        </td>
+        <td>[[ formatDate(job.createdAt) ]]</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div v-if="!loading && !error && !filteredJobs.length">暂无任务</div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const { createApp } = Vue;
+
+createApp({
+  delimiters: ['[[', ']]'],
+  data() {
+    return {
+      pools: [],
+      selectedPoolId: '{{ default_pool_id }}',
+      jobs: [],
+      loading: false,
+      poolsLoading: false,
+      error: null,
+      searchQuery: ''
+    }
+  },
+  computed: {
+    filteredJobs() {
+      const q = (this.searchQuery || '').toLowerCase();
+      return this.jobs.filter(j =>
+        (!q) ||
+        (j.name && j.name.toLowerCase().includes(q)) ||
+        (j.jobId && String(j.jobId).toLowerCase().includes(q))
+      );
+    }
+  },
+  methods: {
+    async loadPools() {
+      this.poolsLoading = true;
+      try {
+        const res = await axios.get('/api/v1/resourcepools');
+        this.pools = res.data?.result?.resourcePools || [];
+        if (this.pools.length) {
+          this.selectedPoolId = this.pools[0].metadata.id;
+        }
+      } catch (e) {
+        this.error = '加载资源池失败: ' + (e.message || e);
+      } finally {
+        this.poolsLoading = false;
+      }
+    },
+    normalizeJobs(rawJobs) {
+      if (!Array.isArray(rawJobs)) return [];
+      return rawJobs.map(j => {
+        const jobId = j.jobId || j.id || j.jobID || j?.metadata?.id || j?.job?.id || '';
+        const name = j.name || j.jobName || j?.metadata?.name || j?.job?.name || '';
+        const status = j.status || j.state || j.phase || j?.status?.phase || j?.jobStatus?.phase || '';
+        const createdAt = j.createdAt || j.createdTime || j.creationTime || j.createTime || j?.metadata?.createdAt || '';
+        return { jobId, name, status, createdAt };
+      });
+    },
+    extractJobsFromResponse(data) {
+      if (!data) return [];
+      const candidates = [
+        data?.result?.jobs,
+        data?.jobs,
+        data?.result?.jobList,
+        data?.result?.items,
+        data?.data?.jobs,
+        data?.result?.data?.jobs
+      ];
+      for (const arr of candidates) {
+        if (Array.isArray(arr)) return this.normalizeJobs(arr);
+      }
+      const maybeObj = data?.result || data?.data || data;
+      for (const key in maybeObj) {
+        if (Array.isArray(maybeObj[key]) && maybeObj[key].length && (maybeObj[key][0].jobId || maybeObj[key][0].name)) {
+          return this.normalizeJobs(maybeObj[key]);
+        }
+      }
+      return [];
+    },
+    async loadJobs() {
+      if (!this.selectedPoolId || this.poolsLoading) return;
+      this.loading = true;
+      this.error = null;
+      try {
+        const url = `/api?action=DescribeJobs&resourcePoolId=${encodeURIComponent(this.selectedPoolId)}`;
+        const res = await axios.post(url, {});
+        const data = res?.data || {};
+        this.jobs = this.extractJobsFromResponse(data);
+      } catch (e) {
+        this.error = '加载任务失败: ' + (e.response?.data?.error || e.message || e);
+        this.jobs = [];
+      } finally {
+        this.loading = false;
+      }
+    },
+    formatDate(s) {
+      if (!s) return 'N/A';
+      try { return new Date(s).toLocaleString('zh-CN'); } catch { return s; }
+    },
+    statusClass(s) {
+      if (!s) return 'pending';
+      const m = { running:'running', pending:'pending', failed:'failed', succeeded:'succeeded', success:'succeeded' };
+      return m[s] || 'pending';
+    },
+    statusText(s) {
+      const m = { running:'运行中', pending:'等待中', failed:'失败', succeeded:'成功', success:'成功' };
+      return m[s] || s || '未知';
+    }
+  },
+  async mounted() {
+    await this.loadPools();
+    if (this.selectedPoolId) {
+      this.loadJobs();
+    }
+  }
+}).mount('#app');
+</script>
+{% endblock %} 

@@ -12,187 +12,268 @@
   <!-- Font Awesome Icons -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
+    :root {
+      --bg: #f5f7fb;
+      --panel-bg: #ffffff;
+      --text: #1f2937;
+      --muted: #6b7280;
+      --primary: #2b6def;
+      --primary-600: #1f5bd8;
+      --border: #e5e7eb;
+      --shadow: 0 6px 24px rgba(0,0,0,0.06);
+      --radius: 12px;
+      --content-max: 1200px;
+      --sidebar-w: 240px;
+      --header-h: 96px; /* 头部大致高度，用于侧栏吸顶偏移 */
+    }
+
+    * { box-sizing: border-box; }
+
     body { 
       font-family: 'Segoe UI', 'PingFang SC', Arial, sans-serif; 
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      background: var(--bg);
+      color: var(--text);
       margin: 0; 
-      padding: 20px; 
+      /* padding: 16px;  */
       min-height: 100vh;
     }
+
     .container { 
-      max-width: 1400px; 
+      max-width: 1600px; 
       margin: 0 auto; 
-      background: #fff; 
-      border-radius: 15px; 
-      box-shadow: 0 10px 30px rgba(0,0,0,0.2); 
-      overflow: hidden;
+      background: var(--panel-bg); 
+      border-radius: var(--radius); 
+      box-shadow: var(--shadow);
+      overflow: visible;
     }
+
     .header {
-      background: linear-gradient(135deg, #409eff 0%, #3076c9 100%);
-      color: white;
-      padding: 40px;
+      position: sticky;
+      top: 0;
+      z-index: 1000;
+      background: var(--panel-bg);
+      color: var(--text);
+      padding: 28px 32px;
       text-align: center;
+      border-bottom: 1px solid var(--border);
     }
     .header h1 {
       margin: 0;
-      font-size: 2.5em;
-      font-weight: 300;
+      font-size: 26px;
+      font-weight: 600;
+      letter-spacing: 0.2px;
     }
     .header p {
-      margin: 10px 0 0 0;
-      font-size: 1.2em;
-      opacity: 0.9;
+      margin: 8px 0 0 0;
+      font-size: 14px;
+      color: var(--muted);
     }
-    .nav {
-      background: #f8f9fa;
-      padding: 20px 40px;
-      border-bottom: 1px solid #e9ecef;
+
+    /* 左侧布局 */
+    .main {
       display: flex;
-      align-items: center;
-      gap: 20px;
+      min-height: 640px;
+      align-items: flex-start;
     }
-    .nav-group {
-      display: flex;
-      gap: 15px;
-      align-items: center;
+    .sidebar {
+      position: sticky;
+      top: var(--header-h);
+      height: calc(100vh - var(--header-h));
+      overflow: hidden auto;
+      z-index: 900;
+
+      width: var(--sidebar-w);
+      background: var(--panel-bg);
+      border-right: 1px solid var(--border);
+      padding: 20px 14px;
     }
-    .nav-separator {
-      width: 1px;
-      height: 30px;
-      background: #dee2e6;
-      margin: 0 10px;
+    .sidebar .nav-group { 
+      display: flex; 
+      flex-direction: column; 
+      gap: 8px; 
     }
-    .nav a {
-      display: inline-block;
-      background: #409eff;
-      color: white;
+    .sidebar a {
+      display: block;
+      background: transparent;
+      color: var(--text);
       text-decoration: none;
-      padding: 12px 24px;
-      border-radius: 6px;
-      transition: all 0.3s ease;
+      padding: 10px 12px;
+      border-radius: 10px;
+      transition: all 0.15s ease;
       font-weight: 500;
     }
-    .nav a:hover {
-      background: #3076c9;
-      transform: translateY(-1px);
-      box-shadow: 0 4px 12px rgba(64, 158, 255, 0.3);
+    .sidebar a:hover {
+      background: #eef4ff;
+      color: var(--primary);
     }
-    .nav a.action-btn {
-      background: #28a745;
-      font-size: 14px;
-      padding: 10px 20px;
+    .sidebar a.action-btn { 
+      background: var(--primary); 
+      color: #fff;
+      text-align: center;
     }
-    .nav a.action-btn:hover {
-      background: #218838;
-      box-shadow: 0 4px 12px rgba(40, 167, 69, 0.3);
+    .sidebar a.action-btn:hover {
+      background: var(--primary-600);
+      box-shadow: 0 4px 12px rgba(43, 109, 239, 0.25);
     }
+
     .content {
-      padding: 40px;
+      padding: 28px;
       line-height: 1.7;
       font-size: 15px;
+      flex: 1;
+      background: var(--panel-bg);
     }
+    /* 统一内容宽度与居中 */
+    .content > .page-container { 
+      max-width: var(--content-max); 
+      margin: 0 auto; 
+    }
+
     .content h1 {
-      color: #333;
-      border-bottom: 3px solid #409eff;
-      padding-bottom: 15px;
+      color: #111827;
+      border-bottom: 2px solid var(--border);
+      padding-bottom: 12px;
       margin-top: 0;
-      margin-bottom: 30px;
-      font-size: 2.2em;
+      margin-bottom: 24px;
+      font-size: 22px;
+      font-weight: 600;
     }
     .content h2 {
-      color: #333;
-      border-bottom: 2px solid #409eff;
-      padding-bottom: 12px;
-      margin-top: 35px;
-      margin-bottom: 20px;
-      font-size: 1.8em;
+      color: #111827;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 10px;
+      margin-top: 28px;
+      margin-bottom: 18px;
+      font-size: 18px;
+      font-weight: 600;
     }
-    .content h3 {
-      color: #555;
-      margin-top: 30px;
-      margin-bottom: 15px;
-      font-size: 1.4em;
-    }
-    .content h4 {
-      color: #666;
-      margin-top: 25px;
-      margin-bottom: 12px;
-      font-size: 1.2em;
-    }
-    .content p {
-      margin-bottom: 16px;
-      color: #444;
-    }
-    .content pre {
-      background: #f8f9fa;
-      border: 1px solid #e9ecef;
-      border-radius: 8px;
-      padding: 20px;
-      overflow-x: auto;
-      font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+    .content h3 { color: #374151; margin: 20px 0 12px 0; font-size: 16px; }
+    .content h4 { color: #4b5563; margin: 16px 0 10px 0; font-size: 14px; }
+    .content p  { margin-bottom: 14px; color: #374151; }
+
+    /* 通用输入与按钮 */
+    .search-input, .select, input[type="text"], select {
+      padding: 10px 12px;
+      border: 1.5px solid var(--border);
+      border-radius: 10px;
       font-size: 14px;
-      line-height: 1.5;
-      margin: 20px 0;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+      background: #fff;
+      transition: box-shadow 0.15s ease, border-color 0.15s ease;
     }
-    .content code {
-      background: #f1f3f4;
-      padding: 3px 8px;
-      border-radius: 4px;
-      font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
-      font-size: 13px;
-      color: #d63384;
+    .search-input:focus, .select:focus, input[type="text"]:focus, select:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(43,109,239,0.12);
     }
-    .content ul, .content ol {
-      padding-left: 25px;
-      margin-bottom: 20px;
+
+    .btn, .refresh-btn {
+      background: var(--primary);
+      color: #fff;
+      border: none;
+      padding: 10px 16px;
+      border-radius: 10px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 600;
+      transition: all 0.15s ease;
     }
-    .content li {
-      margin-bottom: 10px;
-      color: #444;
+    .btn:hover, .refresh-btn:hover { background: var(--primary-600); }
+    .btn:disabled, .refresh-btn:disabled { background: #9ca3af; cursor: not-allowed; }
+
+    /* 通用表格 */
+    .table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 12px;
+      background: #fff;
+      border-radius: 12px;
+      overflow: hidden;
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow);
     }
-    .content blockquote {
-      background: #f8f9fa;
-      border-left: 4px solid #409eff;
-      padding: 15px 20px;
-      margin: 20px 0;
-      border-radius: 0 8px 8px 0;
-      font-style: italic;
-      color: #666;
+    .table th {
+      background: #f9fafb;
+      padding: 14px 16px;
+      text-align: left;
+      font-weight: 600;
+      color: #111827;
+      border-bottom: 1px solid var(--border);
+      font-size: 14px;
     }
-    .highlight {
-      background: #fff3cd;
-      border: 1px solid #ffeaa7;
-      border-radius: 8px;
-      padding: 20px;
-      margin: 25px 0;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    .table td {
+      padding: 14px 16px;
+      border-bottom: 1px solid #f1f5f9;
+      font-size: 14px;
+      color: #374151;
     }
-    .highlight h4 {
-      margin-top: 0;
-      color: #856404;
+    .table tr:hover { background: #fafbff; }
+
+    /* 卡片与统计 */
+    .card { background: #fff; border: 1px solid var(--border); border-radius: 12px; box-shadow: var(--shadow); }
+    .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 20px; }
+    .stat-number { font-size: 26px; font-weight: 700; color: var(--primary); }
+    .stat-label { font-size: 12px; color: var(--muted); font-weight: 600; }
+
+    /* 响应式 */
+    @media (max-width: 1200px) {
+      :root { --content-max: 1040px; }
+    }
+    @media (max-width: 992px) {
+      .main { flex-direction: column; }
+      .sidebar {
+        position: sticky;
+        top: var(--header-h);
+        height: auto;
+        max-height: calc(100vh - var(--header-h));
+        width: auto; 
+        border-right: none; 
+        border-bottom: 1px solid var(--border); 
+        display: flex; 
+        gap: 8px; 
+        flex-wrap: wrap; 
+      }
+      .sidebar .nav-group { flex-direction: row; flex-wrap: wrap; }
+      .content { padding: 20px; }
+    }
+    @media (max-width: 640px) {
+      :root { --content-max: 90vw; }
+      .stats { grid-template-columns: repeat(2, 1fr); }
     }
   </style>
   {% block extra_css %}{% endblock %}
 </head>
 <body>
   <div class="container">
-    <div class="header">
+    <div class="header" id="app-header">
       <h1>{% block header_title %}🤖 AIHCX{% endblock %}</h1>
       <p>{% block header_subtitle %}机器学习平台命令行工具{% endblock %}</p>
     </div>
-    
-    <div class="nav">
-      {% block navigation %}
-      {{ navigation() }}
-      {% endblock %}
-    </div>
-    
-    <div class="content">
-      {% block content %}{% endblock %}
+    <div class="main">
+      <aside class="sidebar" id="app-sidebar">
+        {% block navigation %}
+        {{ navigation() }}
+        {% endblock %}
+      </aside>
+      <div class="content">
+        <div class="page-container">
+          {% block content %}{% endblock %}
+        </div>
+      </div>
     </div>
   </div>
-  
+  <script>
+    (function() {
+      function setHeaderHeightVar() {
+        var h = document.getElementById('app-header');
+        if (!h) return;
+        var rect = h.getBoundingClientRect();
+        var height = rect.height;
+        document.documentElement.style.setProperty('--header-h', height + 'px');
+      }
+      setHeaderHeightVar();
+      window.addEventListener('resize', setHeaderHeightVar);
+    })();
+  </script>
   {% block scripts %}{% endblock %}
 </body>
 </html> 
