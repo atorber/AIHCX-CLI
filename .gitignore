@@ -4,3 +4,4 @@ aihcx.egg-info/*
 docs/*
 .DS_Store
 sample.log
+dist/*
