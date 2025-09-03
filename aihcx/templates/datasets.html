@@ -292,124 +292,6 @@
   color: #666;
   font-weight: 500;
 }
-.drawer-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
-  z-index: 9999;
-  opacity: 0;
-  visibility: hidden;
-  transition: all 0.3s ease;
-}
-.drawer-overlay.show {
-  opacity: 1;
-  visibility: visible;
-}
-.drawer {
-  position: fixed;
-  top: 0;
-  right: -500px;
-  width: 500px;
-  height: 100vh;
-  background: white;
-  box-shadow: -5px 0 25px rgba(0, 0, 0, 0.15);
-  z-index: 10000;
-  transition: right 0.3s ease;
-  overflow-y: auto;
-}
-.drawer.show {
-  right: 0;
-}
-.drawer-header {
-  padding: 20px 24px;
-  border-bottom: 1px solid #e9ecef;
-  background: #f8f9fa;
-  position: sticky;
-  top: 0;
-  z-index: 10;
-}
-.drawer-title {
-  font-size: 20px;
-  font-weight: 600;
-  color: #333;
-  margin: 0 0 8px 0;
-}
-.drawer-subtitle {
-  font-size: 14px;
-  color: #666;
-  margin: 0;
-}
-.drawer-close {
-  position: absolute;
-  top: 20px;
-  right: 24px;
-  background: none;
-  border: none;
-  font-size: 24px;
-  cursor: pointer;
-  color: #666;
-  padding: 0;
-  width: 32px;
-  height: 32px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 4px;
-  transition: all 0.2s ease;
-}
-.drawer-close:hover {
-  background: #e9ecef;
-  color: #333;
-}
-.drawer-content {
-  padding: 24px;
-}
-.drawer-section {
-  margin-bottom: 24px;
-}
-.drawer-section-title {
-  font-size: 16px;
-  font-weight: 600;
-  color: #333;
-  margin: 0 0 12px 0;
-  padding-bottom: 8px;
-  border-bottom: 2px solid #409eff;
-}
-.drawer-field {
-  margin-bottom: 16px;
-}
-.drawer-field-label {
-  font-size: 13px;
-  color: #666;
-  margin-bottom: 4px;
-  font-weight: 500;
-}
-.drawer-field-value {
-  font-size: 14px;
-  color: #333;
-  line-height: 1.5;
-  word-break: break-word;
-}
-.drawer-field-value.status {
-  display: inline-block;
-  padding: 4px 8px;
-  border-radius: 4px;
-  font-size: 12px;
-  font-weight: 500;
-}
-.drawer-field-value.status.active {
-  background: #f6ffed;
-  color: #52c41a;
-  border: 1px solid #b7eb8f;
-}
-.drawer-field-value.status.inactive {
-  background: #fff2f0;
-  color: #dc3545;
-  border: 1px solid #ffccc7;
-}
 .dataset-name {
   color: #409eff;
   cursor: pointer;
@@ -424,6 +306,7 @@
   color: #666;
   font-size: 12px;
   font-weight: 500;
+  cursor: pointer;
 }
 .copy-icon {
   color: #409eff;
@@ -531,9 +414,9 @@
       <tbody>
                 <tr v-for="dataset in paginatedDatasets" :key="dataset.id">
           <td>
-            <span class="dataset-name" @click="showDatasetDetail(dataset)">[[ dataset.name || 'N/A' ]]</span>
+            <span class="dataset-name" @click="goToDatasetDetail(dataset.id)">[[ dataset.name || 'N/A' ]]</span>
             <br>
-            <span class="dataset-id">[[ dataset.id || 'N/A' ]]</span> <i class="fa-solid fa-copy copy-icon" @click="copyDatasetId(dataset.id)" title="复制数据集ID"></i>
+            <span class="dataset-id" @click="goToDatasetDetail(dataset.id)">[[ dataset.id || 'N/A' ]]</span> <i class="fa-solid fa-copy copy-icon" @click="copyDatasetId(dataset.id)" title="复制数据集ID"></i>
           </td>
           <td class="owner-column" :title="dataset.ownerName || 'N/A'">[[ dataset.ownerName || 'N/A' ]]</td>
           <td class="permission-column">
@@ -576,77 +459,7 @@
   </div>
 
   <!-- 数据集详情抽屉 -->
-  <div class="drawer-overlay" :class="{ show: showDrawer }" @click="closeDrawer"></div>
-  <div class="drawer" :class="{ show: showDrawer }">
-    <div class="drawer-header">
-      <h2 class="drawer-title">[[ selectedDataset?.name || '数据集详情' ]]</h2>
-      <p class="drawer-subtitle">[[ selectedDataset?.id || '' ]]</p>
-      <button class="drawer-close" @click="closeDrawer">×</button>
-    </div>
-    <div class="drawer-content" v-if="selectedDataset">
-      <!-- 基本信息 -->
-      <div class="drawer-section">
-        <h3 class="drawer-section-title">基本信息</h3>
-        <div class="drawer-field">
-          <div class="drawer-field-label">数据集名称</div>
-          <div class="drawer-field-value">[[ selectedDataset.name || 'N/A' ]]</div>
-        </div>
-        <div class="drawer-field">
-          <div class="drawer-field-label">数据集ID</div>
-          <div class="drawer-field-value">[[ selectedDataset.id || 'N/A' ]]</div>
-        </div>
-        <div class="drawer-field">
-          <div class="drawer-field-label">描述</div>
-          <div class="drawer-field-value">[[ selectedDataset.description || '暂无描述' ]]</div>
-        </div>
-        <div class="drawer-field">
-          <div class="drawer-field-label">所有者</div>
-          <div class="drawer-field-value">[[ selectedDataset.ownerName || 'N/A' ]]</div>
-        </div>
-      </div>
-
-      <!-- 权限和可见性 -->
-      <div class="drawer-section">
-        <h3 class="drawer-section-title">权限和可见性</h3>
-        <div class="drawer-field">
-          <div class="drawer-field-label">权限</div>
-          <div class="drawer-field-value status" :class="selectedDataset?.permission === 'rw' ? 'active' : 'inactive'">
-            [[ selectedDataset?.permission || 'N/A' ]]
-          </div>
-        </div>
-        <div class="drawer-field">
-          <div class="drawer-field-label">可见性</div>
-          <div class="drawer-field-value">[[ formatVisibility(selectedDataset.visibilityScope) ]]</div>
-        </div>
-      </div>
-
-      <!-- 存储信息 -->
-      <div class="drawer-section">
-        <h3 class="drawer-section-title">存储信息</h3>
-        <div class="drawer-field">
-          <div class="drawer-field-label">存储类型</div>
-          <div class="drawer-field-value">[[ selectedDataset.storageType || 'N/A' ]]</div>
-        </div>
-        <div class="drawer-field" v-if="selectedDataset?.storagePath">
-          <div class="drawer-field-label">存储路径</div>
-          <div class="drawer-field-value">[[ selectedDataset?.storagePath || 'N/A' ]]</div>
-        </div>
-      </div>
-
-      <!-- 时间信息 -->
-      <div class="drawer-section">
-        <h3 class="drawer-section-title">时间信息</h3>
-        <div class="drawer-field">
-          <div class="drawer-field-label">创建时间</div>
-          <div class="drawer-field-value">[[ formatDate(selectedDataset.createdAt) ]]</div>
-        </div>
-        <div class="drawer-field">
-          <div class="drawer-field-label">更新时间</div>
-          <div class="drawer-field-value">[[ formatDate(selectedDataset.updatedAt) ]]</div>
-        </div>
-      </div>
-    </div>
-  </div>
+  <!-- 已移除抽屉代码，改为跳转到详情页面 -->
 </div>
 {% endblock %}
 
@@ -665,9 +478,7 @@ createApp({
       sortKey: 'createdAt',
       sortOrder: 'desc',
       currentPage: 1,
-      pageSize: 20,
-      showDrawer: false,
-      selectedDataset: null
+      pageSize: 20
     }
   },
   computed: {
@@ -786,17 +597,10 @@ createApp({
       };
       return visibilityMap[visibilityScope] || visibilityScope;
     },
-    showDatasetDetail(dataset) {
-      this.selectedDataset = dataset;
-      this.showDrawer = true;
-      // 防止body滚动
-      document.body.style.overflow = 'hidden';
-    },
-    closeDrawer() {
-      this.showDrawer = false;
-      this.selectedDataset = null;
-      // 恢复body滚动
-      document.body.style.overflow = '';
+    goToDatasetDetail(datasetId) {
+      if (datasetId) {
+        window.location.href = '/datasets/' + encodeURIComponent(datasetId);
+      }
     },
     copyDatasetId(id) {
       if (!id) return;

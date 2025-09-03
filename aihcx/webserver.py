@@ -86,6 +86,10 @@ def config():
 def datasets():
     return render_template('datasets.html')
 
+@app.route('/datasets/<dataset_id>', methods=['GET'])
+def dataset_detail(dataset_id):
+    return render_template('dataset_detail.html', dataset_id=dataset_id)
+
 @app.route('/models', methods=['GET'])
 def models():
     return render_template('models.html')
