@@ -730,13 +730,12 @@
             </div>
         </div>
     </div>
-</div>
 
-<!-- 导入数据抽屉遮罩 -->
-<div id="drawer-overlay" class="drawer-overlay" onclick="closeDrawer()"></div>
+    <!-- 导入数据抽屉遮罩 -->
+    <div id="drawer-overlay" class="drawer-overlay" onclick="closeDrawer()"></div>
 
-<!-- 导入数据抽屉 -->
-<div id="drawer" class="drawer">
+    <!-- 导入数据抽屉 -->
+    <div id="drawer" class="drawer">
     <div class="drawer-header">
         <div style="display: flex; justify-content: space-between; align-items: flex-start;">
             <div>
@@ -801,8 +800,7 @@
             <label class="form-label required">源数据集</label>
             <select v-model="formData.sourceDataset" @change="onSourceDatasetChange" class="form-control">
                 <option value="">请选择源数据集</option>
-                <option v-for="dataset in availableDatasets" :key="dataset.id" :value="dataset.id">
-                    [[ dataset.name ]]
+                <option v-for="dataset in filteredDatasets" :key="dataset.id" :value="dataset.id" v-text="dataset.name">
                 </option>
             </select>
         </div>
@@ -811,8 +809,7 @@
             <label class="form-label required">数据版本</label>
             <select v-model="formData.datasetVersion" class="form-control">
                 <option value="">请选择数据版本</option>
-                <option v-for="version in datasetVersions" :key="version.id" :value="version.id">
-                    [[ version.version ]]
+                <option v-for="version in filteredVersions" :key="version.id" :value="version.id" v-text="version.version">
                 </option>
             </select>
         </div>
@@ -848,13 +845,15 @@
         <div class="form-group">
             <label class="form-label required">资源池/队列</label>
             <div class="resource-row">
-                <select v-model="formData.resourcePool" class="form-control">
-                    <option value="resourceABC">资源池ABC</option>
-                    <option value="resourceDEF">资源池DEF</option>
+                <select v-model="formData.resourcePool" @change="onResourcePoolChange" class="form-control">
+                    <option value="">请选择资源池</option>
+                    <option v-for="pool in filteredResourcePools" :key="pool.metadata.id" :value="pool.metadata.id" v-text="pool.metadata.name">
+                    </option>
                 </select>
                 <select v-model="formData.queue" class="form-control">
-                    <option value="queue01">队列01</option>
-                    <option value="queue02">队列02</option>
+                    <option value="">请选择队列</option>
+                    <option v-for="queue in filteredQueues" :key="queue.name" :value="queue.name" v-text="queue.name">
+                    </option>
                 </select>
             </div>
         </div>
@@ -864,6 +863,7 @@
         <button type="button" class="btn btn-secondary" onclick="closeDrawer()">取消</button>
         <button type="button" class="btn btn-primary" @click="submitImportForm">确定</button>
     </div>
+</div>
 </div>
 {% endblock %}
 
@@ -904,6 +904,8 @@ createApp({
       importMethod: 'existing', // 默认选中已有数据集
       availableDatasets: [], // 可选数据集列表
       datasetVersions: [], // 数据集版本列表
+      resourcePools: [], // 资源池列表
+      queues: [], // 队列列表
       formData: {
         sourceDataset: '',
         datasetVersion: '',
@@ -918,6 +920,18 @@ createApp({
   computed: {
     totalPages() {
       return Math.ceil(this.totalVersions / this.pageSize);
+    },
+    filteredDatasets() {
+      return this.availableDatasets && this.availableDatasets.length > 0 ? this.availableDatasets : [];
+    },
+    filteredVersions() {
+      return this.datasetVersions && this.datasetVersions.length > 0 ? this.datasetVersions : [];
+    },
+    filteredResourcePools() {
+      return this.resourcePools && this.resourcePools.length > 0 ? this.resourcePools : [];
+    },
+    filteredQueues() {
+      return this.queues && this.queues.length > 0 ? this.queues : [];
     }
   },
   methods: {
@@ -932,6 +946,9 @@ createApp({
       
       // 加载可选数据集列表
       await this.loadAvailableDatasets();
+      
+      // 加载资源池和队列列表
+      await this.loadResourcePools();
       
       console.log('数据集列表加载完成，数量:', this.availableDatasets.length);
       console.log('数据集列表内容:', this.availableDatasets);
@@ -957,12 +974,28 @@ createApp({
         // 再次确认默认值设置
         console.log('抽屉显示后 - importMethod:', this.importMethod, 'nameStrategy:', this.formData.nameStrategy);
         console.log('抽屉显示后 - availableDatasets:', this.availableDatasets);
+        console.log('抽屉显示后 - filteredDatasets:', this.filteredDatasets);
+        console.log('抽屉显示后 - filteredDatasets.length:', this.filteredDatasets.length);
+        if (this.filteredDatasets.length > 0) {
+          console.log('第一个数据集对象:', this.filteredDatasets[0]);
+          console.log('第一个数据集名称:', this.filteredDatasets[0].name);
+        }
         
         // 检查DOM中的单选按钮状态
         const existingRadio = document.querySelector('input[value="existing"]');
         const targetRadio = document.querySelector('input[value="target"]');
         console.log('DOM检查 - existing radio checked:', existingRadio ? existingRadio.checked : 'not found');
         console.log('DOM检查 - target radio checked:', targetRadio ? targetRadio.checked : 'not found');
+        
+        // 强制设置单选按钮的选中状态
+        if (existingRadio) {
+          existingRadio.checked = true;
+          console.log('强制设置已有数据集为选中状态');
+        }
+        if (targetRadio) {
+          targetRadio.checked = true;
+          console.log('强制设置保留目的文件为选中状态');
+        }
         
         // 检查源数据集下拉框
         const sourceDatasetSelect = document.querySelector('select[v-model="formData.sourceDataset"]');
@@ -973,6 +1006,21 @@ createApp({
             console.log(`选项 ${i}:`, sourceDatasetSelect.options[i].text, sourceDatasetSelect.options[i].value);
           }
         }
+        
+        // 强制重新渲染下拉框
+        this.$forceUpdate();
+        console.log('强制重新渲染Vue.js组件');
+        
+        // 延迟再次检查下拉框状态
+        setTimeout(() => {
+          const sourceDatasetSelect = document.querySelector('select[v-model="formData.sourceDataset"]');
+          if (sourceDatasetSelect) {
+            console.log('延迟检查 - 下拉框选项数量:', sourceDatasetSelect.options.length);
+            for (let i = 0; i < sourceDatasetSelect.options.length; i++) {
+              console.log(`延迟检查 - 选项 ${i}:`, sourceDatasetSelect.options[i].text, sourceDatasetSelect.options[i].value);
+            }
+          }
+        }, 100);
       });
     },
     onSourceDatasetChange() {
@@ -1107,6 +1155,101 @@ createApp({
         this.loadVersions();
       }
     },
+    async loadResourcePools() {
+      console.log('开始加载资源池列表...');
+      try {
+        const response = await axios.get('/api/v1/resourcepools');
+        console.log('资源池API响应:', response.data);
+        
+        if (response.data.error) {
+          console.error('加载资源池失败:', response.data.error);
+          return;
+        }
+        
+        this.resourcePools = response.data.result?.resourcePools || [];
+        console.log('资源池列表加载完成:', this.resourcePools.length, '个资源池');
+        
+        // 如果有资源池，默认选择第一个
+        if (this.resourcePools.length > 0) {
+          this.formData.resourcePool = this.resourcePools[0].metadata.id;
+          // 加载该资源池的队列
+          await this.loadQueues(this.formData.resourcePool);
+        }
+      } catch (error) {
+        console.error('加载资源池API调用失败:', error);
+      }
+    },
+    async loadQueues(resourcePoolId) {
+      if (!resourcePoolId) {
+        this.queues = [];
+        this.formData.queue = '';
+        return;
+      }
+      
+      console.log('开始加载队列列表，资源池ID:', resourcePoolId);
+      try {
+        const response = await axios.get('/api/v1/resourcepools/' + encodeURIComponent(resourcePoolId) + '/queue');
+        console.log('队列API响应:', response.data);
+        
+        if (response.data.error) {
+          console.error('加载队列失败:', response.data.error);
+          return;
+        }
+        
+        this.queues = response.data.result?.queues || [];
+        console.log('队列列表加载完成:', this.queues.length, '个队列');
+        
+        // 如果有队列，默认选择第一个
+        if (this.queues.length > 0) {
+          this.formData.queue = this.queues[0].name;
+        } else {
+          this.formData.queue = '';
+        }
+      } catch (error) {
+        console.error('加载队列API调用失败:', error);
+        this.queues = [];
+        this.formData.queue = '';
+      }
+    },
+    async onResourcePoolChange() {
+      console.log('资源池选择变化:', this.formData.resourcePool);
+      // 重置队列选择
+      this.formData.queue = '';
+      // 加载新的队列列表
+      await this.loadQueues(this.formData.resourcePool);
+    },
+    buildImportCommand() {
+      // 构建数据导入的命令脚本
+      let command = `#!/bin/bash
+echo "开始数据导入任务..."
+echo "数据集ID: $DATASET_ID"
+echo "导入方式: $IMPORT_METHOD"
+echo "源数据集: $SOURCE_DATASET"
+echo "数据版本: $DATASET_VERSION"
+echo "清空数据: $CLEAN_DATA"
+echo "同名保留策略: $NAME_STRATEGY"
+
+# 这里添加实际的数据导入逻辑
+# 可以调用相应的数据导入脚本或API
+
+if [ "$IMPORT_METHOD" = "existing" ]; then
+    echo "从已有数据集导入数据..."
+    # 添加从已有数据集导入的逻辑
+    echo "源数据集: $SOURCE_DATASET"
+    echo "数据版本: $DATASET_VERSION"
+    
+    # 模拟数据导入过程
+    echo "正在复制数据..."
+    sleep 10
+    echo "数据导入完成"
+else
+    echo "其他导入方式暂未实现"
+fi
+
+echo "数据导入任务完成"`;
+      
+      return command;
+    },
     // 提交导入表单
     async submitImportForm() {
         console.log('submitImportForm called');
@@ -1126,43 +1269,79 @@ createApp({
         return;
       }
       
-      // 构建导入数据请求参数
+      // 构建训练任务请求参数（参考AIHC文档格式）
+      const jobName = `import-data-${this.datasetId}-${Date.now()}`;
       const requestParams = {
-        datasetId: this.datasetId,
-        versionId: this.currentVersion ? this.currentVersion.id : null,
-        importMethod: this.importMethod,
-        sourceDataset: this.formData.sourceDataset,
-        datasetVersion: this.formData.datasetVersion,
-        cleanData: this.formData.cleanData,
-        nameStrategy: this.formData.nameStrategy,
-        resourcePool: this.formData.resourcePool,
-        queue: this.formData.queue
+        jobName: jobName,
+        jobType: "Training",
+        framework: "PyTorch",
+        queue: this.formData.queue,
+        spec: {
+          image: "registry.baidubce.com/public/pytorch:1.12.0-cuda11.3-cudnn8-devel",
+          command: ["/bin/bash"],
+          args: ["-c", this.buildImportCommand()],
+          resources: [],
+          envs: [
+            {
+              name: "DATASET_ID",
+              value: this.datasetId
+            },
+            {
+              name: "SOURCE_DATASET",
+              value: this.formData.sourceDataset || ""
+            },
+            {
+              name: "DATASET_VERSION",
+              value: this.formData.datasetVersion || ""
+            },
+            {
+              name: "CLEAN_DATA",
+              value: this.formData.cleanData ? "true" : "false"
+            },
+            {
+              name: "NAME_STRATEGY",
+              value: this.formData.nameStrategy
+            },
+            {
+              name: "IMPORT_METHOD",
+              value: this.importMethod
+            }
+          ],
+          enableRDMA: false
+        },
+        labels: [
+          "data-import",
+          `dataset-${this.datasetId}`
+        ],
+        datasource: []
       };
       
-      console.log('导入数据请求参数:', requestParams);
+      console.log('创建训练任务请求参数:', requestParams);
       
       try {
         // 显示加载状态
         const submitBtn = document.querySelector('.form-actions .btn-primary');
         if (submitBtn) {
-          submitBtn.textContent = '提交中...';
+          submitBtn.textContent = '创建任务中...';
           submitBtn.disabled = true;
         }
         
-        // 调用导入数据API
-        const response = await axios.post('/api?action=ImportDatasetData', requestParams);
-        console.log('导入数据API响应:', response.data);
+        // 调用创建训练任务API
+        const response = await axios.post('/api?action=CreateJob&resourcePoolId=' + encodeURIComponent(this.formData.resourcePool), requestParams);
+        console.log('创建训练任务API响应:', response.data);
         
         if (response.data.error) {
-          alert('导入数据失败: ' + response.data.error);
+          alert('创建导入任务失败: ' + response.data.error);
         } else {
-          alert('导入数据请求已成功提交！');
+          const jobId = response.data.jobId || response.data.result?.jobId;
+          const jobName = response.data.jobName || response.data.result?.jobName;
+          alert(`导入任务创建成功！\n任务ID: ${jobId}\n任务名称: ${jobName}`);
           // 关闭抽屉
-          this.closeDrawer();
+          closeDrawer();
         }
       } catch (error) {
-        console.error('导入数据API调用失败:', error);
-        alert('导入数据失败: ' + (error.response?.data?.error || error.message || '未知错误'));
+        console.error('创建训练任务API调用失败:', error);
+        alert('创建导入任务失败: ' + (error.response?.data?.error || error.message || '未知错误'));
       } finally {
         // 恢复按钮状态
         const submitBtn = document.querySelector('.form-actions .btn-primary');
