@@ -555,6 +555,41 @@
     .resource-row .form-control {
         flex: 1;
     }
+    
+    .resource-pool-group {
+        display: flex;
+        gap: 8px;
+        flex: 1;
+    }
+    
+    .btn-refresh {
+        background: #f8f9fa;
+        border: 1px solid #dee2e6;
+        border-radius: 4px;
+        padding: 8px 12px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 40px;
+        height: 38px;
+        transition: all 0.2s ease;
+    }
+    
+    .btn-refresh:hover {
+        background: #e9ecef;
+        border-color: #adb5bd;
+    }
+    
+    .btn-refresh:active {
+        background: #dee2e6;
+        transform: scale(0.95);
+    }
+    
+    .btn-refresh span {
+        font-size: 14px;
+        line-height: 1;
+    }
 </style>
 {% endblock %}
 
@@ -768,10 +803,10 @@
                     <input type="radio" v-model="importMethod" value="existing" name="importMethod">
                     <span class="radio-label">已有数据集</span>
                 </label>
-                <label class="radio-item">
+                <!-- <label class="radio-item">
                     <input type="radio" v-model="importMethod" value="public" name="importMethod">
                     <span class="radio-label">公共数据集</span>
-                </label>
+                </label> -->
                 <label class="radio-item">
                     <input type="radio" v-model="importMethod" value="object" name="importMethod">
                     <span class="radio-label">对象存储</span>
@@ -784,10 +819,10 @@
                     <input type="radio" v-model="importMethod" value="custom" name="importMethod">
                     <span class="radio-label">自定义下载</span>
                 </label>
-                <label class="radio-item">
+                <!-- <label class="radio-item">
                     <input type="radio" v-model="importMethod" value="upload" name="importMethod">
                     <span class="radio-label">上传文件</span>
-                </label>
+                </label> -->
                 <label class="radio-item">
                     <input type="radio" v-model="importMethod" value="tool" name="importMethod">
                     <span class="radio-label">工具上传</span>
@@ -800,7 +835,8 @@
             <label class="form-label required">源数据集</label>
             <select v-model="formData.sourceDataset" @change="onSourceDatasetChange" class="form-control">
                 <option value="">请选择源数据集</option>
-                <option v-for="dataset in filteredDatasets" :key="dataset.id" :value="dataset.id" v-text="dataset.name">
+                <option v-for="dataset in filteredDatasets" :key="dataset.id" :value="dataset.id">
+                    [[ getDatasetDisplayText(dataset) ]]
                 </option>
             </select>
         </div>
@@ -845,11 +881,16 @@
         <div class="form-group">
             <label class="form-label required">资源池/队列</label>
             <div class="resource-row">
-                <select v-model="formData.resourcePool" @change="onResourcePoolChange" class="form-control">
-                    <option value="">请选择资源池</option>
-                    <option v-for="pool in filteredResourcePools" :key="pool.metadata.id" :value="pool.metadata.id" v-text="pool.metadata.name">
-                    </option>
-                </select>
+                <div class="resource-pool-group">
+                    <select v-model="formData.resourcePool" @change="onResourcePoolChange" class="form-control">
+                        <option value="">请选择资源池</option>
+                        <option v-for="pool in filteredResourcePools" :key="pool.metadata.id" :value="pool.metadata.id" v-text="pool.metadata.name">
+                        </option>
+                    </select>
+                    <button type="button" @click="refreshResourcePools" class="btn-refresh" title="刷新资源池列表">
+                        <span>🔄</span>
+                    </button>
+                </div>
                 <select v-model="formData.queue" class="form-control">
                     <option value="">请选择队列</option>
                     <option v-for="queue in filteredQueues" :key="queue.name" :value="queue.name" v-text="queue.name">
@@ -906,6 +947,10 @@ createApp({
       datasetVersions: [], // 数据集版本列表
       resourcePools: [], // 资源池列表
       queues: [], // 队列列表
+      // 缓存相关
+      resourcePoolCache: null, // 资源池缓存
+      resourcePoolCacheTime: null, // 缓存时间
+      cacheExpiry: 5 * 60 * 1000, // 缓存过期时间：5分钟
       formData: {
         sourceDataset: '',
         datasetVersion: '',
@@ -935,6 +980,32 @@ createApp({
     }
   },
   methods: {
+    // 获取数据集显示文本
+    getDatasetDisplayText(dataset) {
+      if (!dataset) return '';
+      
+      let displayText = dataset.name || '未命名数据集';
+      
+      // 添加描述信息
+      if (dataset.description) {
+        displayText += ` - ${dataset.description}`;
+      }
+      
+      // 添加版本数量信息
+      if (dataset.versionCount !== undefined) {
+        displayText += ` (${dataset.versionCount}个版本)`;
+      }
+      
+      // 添加创建时间信息
+      if (dataset.createTime) {
+        const createDate = new Date(dataset.createTime);
+        const dateStr = createDate.toLocaleDateString('zh-CN');
+        displayText += ` [${dateStr}]`;
+      }
+      
+      return displayText;
+    },
+    
     async showImportDrawer(version) {
       // 确保默认选中已有数据集
       this.importMethod = 'existing';
@@ -947,7 +1018,7 @@ createApp({
       // 加载可选数据集列表
       await this.loadAvailableDatasets();
       
-      // 加载资源池和队列列表
+      // 加载资源池和队列列表（优先使用预加载的缓存）
       await this.loadResourcePools();
       
       console.log('数据集列表加载完成，数量:', this.availableDatasets.length);
@@ -1102,6 +1173,10 @@ createApp({
         console.log('Dataset loaded:', this.dataset);
         console.log('Dataset name:', this.dataset ? this.dataset.name : 'undefined');
         console.log('Dataset ID:', this.dataset ? this.dataset.id : 'undefined');
+        
+        // 预加载资源池数据（如果缓存中没有数据）
+        this.preloadResourcePools();
+        
       } catch (err) {
         console.error('Error loading dataset:', err);
         this.error = '加载数据集详情失败: ' + err.message;
@@ -1155,10 +1230,32 @@ createApp({
         this.loadVersions();
       }
     },
-    async loadResourcePools() {
-      console.log('开始加载资源池列表...');
+    async loadResourcePools(forceRefresh = false) {
+      console.log('开始加载资源池列表...', forceRefresh ? '(强制刷新)' : '(检查缓存)');
+      
+      // 检查缓存是否有效
+      if (!forceRefresh && this.resourcePoolCache && this.resourcePoolCacheTime) {
+        const now = Date.now();
+        const cacheAge = now - this.resourcePoolCacheTime;
+        
+        if (cacheAge < this.cacheExpiry) {
+          console.log('使用缓存的资源池数据，缓存年龄:', Math.round(cacheAge / 1000), '秒');
+          this.resourcePools = this.resourcePoolCache;
+          
+          // 如果有资源池，默认选择第一个
+          if (this.resourcePools.length > 0) {
+            this.formData.resourcePool = this.resourcePools[0].metadata.id;
+            // 加载该资源池的队列
+            await this.loadQueues(this.formData.resourcePool);
+          }
+          return;
+        } else {
+          console.log('缓存已过期，重新请求资源池数据');
+        }
+      }
+      
       try {
-        const response = await axios.get('/api/v1/resourcepools');
+        const response = await axios.get('/api?action=DescribeResourcePools&resourcePoolType=common');
         console.log('资源池API响应:', response.data);
         
         if (response.data.error) {
@@ -1166,8 +1263,22 @@ createApp({
           return;
         }
         
-        this.resourcePools = response.data.result?.resourcePools || [];
+        // 处理新的API响应格式
+        if (response.data.result?.resourcePools) {
+          this.resourcePools = response.data.result.resourcePools;
+        } else if (response.data.resourcePools) {
+          this.resourcePools = response.data.resourcePools;
+        } else if (response.data.ResourcePools) {
+          this.resourcePools = response.data.ResourcePools;
+        } else {
+          this.resourcePools = [];
+        }
         console.log('资源池列表加载完成:', this.resourcePools.length, '个资源池');
+        
+        // 更新缓存
+        this.resourcePoolCache = [...this.resourcePools];
+        this.resourcePoolCacheTime = Date.now();
+        console.log('资源池数据已缓存');
         
         // 如果有资源池，默认选择第一个
         if (this.resourcePools.length > 0) {
@@ -1188,7 +1299,7 @@ createApp({
       
       console.log('开始加载队列列表，资源池ID:', resourcePoolId);
       try {
-        const response = await axios.get('/api/v1/resourcepools/' + encodeURIComponent(resourcePoolId) + '/queue');
+        const response = await axios.get('/api?action=DescribeQueues&resourcePoolId=' + encodeURIComponent(resourcePoolId));
         console.log('队列API响应:', response.data);
         
         if (response.data.error) {
@@ -1196,7 +1307,16 @@ createApp({
           return;
         }
         
-        this.queues = response.data.result?.queues || [];
+        // 处理新的API响应格式
+        if (response.data.result?.queues) {
+          this.queues = response.data.result.queues;
+        } else if (response.data.queues) {
+          this.queues = response.data.queues;
+        } else if (response.data.Queues) {
+          this.queues = response.data.Queues;
+        } else {
+          this.queues = [];
+        }
         console.log('队列列表加载完成:', this.queues.length, '个队列');
         
         // 如果有队列，默认选择第一个
@@ -1217,6 +1337,58 @@ createApp({
       this.formData.queue = '';
       // 加载新的队列列表
       await this.loadQueues(this.formData.resourcePool);
+    },
+    
+    // 刷新资源池列表
+    async refreshResourcePools() {
+      console.log('用户手动刷新资源池列表');
+      await this.loadResourcePools(true); // 强制刷新
+    },
+    
+    // 预加载资源池数据（在页面加载时调用）
+    async preloadResourcePools() {
+      console.log('预加载资源池数据...');
+      
+      // 检查是否已有缓存数据
+      if (this.resourcePoolCache && this.resourcePoolCacheTime) {
+        const now = Date.now();
+        const cacheAge = now - this.resourcePoolCacheTime;
+        
+        if (cacheAge < this.cacheExpiry) {
+          console.log('资源池数据已缓存，无需预加载，缓存年龄:', Math.round(cacheAge / 1000), '秒');
+          return;
+        }
+      }
+      
+      // 如果没有缓存或缓存已过期，则预加载
+      console.log('开始预加载资源池数据...');
+      try {
+        const response = await axios.get('/api?action=DescribeResourcePools&resourcePoolType=common');
+        console.log('预加载资源池API响应:', response.data);
+        
+        if (response.data.error) {
+          console.error('预加载资源池失败:', response.data.error);
+          return;
+        }
+        
+        // 处理新的API响应格式并更新缓存
+        let resourcePools = [];
+        if (response.data.result?.resourcePools) {
+          resourcePools = response.data.result.resourcePools;
+        } else if (response.data.resourcePools) {
+          resourcePools = response.data.resourcePools;
+        } else if (response.data.ResourcePools) {
+          resourcePools = response.data.ResourcePools;
+        }
+        
+        this.resourcePoolCache = [...resourcePools];
+        this.resourcePoolCacheTime = Date.now();
+        console.log('资源池数据预加载完成，缓存了', this.resourcePoolCache.length, '个资源池');
+        
+      } catch (error) {
+        console.error('预加载资源池API调用失败:', error);
+        // 预加载失败不影响页面正常使用，只是会在打开抽屉时重新请求
+      }
     },
     buildImportCommand() {
       // 构建数据导入的命令脚本

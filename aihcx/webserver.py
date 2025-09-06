@@ -2,11 +2,13 @@ from flask import Flask, render_template, request, redirect, url_for
 from flask_cors import CORS
 import os
 import sys
+
+from requests import delete
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from client import AIJobConfig
 from flask import jsonify
 # from baidubce.services.aihc_v2.aihc_client import AIHCV2Client
-from baidubce.services.aihc.aihc_client import AIHCClient
+from baidubce.services.aihc.aihc_client import AIHCClient, AihcClient
 import logging
 from baidubce.bce_client_configuration import BceClientConfiguration
 from baidubce.auth.bce_credentials import BceCredentials
@@ -187,28 +189,38 @@ def proxy_aihc(subpath=None):
         # 检查URL路径是否包含v1或v2
         url_path = request.path
         logger.info('url_path: %s', url_path)
-        
+
         # 如果query参数中包含action，则透传到aihc api
         if 'action' in params:
-            print('找到action参数，开始透传请求...')
+            print('找到action参数，开始透传请求...', params['action'])
             # 透传请求
-            aihc_client = AIHCClient(aihc_sample_conf)
-            response = aihc_client._send_request(
-                http_method=http_method,
-                path=path,
-                body=body,
-                params=params,
-                headers={
-                    b'version': b'v2',
-                    b'X-API-Version': b'v2',
-                },
-                body_parser=parse_json
-            )
 
-            print('请求response', response)
+            if params['action'] in ['DescribeResourcePools', 'DescribeResourcePool']:
+                aihc_client = AihcClient(aihc_sample_conf)
+                response = aihc_client.base_client._aihc_request(
+                    http_method=http_method,
+                    path='/',
+                    body=body,
+                    params=params,
+                )
+                            # 返回响应
+                return jsonify(json.loads(response.raw_data)), 200
+            else:
+                aihc_client = AIHCClient(aihc_sample_conf)
+                response = aihc_client._send_request(
+                    http_method=http_method,
+                    path=path,
+                    body=body,
+                    params=params,
+                    headers={
+                        b'version': b'v2',
+                        b'X-API-Version': b'v2',
+                    },
+                    body_parser=parse_json
+                )
+                            # 返回响应
+                return jsonify(to_dict(response)), 200
 
-            # 返回响应
-            return jsonify(to_dict(response)), 200
         elif '/v1/' in url_path:
             logger.info('找到v1路径，开始透传请求...')
             # 透传请求
