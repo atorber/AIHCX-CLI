@@ -1835,7 +1835,7 @@ createApp({
       versionsLoading: false,
       versionsError: null,
       currentPage: 1,
-      pageSize: 10,
+      pageSize: 100,
       totalVersions: 0,
       
       // 导入记录相关数据
@@ -2755,43 +2755,38 @@ createApp({
       }
     },
       async loadResourcePools(forceRefresh = false) {
-        console.log('开始加载资源池列表...', forceRefresh ? '(强制刷新)' : '(检查缓存)');
-
-        // 检查是否选择了资源池类型
         if (!this.formData.resourcePoolType) {
-          console.log('未选择资源池类型，跳过加载');
           this.resourcePools = [];
           return;
         }
 
-        // 检查缓存是否有效（按资源池类型分别缓存）
+        console.log('开始加载资源池列表，类型:', this.formData.resourcePoolType);
         const cacheKey = this.formData.resourcePoolType;
-        if (!forceRefresh && this.resourcePoolCache[cacheKey] && this.resourcePoolCacheTime[cacheKey]) {
-          const now = Date.now();
-          const cacheAge = now - this.resourcePoolCacheTime[cacheKey];
-
-          if (cacheAge < this.cacheExpiry) {
-            console.log(`使用缓存的${cacheKey}类型资源池数据，缓存年龄:`, Math.round(cacheAge / 1000), '秒');
-            this.resourcePools = this.resourcePoolCache[cacheKey];
-
-            // 重新过滤资源池
-            this.refilterResourcePools();
-            
-            // 如果有可用的资源池，默认选择第一个
-            const filteredPools = this.filteredResourcePools;
-            if (filteredPools.length > 0) {
-              this.formData.resourcePool = filteredPools[0].resourcePoolId || filteredPools[0].metadata?.id;
-              // 加载该资源池的队列
-              await this.loadQueues(this.formData.resourcePool);
-            }
-            return;
-          } else {
-            console.log(`${cacheKey}类型资源池缓存已过期，重新请求数据`);
-          }
-        }
 
         try {
-          const response = await axios.get(`/api?action=DescribeResourcePools&resourcePoolType=${this.formData.resourcePoolType}`);
+          // 检查缓存中是否有数据且未过期
+          if (!forceRefresh && this.resourcePoolCache[cacheKey] && this.resourcePoolCacheTime[cacheKey]) {
+            const now = Date.now();
+            const cacheAge = now - this.resourcePoolCacheTime[cacheKey];
+            
+            if (cacheAge < this.cacheExpiry) {
+              console.log(`使用${cacheKey}类型资源池缓存数据，缓存年龄:`, Math.round(cacheAge / 1000), '秒');
+              this.resourcePools = [...this.resourcePoolCache[cacheKey]];
+              // 重新过滤资源池
+              this.refilterResourcePools();
+              return;
+            }
+          }
+
+          // 构建完整的URL参数
+          const urlParams = new URLSearchParams({
+            action: 'DescribeResourcePools',
+            resourcePoolType: cacheKey
+          });
+          const fullUrl = `/api?${urlParams.toString()}`;
+          
+          // 使用axios发送请求，让HTTP拦截器处理缓存
+          const response = await axios.get(fullUrl);
           console.log('资源池API响应:', response.data);
 
           if (response.data.error) {
@@ -2800,23 +2795,26 @@ createApp({
           }
 
           // 处理新的API响应格式
-          console.log('资源池API完整响应:', JSON.stringify(response.data, null, 2));
+          // console.log('资源池API完整响应:', JSON.stringify(response.data, null, 2));
 
+          let resourcePools = [];
           // 新接口直接在根级别返回resourcePools数组
           if (response.data.resourcePools && Array.isArray(response.data.resourcePools)) {
-            this.resourcePools = response.data.resourcePools;
+            resourcePools = response.data.resourcePools;
           } else if (response.data.result?.resourcePools) {
-            this.resourcePools = response.data.result.resourcePools;
+            resourcePools = response.data.result.resourcePools;
           } else if (response.data.ResourcePools) {
-            this.resourcePools = response.data.ResourcePools;
+            resourcePools = response.data.ResourcePools;
           } else if (response.data.result?.ResourcePools) {
-            this.resourcePools = response.data.result.ResourcePools;
+            resourcePools = response.data.result.ResourcePools;
           } else if (Array.isArray(response.data)) {
-            this.resourcePools = response.data;
+            resourcePools = response.data;
           } else {
             console.warn('未识别的资源池API响应格式:', response.data);
-            this.resourcePools = [];
+            resourcePools = [];
           }
+
+          this.resourcePools = resourcePools;
           console.log('资源池列表加载完成:', this.resourcePools.length, '个资源池');
 
           // 更新缓存（按资源池类型分别缓存）
@@ -2906,7 +2904,15 @@ createApp({
 
         console.log('开始加载队列列表，资源池ID:', resourcePoolId);
         try {
-          const response = await axios.get('/api?action=DescribeQueues&resourcePoolId=' + encodeURIComponent(resourcePoolId));
+          // 构建完整的URL参数
+          const urlParams = new URLSearchParams({
+            action: 'DescribeQueues',
+            resourcePoolId: resourcePoolId
+          });
+          const fullUrl = `/api?${urlParams.toString()}`;
+          
+          // 使用axios发送请求，让HTTP拦截器处理缓存
+          const response = await axios.get(fullUrl);
           console.log('队列API响应:', response.data);
 
           if (response.data.error) {
@@ -3113,7 +3119,8 @@ createApp({
           // 如果没有缓存或缓存已过期，则预加载
           console.log(`开始预加载${poolType}类型资源池数据...`);
           try {
-            const response = await axios.get(`/api?action=DescribeResourcePools&resourcePoolType=${poolType}`);
+            // 使用axios发送请求，让HTTP拦截器处理缓存
+            const response = await axios.get(`/api?action=DescribeResourcePools&resourcePoolType=${poolType}&keywordType=resourcePoolName&keyword=&orderBy=createdAt&order=DESC&pageNumber=1&pageSize=100`);
             console.log(`预加载${poolType}类型资源池API响应:`, response.data);
 
             if (response.data.error) {

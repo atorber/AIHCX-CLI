@@ -800,6 +800,8 @@ createApp({
         }
         
         console.log('Making API request with params:', params.toString());
+        
+        // 使用axios发送请求，让HTTP拦截器处理缓存
         const response = await axios.get(`/api?${params.toString()}`);
         console.log('API response received:', response.data);
         const data = response.data;

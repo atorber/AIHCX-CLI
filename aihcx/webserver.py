@@ -110,6 +110,12 @@ def jobs():
 def job_detail(job_id):
     return render_template('job_detail.html', job_id=job_id)
 
+# 添加静态文件路由
+@app.route('/aihcx/static/<path:filename>')
+def static_files(filename):
+    from flask import send_from_directory
+    return send_from_directory(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'aihcx', 'static'), filename)
+
 @app.route('/', methods=['GET'])
 def welcome():
     try:

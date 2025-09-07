@@ -832,15 +832,72 @@ createApp({
       
       for (const tabType of tabTypes) {
         try {
-          const params = new URLSearchParams({
-            action: 'DescribeResourcePools',
-            resourcePoolType: tabType,
-            pageNumber: '1',
-            pageSize: '1' // 只需要获取总数，不需要具体数据
-          });
+          // 检查是否有缓存数据
+          let data = null;
           
-          const response = await axios.get(`/api?${params.toString()}`);
-          const data = response.data;
+          // 尝试从全局缓存获取数据
+          if (window.cacheManager) {
+            // 构建完整的参数对象，包括URL信息
+            const cacheParams = {
+              resourcePoolType: tabType,
+              pageNumber: 1,
+              pageSize: 1
+            };
+            
+            // 生成对应的URL用于缓存键
+            const urlParams = new URLSearchParams({
+              action: 'DescribeResourcePools',
+              resourcePoolType: tabType,
+              pageNumber: '1',
+              pageSize: '1'
+            });
+            
+            data = window.cacheManager.get('DescribeResourcePools', {
+              ...cacheParams,
+              url: `/api?${urlParams.toString()}`
+            });
+            
+            if (data) {
+              console.log(`从全局缓存获取${tabType}类型资源池计数`);
+            }
+          }
+          
+          // 如果缓存中没有数据，则从API获取
+          if (!data) {
+            const params = new URLSearchParams({
+              action: 'DescribeResourcePools',
+              resourcePoolType: tabType,
+              pageNumber: '1',
+              pageSize: '1' // 只需要获取总数，不需要具体数据
+            });
+            
+            const response = await axios.get(`/api?${params.toString()}`);
+            data = response.data;
+            
+            // 将数据存入全局缓存
+            if (window.cacheManager && !data.error) {
+              // 构建完整的参数对象，包括URL信息
+              const cacheParams = {
+                resourcePoolType: tabType,
+                pageNumber: 1,
+                pageSize: 1
+              };
+              
+              // 生成对应的URL用于缓存键
+              const urlParams = new URLSearchParams({
+                action: 'DescribeResourcePools',
+                resourcePoolType: tabType,
+                pageNumber: '1',
+                pageSize: '1'
+              });
+              
+              window.cacheManager.set('DescribeResourcePools', {
+                ...cacheParams,
+                url: `/api?${urlParams.toString()}`
+              }, data);
+              console.log(`${tabType}类型资源池计数已存入全局缓存`);
+            }
+          }
           
           if (data && !data.error) {
             this.tabCounts[tabType] = data.totalCount || 0;
@@ -889,6 +946,8 @@ createApp({
         });
         
         console.log('Making API request with params:', params.toString());
+        
+        // 使用axios发送请求，让HTTP拦截器处理缓存
         const response = await axios.get(`/api?${params.toString()}`);
         console.log('API response received:', response.data);
         const data = response.data;
@@ -900,7 +959,7 @@ createApp({
         }
         
         // 处理新的API响应格式
-        console.log('资源池API完整响应:', JSON.stringify(data, null, 2));
+        // console.log('资源池API完整响应:', JSON.stringify(data, null, 2));
         
         // 新接口直接在根级别返回resourcePools数组
         if (data.resourcePools && Array.isArray(data.resourcePools)) {
