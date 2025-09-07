@@ -214,11 +214,84 @@
   color: #333;
   font-size: 20px;
 }
-.search-box {
+/* 搜索和筛选样式 */
+.search-filters {
   margin-bottom: 24px;
+}
+
+.search-box {
+  margin-bottom: 16px;
   display: flex;
   gap: 12px;
   align-items: center;
+}
+
+.filters-row {
+  display: flex;
+  gap: 16px;
+  align-items: end;
+  flex-wrap: wrap;
+  padding: 16px;
+  background: #f8f9fa;
+  border-radius: 8px;
+  border: 1px solid #e9ecef;
+}
+
+.filter-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 120px;
+}
+
+.filter-label {
+  font-size: 12px;
+  font-weight: 500;
+  color: #666;
+  margin: 0;
+}
+
+.filter-select,
+.filter-input {
+  padding: 8px 12px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font-size: 14px;
+  background: white;
+  transition: border-color 0.2s ease;
+}
+
+.filter-select:focus,
+.filter-input:focus {
+  outline: none;
+  border-color: #409eff;
+  box-shadow: 0 0 0 2px rgba(64, 158, 255, 0.1);
+}
+
+.filter-input {
+  min-width: 200px;
+}
+
+.clear-filters-btn {
+  padding: 8px 16px;
+  background: #f8f9fa;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  color: #666;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  height: fit-content;
+}
+
+.clear-filters-btn:hover:not(:disabled) {
+  background: #e9ecef;
+  border-color: #ccc;
+}
+
+.clear-filters-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 .search-input {
   flex: 1;
@@ -350,22 +423,73 @@
     </div>
   </div>
 
-  <!-- 搜索和刷新 -->
-  <div class="search-box">
-    <input 
-      type="text" 
-      class="search-input" 
-      v-model="searchQuery" 
-      placeholder="搜索数据集名称、描述或所有者..."
-    >
-    <button 
-      class="refresh-btn" 
-      @click="loadDatasets" 
-      :disabled="loading"
-    >
-      <span v-if="loading">🔄 加载中...</span>
-      <span v-else>🔄 刷新列表</span>
-    </button>
+  <!-- 搜索和筛选 -->
+  <div class="search-filters">
+    <div class="search-box">
+      <input 
+        type="text" 
+        class="search-input" 
+        v-model="searchQuery" 
+        @keyup.enter="search"
+        @input="onSearchInput"
+        placeholder="搜索数据集名称、描述或所有者..."
+      >
+      <button 
+        class="refresh-btn" 
+        @click="loadDatasets" 
+        :disabled="loading"
+      >
+        <span v-if="loading">🔄 加载中...</span>
+        <span v-else>🔄 刷新列表</span>
+      </button>
+    </div>
+    
+    <!-- 筛选条件 -->
+    <div class="filters-row">
+      <div class="filter-group">
+        <label class="filter-label">存储类型</label>
+        <select v-model="filters.storageType" @change="search" class="filter-select">
+          <option value="">全部类型</option>
+          <option value="PFS">并行存储 PFS</option>
+          <option value="PFSBOS">对象存储 BOS</option>
+        </select>
+      </div>
+      
+      <div class="filter-group">
+        <label class="filter-label">导入格式</label>
+        <select v-model="filters.importFormat" @change="search" class="filter-select">
+          <option value="">全部格式</option>
+          <option value="FILE">文件</option>
+          <option value="FOLDER">文件夹</option>
+        </select>
+      </div>
+      
+      <div class="filter-group">
+        <label class="filter-label">存储实例</label>
+        <input 
+          type="text" 
+          v-model="filters.storageInstances" 
+          @keyup.enter="search"
+          @input="onSearchInput"
+          class="filter-input" 
+          placeholder="多个实例用逗号分隔"
+        >
+      </div>
+      
+      <div class="filter-group">
+        <label class="filter-label">每页显示</label>
+        <select v-model="pageSize" @change="onPageSizeChange" class="filter-select">
+          <option value="10">10条</option>
+          <option value="20">20条</option>
+          <option value="50">50条</option>
+          <option value="100">100条</option>
+        </select>
+      </div>
+      
+      <button class="clear-filters-btn" @click="clearFilters" :disabled="loading">
+        清空筛选
+      </button>
+    </div>
   </div>
 
   <!-- 加载状态 -->
@@ -452,9 +576,9 @@
   </div>
 
   <!-- 空状态 -->
-  <div class="empty-state" v-if="!loading && !error && filteredDatasets.length === 0">
+  <div class="empty-state" v-if="!loading && !error && datasets.length === 0">
     <h3>暂无数据集</h3>
-    <p v-if="searchQuery">没有找到匹配"[[ searchQuery ]]"的数据集</p>
+    <p v-if="hasActiveFilters">没有找到匹配筛选条件的数据集</p>
     <p v-else>您还没有创建任何数据集</p>
   </div>
 
@@ -478,7 +602,14 @@ createApp({
       sortKey: 'createdAt',
       sortOrder: 'desc',
       currentPage: 1,
-      pageSize: 20
+      pageSize: 20,
+      // 筛选条件
+      filters: {
+        storageType: '',        // 存储类型
+        storageInstances: '',   // 存储实例
+        importFormat: ''        // 导入格式
+      },
+      searchTimeout: null
     }
   },
   computed: {
@@ -532,6 +663,12 @@ createApp({
     },
     bosCount() {
       return this.datasets.filter(d => d.storageType === 'BOS').length;
+    },
+    hasActiveFilters() {
+      return this.searchQuery || 
+             this.filters.storageType || 
+             this.filters.storageInstances || 
+             this.filters.importFormat;
     }
   },
   methods: {
@@ -541,8 +678,29 @@ createApp({
       this.error = null;
       
       try {
-        console.log('Making API request...');
-        const response = await axios.get('/api?action=DescribeDatasets');
+        // 构建API请求参数
+        const params = new URLSearchParams({
+          action: 'DescribeDatasets',
+          pageNumber: this.currentPage.toString(),
+          pageSize: this.pageSize.toString()
+        });
+        
+        // 添加可选参数
+        if (this.searchQuery) {
+          params.append('keyword', this.searchQuery);
+        }
+        if (this.filters.storageType) {
+          params.append('storageType', this.filters.storageType);
+        }
+        if (this.filters.storageInstances) {
+          params.append('storageInstances', this.filters.storageInstances);
+        }
+        if (this.filters.importFormat) {
+          params.append('importFormat', this.filters.importFormat);
+        }
+        
+        console.log('Making API request with params:', params.toString());
+        const response = await axios.get(`/api?${params.toString()}`);
         console.log('API response received:', response.data);
         const data = response.data;
         
@@ -568,15 +726,56 @@ createApp({
         this.sortKey = key;
         this.sortOrder = 'asc';
       }
+      this.currentPage = 1; // 重置到第一页
+      this.loadDatasets(); // 重新加载数据
+    },
+    
+    // 搜索方法
+    search() {
+      this.currentPage = 1; // 重置到第一页
+      this.loadDatasets(); // 重新加载数据
+    },
+    
+    // 搜索输入处理（防抖）
+    onSearchInput() {
+      // 清除之前的定时器
+      if (this.searchTimeout) {
+        clearTimeout(this.searchTimeout);
+      }
+      
+      // 设置新的定时器，500ms后执行搜索
+      this.searchTimeout = setTimeout(() => {
+        this.search();
+      }, 500);
+    },
+    
+    // 分页大小变化
+    onPageSizeChange() {
+      this.currentPage = 1; // 重置到第一页
+      this.loadDatasets(); // 重新加载数据
+    },
+    
+    // 清空筛选条件
+    clearFilters() {
+      this.searchQuery = '';
+      this.filters = {
+        storageType: '',
+        storageInstances: '',
+        importFormat: ''
+      };
+      this.currentPage = 1;
+      this.loadDatasets();
     },
     prevPage() {
       if (this.currentPage > 1) {
         this.currentPage--;
+        this.loadDatasets(); // 重新加载数据
       }
     },
     nextPage() {
       if (this.currentPage < this.totalPages) {
         this.currentPage++;
+        this.loadDatasets(); // 重新加载数据
       }
     },
     formatDate(dateStr) {

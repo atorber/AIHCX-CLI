@@ -144,10 +144,27 @@ createApp({
     async loadPools() {
       this.poolsLoading = true;
       try {
-        const res = await axios.get('/api/v1/resourcepools');
-        this.pools = res.data?.result?.resourcePools || [];
+        const res = await axios.get('/api?action=DescribeResourcePools&resourcePoolType=common');
+        // 处理新的API响应格式
+        console.log('资源池API完整响应:', JSON.stringify(res.data, null, 2));
+        
+        // 新接口直接在根级别返回resourcePools数组
+        if (res.data?.resourcePools && Array.isArray(res.data.resourcePools)) {
+          this.pools = res.data.resourcePools;
+        } else if (res.data?.result?.resourcePools) {
+          this.pools = res.data.result.resourcePools;
+        } else if (res.data?.ResourcePools) {
+          this.pools = res.data.ResourcePools;
+        } else if (res.data?.result?.ResourcePools) {
+          this.pools = res.data.result.ResourcePools;
+        } else if (Array.isArray(res.data)) {
+          this.pools = res.data;
+        } else {
+          console.warn('未识别的资源池API响应格式:', res.data);
+          this.pools = [];
+        }
         if (this.pools.length) {
-          this.selectedPoolId = this.pools[0].metadata.id;
+          this.selectedPoolId = this.pools[0].resourcePoolId || this.pools[0].metadata?.id;
         }
       } catch (e) {
         this.error = '加载资源池失败: ' + (e.message || e);

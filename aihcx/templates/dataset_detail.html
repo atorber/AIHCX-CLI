@@ -8,1580 +8,2228 @@
 
 {% block extra_css %}
 <style>
-    .action-bar {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 20px;
-    }
-    
-    .btn-back {
-        background: #6c757d;
-        color: white;
-        border: none;
-        padding: 8px 16px;
-        border-radius: 6px;
-        cursor: pointer;
-        text-decoration: none;
-        display: inline-block;
-        font-size: 14px;
-    }
-    
-    .btn-back:hover {
-        background: #5a6268;
-    }
-    
-    .dataset-card {
-        background: var(--panel-bg);
-        border-radius: var(--radius);
-        box-shadow: var(--shadow);
-        border: 1px solid var(--border);
-        margin-bottom: 24px;
-        overflow: hidden;
-    }
-    
-    .dataset-card-header {
-        background: #f8f9fa;
-        padding: 16px 24px;
-        border-bottom: 1px solid var(--border);
-    }
-    
-    .dataset-card-header h5 {
-        margin: 0;
-        font-size: 18px;
-        font-weight: 600;
-        color: var(--text);
-    }
-    
-    .dataset-card-body {
-        padding: 24px;
-    }
-    
-    .info-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-        gap: 20px;
-    }
-    
-    .info-item {
-        margin-bottom: 16px;
-    }
-    
-    .info-label {
-        font-weight: 600;
-        color: #495057;
-        margin-bottom: 4px;
-        font-size: 14px;
-    }
-    
-    .info-value {
-        font-size: 15px;
-        color: var(--text);
-        word-break: break-all;
-    }
-    
-    .nav-tabs {
-        display: flex;
-        border-bottom: 1px solid var(--border);
-        margin-bottom: 24px;
-    }
-    
-    .nav-tab {
-        padding: 12px 20px;
-        cursor: pointer;
-        border-bottom: 3px solid transparent;
-        color: var(--muted);
-        font-weight: 500;
-        transition: all 0.2s ease;
-    }
-    
-    .nav-tab.active {
-        color: var(--primary);
-        border-bottom-color: var(--primary);
-    }
-    
-    .nav-tab:hover:not(.active) {
-        color: var(--text);
-        background: #f8f9fa;
-    }
-    
-    .tab-content {
-        min-height: 300px;
-    }
-    
-    .loading, .error {
-        text-align: center;
-        padding: 40px 20px;
-        color: var(--muted);
-    }
-    
-    .error {
-        color: #dc3545;
-    }
-    
-    .table-container {
-        overflow-x: auto;
-        border-radius: var(--radius);
-        box-shadow: var(--shadow);
-        border: 1px solid var(--border);
-    }
-    
-    .versions-table {
-        width: 100%;
-        border-collapse: collapse;
-        background: var(--panel-bg);
-    }
-    
-    .versions-table th {
-        background: #f8f9fa;
-        padding: 14px 16px;
-        text-align: left;
-        font-weight: 600;
-        color: #495057;
-        border-bottom: 1px solid var(--border);
-        font-size: 14px;
-    }
-    
-    .versions-table td {
-        padding: 14px 16px;
-        border-bottom: 1px solid var(--border);
-        font-size: 14px;
-    }
-    
-    .versions-table tr:hover {
-        background: #f8f9fa;
-    }
-    
-    .btn-primary {
-        background: var(--primary);
-        color: white;
-        border: none;
-        padding: 6px 12px;
-        border-radius: 6px;
-        cursor: pointer;
-        font-size: 13px;
-        font-weight: 500;
-        transition: all 0.2s ease;
-    }
-    
-    .btn-primary:hover {
-        background: var(--primary-600);
-    }
-    
-    .pagination {
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        margin-top: 24px;
-        gap: 8px;
-    }
-    
-    .pagination button {
-        padding: 8px 14px;
-        border: 1px solid var(--border);
-        background: var(--panel-bg);
-        border-radius: 6px;
-        cursor: pointer;
-        font-size: 14px;
-        transition: all 0.2s ease;
-    }
-    
-    .pagination button:hover:not(:disabled) {
-        background: #f8f9fa;
-    }
-    
-    .pagination button:disabled {
-        opacity: 0.6;
-        cursor: not-allowed;
-    }
-    
-    .pagination-info {
-        margin: 0 16px;
-        color: var(--muted);
-        font-size: 14px;
-    }
-    
-    .drawer {
-        position: fixed;
-        top: 0;
-        right: 0;
-        width: 800px;
-        height: 100vh;
-        background-color: white;
-        box-shadow: -2px 0 20px rgba(0,0,0,0.15);
-        z-index: 10000;
-        display: none;
-        flex-direction: column;
-        animation: slideIn 0.3s ease-out;
-    }
-    
-    .drawer-overlay {
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100vw;
-        height: 100vh;
-        background-color: rgba(0,0,0,0.5);
-        z-index: 9999;
-        display: none;
-        animation: fadeIn 0.3s ease-out;
-    }
-    
-    @keyframes slideIn {
-        from { transform: translateX(100%); }
-        to { transform: translateX(0); }
-    }
-    
-    @keyframes fadeIn {
-        from { opacity: 0; }
-        to { opacity: 1; }
-    }
-    
-    .drawer-header {
-        padding: 24px 24px 16px 24px;
-        border-bottom: 1px solid var(--border);
-        position: relative;
-    }
-    
-    .drawer-header h4 {
-        margin: 0 0 8px 0;
-        font-size: 20px;
-        font-weight: 600;
-        color: var(--text);
-    }
-    
-    .drawer-description {
-        margin: 0;
-        font-size: 14px;
-        color: var(--muted);
-        line-height: 1.5;
-    }
-    
-    .drawer-close {
-        background: none;
-        border: none;
-        font-size: 24px;
-        cursor: pointer;
-        color: var(--muted);
-        width: 40px;
-        height: 40px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        border-radius: 50%;
-        transition: all 0.2s ease;
-    }
-    
-    .drawer-close:hover {
-        background: #f1f3f4;
-        color: var(--text);
-    }
-    
-    .form-group {
-        margin-bottom: 20px;
-    }
-    
-    .form-label {
-        display: block;
-        margin-bottom: 8px;
-        font-weight: 500;
-        color: #495057;
-        font-size: 14px;
-    }
-    
-    .form-control {
-        width: 100%;
-        padding: 10px 12px;
-        border: 1px solid var(--border);
-        border-radius: 6px;
-        font-size: 14px;
-        transition: all 0.2s ease;
-    }
-    
-    .form-control:focus {
-        outline: none;
-        border-color: var(--primary);
-        box-shadow: 0 0 0 3px rgba(43,109,239,0.12);
-    }
-    
-    .radio-group {
-        display: flex;
-        gap: 20px;
-        margin-bottom: 16px;
-        flex-wrap: wrap;
-    }
-    
-    .radio-item {
-        display: flex;
-        align-items: center;
-        cursor: pointer;
-        padding: 8px 12px;
-        border-radius: 6px;
-        transition: all 0.2s ease;
-    }
-    
-    .radio-item:hover {
-        background: #f8f9fa;
-    }
-    
-    .radio-item input[type="radio"] {
-        margin-right: 8px;
-        width: 16px;
-        height: 16px;
-        accent-color: var(--primary);
-    }
-    
-    .radio-label {
-        font-size: 14px;
-        color: var(--text);
-        cursor: pointer;
-    }
-    
-    .checkbox-item {
-        display: flex;
-        align-items: center;
-        margin-bottom: 16px;
-    }
-    
-    .checkbox-item input {
-        margin-right: 8px;
-    }
-    
-    .form-actions {
-        display: flex;
-        justify-content: flex-end;
-        gap: 12px;
-        margin-top: 32px;
-        padding: 20px 20px;
-        border-top: 1px solid var(--border);
-        position: sticky;
-        bottom: 0;
-        background: white;
-        z-index: 10;
-    }
-    
-    .btn {
-        padding: 12px 24px;
-        border: none;
-        border-radius: 8px;
-        cursor: pointer;
-        font-size: 14px;
-        font-weight: 500;
-        transition: all 0.2s ease;
-        min-width: 100px;
-        height: 40px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-    }
-    
-    .btn-primary {
-        background: var(--primary);
-        color: white;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    }
-    
-    .btn-primary:hover {
-        background: var(--primary-dark);
-        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
-        transform: translateY(-1px);
-    }
-    
-    .btn-secondary {
-        background: white;
-        color: var(--text);
-        border: 1px solid var(--border);
-        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
-    }
-    
-    .btn-secondary:hover {
-        background: var(--hover);
-        border-color: var(--primary);
-        color: var(--primary);
-        transform: translateY(-1px);
-    }
-    
-    .copy-btn {
-        margin-left: 10px;
-        padding: 4px 8px;
-        font-size: 12px;
-    }
-    
-    .drawer-content {
-        flex: 1;
-        padding: 24px;
-        overflow-y: auto;
-    }
-    
-    .target-dataset-info {
-        background: #f8f9fa;
-        padding: 16px;
-        border-radius: 8px;
-        margin-bottom: 24px;
-    }
-    
-    .target-dataset-info h5 {
-        margin: 0 0 12px 0;
-        font-size: 16px;
-        font-weight: 600;
-        color: var(--text);
-    }
-    
-    .info-row {
-        display: flex;
-        margin-bottom: 8px;
-    }
-    
-    .info-label {
-        font-weight: 500;
-        color: var(--muted);
-        min-width: 60px;
-    }
-    
-    .info-value {
-        color: var(--text);
-        font-weight: 500;
-    }
-    
-    .import-method-tabs {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 8px;
-        margin-bottom: 16px;
-    }
-    
-    .tab-item {
-        padding: 8px 16px;
-        border: 1px solid var(--border);
-        border-radius: 6px;
-        cursor: pointer;
-        font-size: 14px;
-        transition: all 0.2s ease;
-        position: relative;
-        background: white;
-    }
-    
-    .tab-item:hover {
-        border-color: var(--primary);
-        background: #f8f9fa;
-    }
-    
-    .tab-item.active {
-        background: var(--primary);
-        color: white;
-        border-color: var(--primary);
-    }
-    
-    .tab-badge {
-        position: absolute;
-        top: -6px;
-        right: -6px;
-        background: #ffc107;
-        color: #000;
-        border-radius: 50%;
-        width: 18px;
-        height: 18px;
-        font-size: 12px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-weight: 600;
-    }
-    
-    .form-label.required::after {
-        content: " *";
-        color: #dc3545;
-    }
-    
-    .toggle-group {
-        display: flex;
-        flex-direction: column;
-        gap: 8px;
-    }
-    
-    .toggle-label {
-        display: flex;
-        align-items: center;
-        cursor: pointer;
-        font-weight: 500;
-    }
-    
-    .toggle-input {
-        display: none;
-    }
-    
-    .toggle-slider {
-        width: 44px;
-        height: 24px;
-        background: #ccc;
-        border-radius: 12px;
-        position: relative;
-        margin-right: 12px;
-        transition: background 0.3s ease;
-    }
-    
-    .toggle-slider::before {
-        content: '';
-        position: absolute;
-        width: 20px;
-        height: 20px;
-        background: white;
-        border-radius: 50%;
-        top: 2px;
-        left: 2px;
-        transition: transform 0.3s ease;
-    }
-    
-    .toggle-input:checked + .toggle-slider {
-        background: var(--primary);
-    }
-    
-    .toggle-input:checked + .toggle-slider::before {
-        transform: translateX(20px);
-    }
-    
-    .toggle-description {
-        margin: 0;
-        font-size: 13px;
-        color: var(--muted);
-        line-height: 1.4;
-    }
-    
-    .resource-row {
-        display: flex;
-        gap: 12px;
-    }
-    
-    .resource-row .form-control {
-        flex: 1;
-    }
-    
-    .resource-pool-group {
-        display: flex;
-        gap: 8px;
-        flex: 1;
-    }
-    
-    .btn-refresh {
-        background: #f8f9fa;
-        border: 1px solid #dee2e6;
-        border-radius: 4px;
-        padding: 8px 12px;
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        min-width: 40px;
-        height: 38px;
-        transition: all 0.2s ease;
-    }
-    
-    .btn-refresh:hover {
-        background: #e9ecef;
-        border-color: #adb5bd;
-    }
-    
-    .btn-refresh:active {
-        background: #dee2e6;
-        transform: scale(0.95);
-    }
-    
-    .btn-refresh span {
-        font-size: 14px;
-        line-height: 1;
-    }
+  .action-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+  }
+
+  .btn-back {
+    background: #6c757d;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 6px;
+    cursor: pointer;
+    text-decoration: none;
+    display: inline-block;
+    font-size: 14px;
+  }
+
+  .btn-back:hover {
+    background: #5a6268;
+  }
+
+  .dataset-card {
+    background: var(--panel-bg);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    border: 1px solid var(--border);
+    margin-bottom: 24px;
+    overflow: hidden;
+  }
+
+  .dataset-card-header {
+    background: #f8f9fa;
+    padding: 16px 24px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .dataset-card-header h5 {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--text);
+  }
+
+  .dataset-card-body {
+    padding: 24px;
+  }
+
+  .info-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 20px;
+  }
+
+  .info-item {
+    margin-bottom: 16px;
+  }
+
+  .info-label {
+    font-weight: 600;
+    color: #495057;
+    margin-bottom: 4px;
+    font-size: 14px;
+  }
+
+  .info-value {
+    font-size: 15px;
+    color: var(--text);
+    word-break: break-all;
+  }
+
+  .nav-tabs {
+    display: flex;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 24px;
+  }
+
+  .nav-tab {
+    padding: 12px 20px;
+    cursor: pointer;
+    border-bottom: 3px solid transparent;
+    color: var(--muted);
+    font-weight: 500;
+    transition: all 0.2s ease;
+  }
+
+  .nav-tab.active {
+    color: var(--primary);
+    border-bottom-color: var(--primary);
+  }
+
+  .nav-tab:hover:not(.active) {
+    color: var(--text);
+    background: #f8f9fa;
+  }
+
+  .tab-content {
+    min-height: 300px;
+  }
+
+  .loading,
+  .error {
+    text-align: center;
+    padding: 40px 20px;
+    color: var(--muted);
+  }
+
+  .error {
+    color: #dc3545;
+  }
+
+  .resource-pool-loading-info {
+    background: #e3f2fd;
+    border: 1px solid #bbdefb;
+    border-radius: 8px;
+    padding: 16px;
+    margin: 16px 0;
+    color: #1976d2;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .resource-pool-loading-info i {
+    font-size: 16px;
+    color: #1976d2;
+  }
+
+  .table-container {
+    overflow-x: auto;
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    border: 1px solid var(--border);
+  }
+
+  .versions-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: var(--panel-bg);
+  }
+
+  .versions-table th {
+    background: #f8f9fa;
+    padding: 14px 16px;
+    text-align: left;
+    font-weight: 600;
+    color: #495057;
+    border-bottom: 1px solid var(--border);
+    font-size: 14px;
+  }
+
+  .versions-table td {
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--border);
+    font-size: 14px;
+  }
+
+  .versions-table tr:hover {
+    background: #f8f9fa;
+  }
+
+  .btn-primary {
+    background: var(--primary);
+    color: white;
+    border: none;
+    padding: 6px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 500;
+    transition: all 0.2s ease;
+  }
+
+  .btn-primary:hover {
+    background: var(--primary-600);
+  }
+
+  .btn-primary:disabled {
+    background: #6c757d;
+    border-color: #6c757d;
+    cursor: not-allowed;
+    opacity: 0.6;
+  }
+
+  .btn-primary:disabled:hover {
+    background: #6c757d;
+    border-color: #6c757d;
+    transform: none;
+  }
+
+  .pagination {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-top: 24px;
+    gap: 8px;
+  }
+
+  .pagination button {
+    padding: 8px 14px;
+    border: 1px solid var(--border);
+    background: var(--panel-bg);
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: all 0.2s ease;
+  }
+
+  .pagination button:hover:not(:disabled) {
+    background: #f8f9fa;
+  }
+
+  .pagination button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+
+  .pagination-info {
+    margin: 0 16px;
+    color: var(--muted);
+    font-size: 14px;
+  }
+
+  .drawer {
+    position: fixed;
+    top: 0;
+    right: 0;
+    width: 50vw;
+    max-width: 800px;
+    min-width: 400px;
+    height: 100vh;
+    background-color: white;
+    box-shadow: -2px 0 20px rgba(0, 0, 0, 0.15);
+    z-index: 10000;
+    display: none;
+    flex-direction: column;
+    overflow: hidden;
+    animation: slideIn 0.3s ease-out;
+  }
+
+  .drawer-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 9999;
+    display: none;
+    animation: fadeIn 0.3s ease-out;
+  }
+
+  @keyframes slideIn {
+    from {
+      transform: translateX(100%);
+    }
+
+    to {
+      transform: translateX(0);
+    }
+  }
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+    }
+
+    to {
+      opacity: 1;
+    }
+  }
+
+  .drawer-header {
+    padding: 24px 24px 16px 24px;
+    border-bottom: 1px solid var(--border);
+    position: relative;
+  }
+
+  .drawer-header h4 {
+    margin: 0 0 8px 0;
+    font-size: 20px;
+    font-weight: 600;
+    color: var(--text);
+  }
+
+  .drawer-description {
+    margin: 0;
+    font-size: 14px;
+    color: var(--muted);
+    line-height: 1.5;
+  }
+
+  .drawer-close {
+    background: none;
+    border: none;
+    font-size: 24px;
+    cursor: pointer;
+    color: var(--muted);
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: all 0.2s ease;
+  }
+
+  .drawer-close:hover {
+    background: #f1f3f4;
+    color: var(--text);
+  }
+
+  .form-group {
+    margin-bottom: 20px;
+  }
+
+  .form-label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 500;
+    color: #495057;
+    font-size: 14px;
+  }
+
+  .count-badge {
+    display: inline-block;
+    background: #e3f2fd;
+    color: #1976d2;
+    font-size: 12px;
+    font-weight: 500;
+    padding: 2px 8px;
+    border-radius: 12px;
+    margin-left: 8px;
+    border: 1px solid #bbdefb;
+  }
+
+  .count-badge.zero-count {
+    background: #ffebee;
+    color: #d32f2f;
+    border-color: #ffcdd2;
+  }
+
+  .form-control {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    font-size: 14px;
+    transition: all 0.2s ease;
+    box-sizing: border-box;
+    max-width: 100%;
+    min-width: 0;
+  }
+
+  .form-control:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(43, 109, 239, 0.12);
+  }
+
+  /* 源数据集下拉框样式优化 */
+  .form-control option {
+    padding: 8px 12px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+  }
+
+  /* 确保下拉框有足够的宽度显示长文本 */
+  select.form-control {
+    min-width: 100%;
+    max-width: 100%;
+  }
+
+  .radio-group {
+    display: flex;
+    gap: 20px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+  }
+
+  .radio-item {
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    padding: 8px 12px;
+    border-radius: 6px;
+    transition: all 0.2s ease;
+  }
+
+  .radio-item:hover {
+    background: #f8f9fa;
+  }
+
+  .radio-item input[type="radio"] {
+    margin-right: 8px;
+    width: 16px;
+    height: 16px;
+    accent-color: var(--primary);
+  }
+
+  .radio-label {
+    font-size: 14px;
+    color: var(--text);
+    cursor: pointer;
+  }
+
+  .checkbox-item {
+    display: flex;
+    align-items: center;
+    margin-bottom: 16px;
+  }
+
+  .checkbox-item input {
+    margin-right: 8px;
+  }
+
+  .transfer-summary {
+    flex: 1;
+    font-size: 13px;
+    color: #6c757d;
+    line-height: 1.4;
+    word-break: break-all;
+    margin-right: 16px;
+  }
+
+  .transfer-summary .source-path {
+    background: #e3f2fd;
+    color: #1976d2;
+    padding: 1px 4px;
+    border-radius: 3px;
+    font-family: monospace;
+    font-weight: 500;
+    font-size: 12px;
+  }
+
+  .transfer-summary .target-path {
+    background: #f3e5f5;
+    color: #7b1fa2;
+    padding: 1px 4px;
+    border-radius: 3px;
+    font-family: monospace;
+    font-weight: 500;
+    font-size: 12px;
+  }
+
+  .transfer-summary .empty-hint {
+    color: #dc3545;
+    font-style: italic;
+  }
+
+  .action-buttons {
+    display: flex;
+    gap: 12px;
+    flex-shrink: 0;
+  }
+
+  .form-actions {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 32px;
+    padding: 20px 20px;
+    border-top: 1px solid var(--border);
+    position: sticky;
+    bottom: 0;
+    background: white;
+    z-index: 10;
+  }
+
+  .btn {
+    padding: 12px 24px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    transition: all 0.2s ease;
+    min-width: 100px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .btn-primary {
+    background: var(--primary);
+    color: white;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  }
+
+  .btn-primary:hover {
+    background: var(--primary-dark);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+    transform: translateY(-1px);
+  }
+
+  .btn-secondary {
+    background: white;
+    color: var(--text);
+    border: 1px solid var(--border);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  }
+
+  .btn-secondary:hover {
+    background: var(--hover);
+    border-color: var(--primary);
+    color: var(--primary);
+    transform: translateY(-1px);
+  }
+
+  .copy-btn {
+    margin-left: 10px;
+    padding: 4px 8px;
+    font-size: 12px;
+  }
+
+  .drawer-content {
+    flex: 1;
+    padding: 24px;
+    overflow-y: auto;
+    max-width: 100%;
+    box-sizing: border-box;
+    width: 100%;
+  }
+
+  .drawer-content .form-group {
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+
+  .readonly-input {
+    background-color: #f8f9fa !important;
+    color: #6c757d !important;
+    cursor: not-allowed !important;
+    border: 1px solid #e9ecef !important;
+    font-family: monospace;
+    font-size: 13px;
+  }
+
+  .readonly-input:focus {
+    outline: none !important;
+    border-color: #e9ecef !important;
+    box-shadow: none !important;
+  }
+
+  .target-dataset-summary {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 20px;
+    padding: 12px 16px;
+    background: #f8f9fa;
+    border-radius: 6px;
+    border: 1px solid #e9ecef;
+    font-size: 14px;
+    flex-wrap: wrap;
+  }
+
+  .summary-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .summary-label {
+    font-weight: 500;
+    color: #6c757d;
+    white-space: nowrap;
+  }
+
+  .summary-value {
+    color: #495057;
+    font-family: monospace;
+    font-size: 13px;
+  }
+
+  .disabled-group {
+    opacity: 0.6;
+    pointer-events: none;
+  }
+
+  .disabled-group .form-label.required::after {
+    display: none;
+  }
+
+  .radio-group.disabled {
+    opacity: 0.5;
+  }
+
+  .radio-group.disabled input[type="radio"] {
+    cursor: not-allowed;
+  }
+
+  .disabled-hint {
+    font-size: 12px;
+    color: #6c757d;
+    font-style: italic;
+    margin-top: 8px;
+    margin-bottom: 0;
+  }
+
+  .import-method-tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 16px;
+  }
+
+  .tab-item {
+    padding: 8px 16px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: all 0.2s ease;
+    position: relative;
+    background: white;
+  }
+
+  .tab-item:hover {
+    border-color: var(--primary);
+    background: #f8f9fa;
+  }
+
+  .tab-item.active {
+    background: var(--primary);
+    color: white;
+    border-color: var(--primary);
+  }
+
+  .tab-badge {
+    position: absolute;
+    top: -6px;
+    right: -6px;
+    background: #ffc107;
+    color: #000;
+    border-radius: 50%;
+    width: 18px;
+    height: 18px;
+    font-size: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+  }
+
+  .form-label.required::after {
+    content: " *";
+    color: #dc3545;
+  }
+
+  .toggle-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .toggle-label {
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    font-weight: 500;
+  }
+
+  .toggle-input {
+    display: none;
+  }
+
+  .toggle-slider {
+    width: 44px;
+    height: 24px;
+    background: #ccc;
+    border-radius: 12px;
+    position: relative;
+    margin-right: 12px;
+    transition: background 0.3s ease;
+  }
+
+  .toggle-slider::before {
+    content: '';
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    background: white;
+    border-radius: 50%;
+    top: 2px;
+    left: 2px;
+    transition: transform 0.3s ease;
+  }
+
+  .toggle-input:checked+.toggle-slider {
+    background: var(--primary);
+  }
+
+  .toggle-input:checked+.toggle-slider::before {
+    transform: translateX(20px);
+  }
+
+  .toggle-description {
+    margin: 0;
+    font-size: 13px;
+    color: var(--muted);
+    line-height: 1.4;
+  }
+
+  .resource-pool-group {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    width: 100%;
+  }
+
+  .resource-pool-group .form-control {
+    flex: 1;
+    min-width: 0;
+    /* 防止内容溢出 */
+    max-width: calc(100% - 48px);
+    /* 为按钮留出空间 */
+  }
+
+  .dataset-filter-group {
+    margin-bottom: 12px;
+  }
+
+  .filter-select {
+    width: 120px;
+    font-size: 13px;
+    padding: 8px 12px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    background: #f8f9fa;
+    color: #495057;
+  }
+
+  .filter-select:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 2px rgba(43, 109, 239, 0.12);
+    background: white;
+  }
+
+  .dataset-group {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    width: 100%;
+  }
+
+  .dataset-group .form-control {
+    flex: 1;
+    min-width: 0;
+    /* 防止内容溢出 */
+    max-width: calc(100% - 48px);
+    /* 为按钮留出空间 */
+  }
+
+  .version-group {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    width: 100%;
+  }
+
+  .version-group .form-control {
+    flex: 1;
+    min-width: 0;
+    /* 防止内容溢出 */
+    max-width: calc(100% - 48px);
+    /* 为按钮留出空间 */
+  }
+
+  .queue-group {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    width: 100%;
+  }
+
+  .queue-group .form-control {
+    flex: 1;
+    min-width: 0;
+    /* 防止内容溢出 */
+    max-width: calc(100% - 48px);
+    /* 为按钮留出空间 */
+  }
+
+  .btn-refresh {
+    background: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 4px;
+    padding: 8px 12px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 40px;
+    height: 38px;
+    transition: all 0.2s ease;
+    flex-shrink: 0;
+    /* 防止按钮被压缩 */
+  }
+
+  .btn-refresh:hover {
+    background: #e9ecef;
+    border-color: #adb5bd;
+  }
+
+  .btn-refresh:active {
+    background: #dee2e6;
+    transform: scale(0.95);
+  }
+
+  .btn-refresh span {
+    font-size: 14px;
+    line-height: 1;
+  }
 </style>
 {% endblock %}
 
 {% block content %}
 <div id="app">
-    <div class="page-container">
-        <!-- 操作栏 -->
-        <div class="action-bar">
-            <a href="/datasets" class="btn-back">
-                <i class="fas fa-arrow-left"></i> 返回数据集列表
-            </a>
+  <div class="page-container">
+    <!-- 操作栏 -->
+    <div class="action-bar">
+      <a href="/datasets" class="btn-back">
+        <i class="fas fa-arrow-left"></i> 返回数据集列表
+      </a>
 
-        </div>
-        
-        <!-- 加载状态 -->
-        <div v-if="loading" class="loading">
-            <i class="fas fa-spinner fa-spin"></i> 数据加载中...
-        </div>
-        
-        <!-- 错误信息 -->
-        <div v-if="error" class="error">
-            <i class="fas fa-exclamation-circle"></i> [[ error ]]
-        </div>
-        
-        <!-- 数据集基本信息 -->
-        <div v-if="dataset && !loading">
-            <div class="dataset-card">
-                <div class="dataset-card-header">
-                    <h5>[[ dataset.name ]]</h5>
-                </div>
-                <div class="dataset-card-body">
-                    <div class="info-grid">
-                        <div>
-                            <div class="info-item">
-                                <div class="info-label">数据集ID</div>
-                                <div class="info-value">
-                                    [[ dataset.id ]]
-                                    <button @click="copyDatasetId(dataset.id)" class="btn btn-sm btn-outline-primary copy-btn">复制</button>
-                                </div>
-                            </div>
-                            <div class="info-item">
-                                <div class="info-label">创建时间</div>
-                                <div class="info-value">[[ formatDate(dataset.createdAt) ]]</div>
-                            </div>
-                            <div class="info-item">
-                                <div class="info-label">更新时间</div>
-                                <div class="info-value">[[ formatDate(dataset.updatedAt) ]]</div>
-                            </div>
-                        </div>
-                        <div>
-                            <div class="info-item">
-                                <div class="info-label">存储类型</div>
-                                <div class="info-value">[[ dataset.storageType ]]</div>
-                            </div>
-                            <div class="info-item">
-                                <div class="info-label">可见范围</div>
-                                <div class="info-value">[[ formatVisibility(dataset.visibilityScope) ]]</div>
-                            </div>
-                            <div class="info-item">
-                                <div class="info-label">最新版本</div>
-                                <div class="info-value">[[ dataset.latestVersion ]]</div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        
-        <!-- Tab导航 -->
-        <div class="nav-tabs" v-if="dataset && !loading">
-            <div class="nav-tab" :class="{active: activeTab === 'basic'}" @click="switchTab('basic')">
-                基本信息
-            </div>
-            <div class="nav-tab" :class="{active: activeTab === 'versions'}" @click="switchTab('versions')">
-                版本列表
-            </div>
-        </div>
-        
-        <!-- Tab内容 -->
-        <div class="tab-content">
-            <!-- 基本信息Tab -->
-            <div v-show="activeTab === 'basic'" v-if="dataset && !loading">
-                <div class="dataset-card">
-                    <div class="dataset-card-body">
-                        <h6>详细信息</h6>
-                        <div class="info-grid">
-                            <div>
-                                <div class="info-item">
-                                    <div class="info-label">所有者</div>
-                                    <div class="info-value">[[ dataset.ownerName ]] ([[ dataset.owner ]])</div>
-                                </div>
-                                <div class="info-item">
-                                    <div class="info-label">导入格式</div>
-                                    <div class="info-value">[[ dataset.importFormat ]]</div>
-                                </div>
-                            </div>
-                            <div>
-                                <div class="info-item">
-                                    <div class="info-label">存储实例</div>
-                                    <div class="info-value">[[ dataset.storageInstance ]]</div>
-                                </div>
-                                <div class="info-item">
-                                    <div class="info-label">请求ID</div>
-                                    <div class="info-value">[[ dataset.requestId ]]</div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- 版本列表Tab -->
-            <div v-show="activeTab === 'versions'">
-                <div class="mt-3">
-                    <!-- 版本列表加载状态 -->
-                    <div v-if="versionsLoading" class="loading">
-                        <i class="fas fa-spinner fa-spin"></i> 版本列表加载中...
-                    </div>
-                    
-                    <!-- 版本列表错误信息 -->
-                    <div v-if="versionsError" class="error">
-                        <i class="fas fa-exclamation-circle"></i> [[ versionsError ]]
-                    </div>
-                    
-                    <!-- 版本列表 -->
-                    <div v-if="!versionsLoading && !versionsError && versions.length > 0">
-                        <div class="table-container">
-                            <table class="versions-table">
-                                <thead>
-                                    <tr>
-                                        <th>版本</th>
-                                        <th>创建时间</th>
-                                        <th>创建者</th>
-                                        <th>存储路径</th>
-                                        <th>挂载路径</th>
-                                        <th>操作</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <tr v-for="version in versions" :key="version.id">
-                                        <td>[[ version.version ]]</td>
-                                        <td>[[ formatDate(version.createdAt) ]]</td>
-                                        <td>[[ version.createUserName ]]</td>
-                                        <td>[[ version.storagePath ]]</td>
-                                        <td>[[ version.mountPath ]]</td>
-                                        <td>
-                                            <button @click="showImportDrawer(version)" class="btn-primary">导入数据</button>
-                                        </td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
-                        
-                        <!-- 分页 -->
-                        <div class="pagination">
-                            <button @click="prevPage" :disabled="currentPage === 1">
-                                <i class="fas fa-chevron-left"></i> 上一页
-                            </button>
-                            <span class="pagination-info">
-                                第 [[ currentPage ]] 页，共 [[ totalPages ]] 页
-                            </span>
-                            <button @click="nextPage" :disabled="currentPage === totalPages">
-                                下一页 <i class="fas fa-chevron-right"></i>
-                            </button>
-                        </div>
-                    </div>
-                    
-                    <!-- 无版本数据 -->
-                    <div v-if="!versionsLoading && !versionsError && versions.length === 0" class="loading">
-                        暂无版本数据
-                    </div>
-                </div>
-            </div>
-        </div>
     </div>
 
-    <!-- 导入数据抽屉遮罩 -->
-    <div id="drawer-overlay" class="drawer-overlay" onclick="closeDrawer()"></div>
+    <!-- 加载状态 -->
+    <div v-if="loading" class="loading">
+      <i class="fas fa-spinner fa-spin"></i> 数据加载中...
+    </div>
 
-    <!-- 导入数据抽屉 -->
-    <div id="drawer" class="drawer">
-    <div class="drawer-header">
-        <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+    <!-- 错误信息 -->
+    <div v-if="error" class="error">
+      <i class="fas fa-exclamation-circle"></i> [[ error ]]
+    </div>
+
+    <!-- 数据集基本信息 -->
+    <div v-if="dataset && !loading">
+      <div class="dataset-card">
+        <div class="dataset-card-header">
+          <h5>[[ dataset.name ]]</h5>
+        </div>
+        <div class="dataset-card-body">
+          <div class="info-grid">
             <div>
-                <h4>导入数据</h4>
-                <p class="drawer-description">将数据导入到当前数据集,后续可以在百舸负载中挂载使用</p>
+              <div class="info-item">
+                <div class="info-label">数据集ID</div>
+                <div class="info-value">
+                  [[ dataset.id ]]
+                  <button @click="copyDatasetId(dataset.id)" class="btn btn-sm btn-outline-primary copy-btn">复制</button>
+                </div>
+              </div>
+              <div class="info-item">
+                <div class="info-label">创建时间</div>
+                <div class="info-value">[[ formatDate(dataset.createdAt) ]]</div>
+              </div>
+              <div class="info-item">
+                <div class="info-label">更新时间</div>
+                <div class="info-value">[[ formatDate(dataset.updatedAt) ]]</div>
+              </div>
             </div>
-            <button class="drawer-close" onclick="closeDrawer()" style="margin-left: 20px; flex-shrink: 0;">&times;</button>
+            <div>
+              <div class="info-item">
+                <div class="info-label">存储类型</div>
+                <div class="info-value">[[ dataset.storageType ]]</div>
+              </div>
+              <div class="info-item">
+                <div class="info-label">可见范围</div>
+                <div class="info-value">[[ formatVisibility(dataset.visibilityScope) ]]</div>
+              </div>
+              <div class="info-item">
+                <div class="info-label">最新版本</div>
+                <div class="info-value">[[ dataset.latestVersion ]]</div>
+              </div>
+            </div>
+          </div>
         </div>
+      </div>
     </div>
-    
-    <div class="drawer-content">
-        <!-- 目标数据集信息 -->
-        <div class="target-dataset-info">
-            <h5>目标数据集信息</h5>
-            <div class="info-row">
-                <span class="info-label">名称:</span>
-                <span class="info-value" id="dataset-name">加载中...</span>
-            </div>
-            <div class="info-row">
-                <span class="info-label">版本:</span>
-                <span class="info-value" id="dataset-version">当前版本</span>
-            </div>
+
+    <!-- Tab导航 -->
+    <div class="nav-tabs" v-if="dataset && !loading">
+      <div class="nav-tab" :class="{active: activeTab === 'basic'}" @click="switchTab('basic')">
+        基本信息
+      </div>
+      <div class="nav-tab" :class="{active: activeTab === 'versions'}" @click="switchTab('versions')">
+        版本列表
+      </div>
+    </div>
+
+    <!-- Tab内容 -->
+    <div class="tab-content">
+      <!-- 基本信息Tab -->
+      <div v-show="activeTab === 'basic'" v-if="dataset && !loading">
+        <!-- 资源池载入状态提示 -->
+        <div v-if="!resourcePoolCacheLoaded" class="resource-pool-loading-info">
+          <i class="fas fa-spinner fa-spin"></i>
+          <span>[[ resourcePoolLoadingStatus ]]</span>
         </div>
-        
-        <!-- 导入方式选择 -->
-        <div class="form-group">
-            <label class="form-label">导入方式</label>
-            <div class="radio-group">
-                <label class="radio-item">
-                    <input type="radio" v-model="importMethod" value="existing" name="importMethod">
-                    <span class="radio-label">已有数据集</span>
-                </label>
-                <!-- <label class="radio-item">
+
+        <div class="dataset-card">
+          <div class="dataset-card-body">
+            <h6>详细信息</h6>
+            <div class="info-grid">
+              <div>
+                <div class="info-item">
+                  <div class="info-label">所有者</div>
+                  <div class="info-value">[[ dataset.ownerName ]] ([[ dataset.owner ]])</div>
+                </div>
+                <div class="info-item">
+                  <div class="info-label">导入格式</div>
+                  <div class="info-value">[[ dataset.importFormat ]]</div>
+                </div>
+              </div>
+              <div>
+                <div class="info-item">
+                  <div class="info-label">存储实例</div>
+                  <div class="info-value">[[ dataset.storageInstance ]]</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 版本列表Tab -->
+      <div v-show="activeTab === 'versions'">
+        <div class="mt-3">
+          <!-- 资源池载入状态提示 -->
+          <div v-if="!resourcePoolCacheLoaded" class="resource-pool-loading-info">
+            <i class="fas fa-spinner fa-spin"></i>
+            <span>[[ resourcePoolLoadingStatus ]]</span>
+          </div>
+
+          <!-- 版本列表加载状态 -->
+          <div v-if="versionsLoading" class="loading">
+            <i class="fas fa-spinner fa-spin"></i> 版本列表加载中...
+          </div>
+
+          <!-- 版本列表错误信息 -->
+          <div v-if="versionsError" class="error">
+            <i class="fas fa-exclamation-circle"></i> [[ versionsError ]]
+          </div>
+
+          <!-- 版本列表 -->
+          <div v-if="!versionsLoading && !versionsError && versions.length > 0">
+            <div class="table-container">
+              <table class="versions-table">
+                <thead>
+                  <tr>
+                    <th>版本</th>
+                    <th>创建时间</th>
+                    <th>创建者</th>
+                    <th>存储路径</th>
+                    <th>挂载路径</th>
+                    <th>操作</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="version in versions" :key="version.id">
+                    <td>[[ version.version ]]</td>
+                    <td>[[ formatDate(version.createdAt) ]]</td>
+                    <td>[[ version.createUserName ]]</td>
+                    <td>[[ version.storagePath ]]</td>
+                    <td>[[ version.mountPath ]]</td>
+                    <td>
+                      <button @click="showImportDrawer(version)" class="btn-primary"
+                        :disabled="!resourcePoolCacheLoaded"
+                        :title="resourcePoolCacheLoaded ? '导入数据' : '资源池缓存加载中，请稍候...'">
+                        导入数据
+                      </button>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <!-- 分页 -->
+            <div class="pagination">
+              <button @click="prevPage" :disabled="currentPage === 1">
+                <i class="fas fa-chevron-left"></i> 上一页
+              </button>
+              <span class="pagination-info">
+                第 [[ currentPage ]] 页，共 [[ totalPages ]] 页
+              </span>
+              <button @click="nextPage" :disabled="currentPage === totalPages">
+                下一页 <i class="fas fa-chevron-right"></i>
+              </button>
+            </div>
+          </div>
+
+          <!-- 无版本数据 -->
+          <div v-if="!versionsLoading && !versionsError && versions.length === 0" class="loading">
+            暂无版本数据
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 导入数据抽屉遮罩 -->
+  <div id="drawer-overlay" class="drawer-overlay" onclick="closeDrawer()"></div>
+
+  <!-- 导入数据抽屉 -->
+  <div id="drawer" class="drawer">
+    <div class="drawer-header">
+      <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+        <div>
+          <h4>导入数据</h4>
+          <p class="drawer-description">将数据导入到当前数据集,后续可以在百舸负载中挂载使用</p>
+        </div>
+        <button class="drawer-close" onclick="closeDrawer()" style="margin-left: 20px; flex-shrink: 0;">&times;</button>
+      </div>
+    </div>
+
+    <div class="drawer-content">
+      <!-- 目标数据集信息 -->
+      <div class="target-dataset-summary">
+        <div class="summary-item">
+          <span class="summary-label">目标数据集:</span>
+          <span class="summary-value">[[ dataset ? dataset.name : '加载中...' ]]</span>
+        </div>
+        <div class="summary-item">
+          <span class="summary-label">版本:</span>
+          <span class="summary-value">[[ getTargetDatasetVersion() ]]</span>
+        </div>
+        <div class="summary-item">
+          <span class="summary-label">存储:</span>
+          <span class="summary-value">[[ getTargetStorageInfo() ]]</span>
+        </div>
+        <div class="summary-item">
+          <span class="summary-label">路径:</span>
+          <span class="summary-value">[[ getTargetStoragePath() ]]</span>
+        </div>
+      </div>
+
+      <!-- 导入方式选择 -->
+      <div class="form-group">
+        <label class="form-label">导入方式</label>
+        <div class="radio-group">
+          <label class="radio-item">
+            <input type="radio" v-model="importMethod" value="existing" name="importMethod">
+            <span class="radio-label">已有数据集</span>
+          </label>
+          <!-- <label class="radio-item">
                     <input type="radio" v-model="importMethod" value="public" name="importMethod">
                     <span class="radio-label">公共数据集</span>
                 </label> -->
-                <label class="radio-item">
-                    <input type="radio" v-model="importMethod" value="object" name="importMethod">
-                    <span class="radio-label">对象存储</span>
-                </label>
-                <label class="radio-item">
-                    <input type="radio" v-model="importMethod" value="huggingface" name="importMethod">
-                    <span class="radio-label">HuggingFace</span>
-                </label>
-                <label class="radio-item">
-                    <input type="radio" v-model="importMethod" value="custom" name="importMethod">
-                    <span class="radio-label">自定义下载</span>
-                </label>
-                <!-- <label class="radio-item">
+          <label class="radio-item">
+            <input type="radio" v-model="importMethod" value="object" name="importMethod">
+            <span class="radio-label">对象存储</span>
+          </label>
+          <label class="radio-item">
+            <input type="radio" v-model="importMethod" value="huggingface" name="importMethod">
+            <span class="radio-label">HuggingFace</span>
+          </label>
+          <label class="radio-item">
+            <input type="radio" v-model="importMethod" value="custom" name="importMethod">
+            <span class="radio-label">自定义下载</span>
+          </label>
+          <!-- <label class="radio-item">
                     <input type="radio" v-model="importMethod" value="upload" name="importMethod">
                     <span class="radio-label">上传文件</span>
                 </label> -->
-                <label class="radio-item">
-                    <input type="radio" v-model="importMethod" value="tool" name="importMethod">
-                    <span class="radio-label">工具上传</span>
-                </label>
-            </div>
+          <label class="radio-item">
+            <input type="radio" v-model="importMethod" value="tool" name="importMethod">
+            <span class="radio-label">工具上传</span>
+          </label>
         </div>
-        
-        <!-- 源数据集配置 -->
-        <div v-if="importMethod === 'existing'" class="form-group">
-            <label class="form-label required">源数据集</label>
-            <select v-model="formData.sourceDataset" @change="onSourceDatasetChange" class="form-control">
-                <option value="">请选择源数据集</option>
-                <option v-for="dataset in filteredDatasets" :key="dataset.id" :value="dataset.id">
-                    [[ getDatasetDisplayText(dataset) ]]
-                </option>
-            </select>
+      </div>
+
+      <!-- 源数据集配置 -->
+      <div v-if="importMethod === 'existing'" class="form-group">
+        <label class="form-label required">
+          源数据集
+          <span class="count-badge" :class="{ 'zero-count': filteredDatasets.length === 0 }">([[ filteredDatasets.length
+            ]])</span>
+        </label>
+        <div class="dataset-filter-group">
+          <select v-model="datasetTypeFilter" @change="onDatasetTypeFilterChange" class="form-control filter-select">
+            <option value="all">全部</option>
+            <option value="BOS">BOS类型</option>
+            <option value="PFS">PFS类型</option>
+          </select>
         </div>
-        
-        <div v-if="importMethod === 'existing'" class="form-group">
-            <label class="form-label required">数据版本</label>
-            <select v-model="formData.datasetVersion" class="form-control">
-                <option value="">请选择数据版本</option>
-                <option v-for="version in filteredVersions" :key="version.id" :value="version.id" v-text="version.version">
-                </option>
-            </select>
+        <div class="dataset-group">
+          <select v-model="formData.sourceDataset" @change="onSourceDatasetChange" class="form-control">
+            <option value="">请选择源数据集</option>
+            <option v-for="dataset in filteredDatasets" :key="dataset.id" :value="dataset.id">
+              [[ getDatasetDisplayText(dataset) ]]
+            </option>
+          </select>
+          <button type="button" @click="refreshDatasets" class="btn-refresh" title="刷新数据集列表" :disabled="loading">
+            <span>🔄</span>
+          </button>
         </div>
-        
-        <!-- 清空数据选项 -->
-        <div class="form-group">
-            <div class="toggle-group">
-                <label class="toggle-label">
-                    <input type="checkbox" v-model="formData.cleanData" class="toggle-input">
-                    <span class="toggle-slider"></span>
-                    清空数据
-                </label>
-                <p class="toggle-description">开启清空数据会在导入开始时先删除当前数据集目录下所有文件</p>
-            </div>
+      </div>
+
+      <div v-if="importMethod === 'existing'" class="form-group">
+        <label class="form-label required">
+          数据版本
+          <span class="count-badge" :class="{ 'zero-count': datasetVersions.length === 0 }">([[ datasetVersions.length
+            ]])</span>
+        </label>
+        <div class="version-group">
+          <select v-model="formData.datasetVersion" class="form-control">
+            <option value="">请选择数据版本</option>
+            <option v-for="version in filteredVersions" :key="version.id" :value="version.id"
+              v-text="getVersionDisplayText(version)">
+            </option>
+          </select>
+          <button type="button" @click="refreshDatasetVersions" class="btn-refresh" title="刷新数据版本列表"
+            :disabled="!formData.sourceDataset">
+            <span>🔄</span>
+          </button>
         </div>
-        
-        <!-- 同名保留策略 -->
-        <div class="form-group">
-            <label class="form-label required">同名保留策略</label>
-            <div class="radio-group">
-                <label class="radio-item">
-                    <input type="radio" value="target" v-model="formData.nameStrategy" name="nameStrategy">
-                    <span class="radio-label">保留目的文件</span>
-                </label>
-                <label class="radio-item">
-                    <input type="radio" value="source" v-model="formData.nameStrategy" name="nameStrategy">
-                    <span class="radio-label">保留源文件</span>
-                </label>
-            </div>
+      </div>
+
+      <!-- 清空数据选项 -->
+      <div class="form-group">
+        <div class="toggle-group">
+          <label class="toggle-label">
+            <input type="checkbox" v-model="formData.cleanData" @change="onCleanDataChange" class="toggle-input">
+            <span class="toggle-slider"></span>
+            清空数据
+          </label>
+          <p class="toggle-description">开启清空数据会在导入开始时先删除当前数据集目录下所有文件</p>
         </div>
-        
-        <!-- 资源池/队列 -->
-        <div class="form-group">
-            <label class="form-label required">资源池/队列</label>
-            <div class="resource-row">
-                <div class="resource-pool-group">
-                    <select v-model="formData.resourcePool" @change="onResourcePoolChange" class="form-control">
-                        <option value="">请选择资源池</option>
-                        <option v-for="pool in filteredResourcePools" :key="pool.metadata.id" :value="pool.metadata.id" v-text="pool.metadata.name">
-                        </option>
-                    </select>
-                    <button type="button" @click="refreshResourcePools" class="btn-refresh" title="刷新资源池列表">
-                        <span>🔄</span>
-                    </button>
-                </div>
-                <select v-model="formData.queue" class="form-control">
-                    <option value="">请选择队列</option>
-                    <option v-for="queue in filteredQueues" :key="queue.name" :value="queue.name" v-text="queue.name">
-                    </option>
-                </select>
-            </div>
+      </div>
+
+      <!-- 同名保留策略 -->
+      <div class="form-group" :class="{ 'disabled-group': formData.cleanData }">
+        <label class="form-label" :class="{ 'required': !formData.cleanData }">同名保留策略</label>
+        <div class="radio-group" :class="{ 'disabled': formData.cleanData }">
+          <label class="radio-item">
+            <input type="radio" value="target" v-model="formData.nameStrategy" name="nameStrategy"
+              :disabled="formData.cleanData">
+            <span class="radio-label">保留目的文件</span>
+          </label>
+          <label class="radio-item">
+            <input type="radio" value="source" v-model="formData.nameStrategy" name="nameStrategy"
+              :disabled="formData.cleanData">
+            <span class="radio-label">保留源文件</span>
+          </label>
         </div>
+        <p v-if="formData.cleanData" class="disabled-hint">清空数据时无需选择同名保留策略</p>
+      </div>
+
+      <!-- 资源池类型 -->
+      <div class="form-group">
+        <label class="form-label required">资源池类型</label>
+        <select v-model="formData.resourcePoolType" @change="onResourcePoolTypeChange" class="form-control">
+          <option value="">请选择资源池类型</option>
+          <option value="common">自运维资源池</option>
+          <option value="dedicatedV2">全托管资源池</option>
+        </select>
+      </div>
+
+      <!-- 资源池 -->
+      <div class="form-group">
+        <label class="form-label required">
+          资源池
+          <span class="count-badge" :class="{ 'zero-count': resourcePools.length === 0 }">([[ resourcePools.length
+            ]])</span>
+        </label>
+        <div class="resource-pool-group">
+          <select v-model="formData.resourcePool" @change="onResourcePoolChange" class="form-control"
+            :disabled="!formData.resourcePoolType">
+            <option value="">请选择资源池</option>
+            <option v-for="pool in filteredResourcePools" :key="pool.resourcePoolId || pool.metadata?.id"
+              :value="pool.resourcePoolId || pool.metadata?.id" v-text="pool.name || pool.metadata?.name">
+            </option>
+          </select>
+          <button type="button" @click="refreshResourcePools" class="btn-refresh" title="刷新资源池列表"
+            :disabled="!formData.resourcePoolType">
+            <span>🔄</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- 队列 -->
+      <div class="form-group">
+        <label class="form-label required">
+          队列
+          <span class="count-badge" :class="{ 'zero-count': queues.length === 0 }">([[ queues.length ]])</span>
+        </label>
+        <div class="queue-group">
+          <select v-model="formData.queue" class="form-control" :disabled="!formData.resourcePool">
+            <option value="">请选择队列</option>
+            <option v-for="queue in filteredQueues" :key="queue.queueId || queue.name"
+              :value="queue.queueName || queue.name" v-text="getQueueDisplayText(queue)">
+            </option>
+          </select>
+          <button type="button" @click="refreshQueues" class="btn-refresh" title="刷新队列列表"
+            :disabled="!formData.resourcePool">
+            <span>🔄</span>
+          </button>
+        </div>
+      </div>
     </div>
-    
+
     <div class="form-actions">
+      <div class="transfer-summary">
+        <span v-if="getSourcePath()">
+          从 <span class="source-path">[[ getSourcePath() ]]</span> 转储到 <span class="target-path">[[ getTargetPath()
+            ]]</span>
+        </span>
+        <span v-else class="empty-hint">
+          请选择源数据集和版本
+        </span>
+      </div>
+      <div class="action-buttons">
         <button type="button" class="btn btn-secondary" onclick="closeDrawer()">取消</button>
         <button type="button" class="btn btn-primary" @click="submitImportForm">确定</button>
+      </div>
     </div>
-</div>
+  </div>
 </div>
 {% endblock %}
 
 {% block scripts %}
 <script>
-// 简单的抽屉控制函数
+  // 简单的抽屉控制函数
 
-function closeDrawer() {
+  function closeDrawer() {
     document.getElementById('drawer').style.display = 'none';
     document.getElementById('drawer-overlay').style.display = 'none';
     document.body.style.overflow = 'auto';
-}
+  }
 
-// 从Jinja2模板获取数据集ID
-const DATASET_ID = '{{ dataset_id }}';
+  // 从Jinja2模板获取数据集ID
+  const DATASET_ID = '{{ dataset_id }}';
 
-const { createApp } = Vue;
+  const { createApp } = Vue;
 
-createApp({
-  delimiters: ['[[', ']]'],
-  data() {
-    return {
-      dataset: null,
-      loading: false,
-      error: null,
-      datasetId: DATASET_ID,
-      activeTab: 'basic', // 默认显示基本信息tab
-      
-      // 版本列表相关数据
-      versions: [],
-      versionsLoading: false,
-      versionsError: null,
-      currentPage: 1,
-      pageSize: 10,
-      totalVersions: 0,
-      
-      // 导入数据相关数据
-      importMethod: 'existing', // 默认选中已有数据集
-      availableDatasets: [], // 可选数据集列表
-      datasetVersions: [], // 数据集版本列表
-      resourcePools: [], // 资源池列表
-      queues: [], // 队列列表
-      // 缓存相关
-      resourcePoolCache: null, // 资源池缓存
-      resourcePoolCacheTime: null, // 缓存时间
-      cacheExpiry: 5 * 60 * 1000, // 缓存过期时间：5分钟
-      formData: {
-        sourceDataset: '',
-        datasetVersion: '',
-        cleanData: false,
-        nameStrategy: 'target', // 默认选中保留目的文件
-        resourcePool: '',
-        queue: ''
-      }
+  createApp({
+    delimiters: ['[[', ']]'],
+    data() {
+      return {
+        dataset: null,
+        loading: false,
+        error: null,
+        datasetId: DATASET_ID,
+        activeTab: 'basic', // 默认显示基本信息tab
 
-    }
-  },
-  computed: {
-    totalPages() {
-      return Math.ceil(this.totalVersions / this.pageSize);
-    },
-    filteredDatasets() {
-      return this.availableDatasets && this.availableDatasets.length > 0 ? this.availableDatasets : [];
-    },
-    filteredVersions() {
-      return this.datasetVersions && this.datasetVersions.length > 0 ? this.datasetVersions : [];
-    },
-    filteredResourcePools() {
-      return this.resourcePools && this.resourcePools.length > 0 ? this.resourcePools : [];
-    },
-    filteredQueues() {
-      return this.queues && this.queues.length > 0 ? this.queues : [];
-    }
-  },
-  methods: {
-    // 获取数据集显示文本
-    getDatasetDisplayText(dataset) {
-      if (!dataset) return '';
-      
-      let displayText = dataset.name || '未命名数据集';
-      
-      // 添加描述信息
-      if (dataset.description) {
-        displayText += ` - ${dataset.description}`;
-      }
-      
-      // 添加版本数量信息
-      if (dataset.versionCount !== undefined) {
-        displayText += ` (${dataset.versionCount}个版本)`;
-      }
-      
-      // 添加创建时间信息
-      if (dataset.createTime) {
-        const createDate = new Date(dataset.createTime);
-        const dateStr = createDate.toLocaleDateString('zh-CN');
-        displayText += ` [${dateStr}]`;
-      }
-      
-      return displayText;
-    },
-    
-    async showImportDrawer(version) {
-      // 确保默认选中已有数据集
-      this.importMethod = 'existing';
-      
-      // 确保默认选中保留目的文件
-      this.formData.nameStrategy = 'target';
-      
-      console.log('设置默认值 - importMethod:', this.importMethod, 'nameStrategy:', this.formData.nameStrategy);
-      
-      // 加载可选数据集列表
-      await this.loadAvailableDatasets();
-      
-      // 加载资源池和队列列表（优先使用预加载的缓存）
-      await this.loadResourcePools();
-      
-      console.log('数据集列表加载完成，数量:', this.availableDatasets.length);
-      console.log('数据集列表内容:', this.availableDatasets);
-      
-      // 强制Vue.js更新
-      this.$forceUpdate();
-      
-      // 使用$nextTick确保Vue.js响应式更新完成后再显示抽屉
-      this.$nextTick(() => {
-        // 更新数据集信息
-        const datasetName = document.querySelector('h5') ? document.querySelector('h5').textContent : '数据集';
-        document.getElementById('dataset-name').textContent = datasetName;
-        
-        // 显示版本信息
-        const versionText = version && version.version ? version.version : '当前版本';
-        document.getElementById('dataset-version').textContent = versionText;
-        
-        // 显示抽屉
-        document.getElementById('drawer').style.display = 'flex';
-        document.getElementById('drawer-overlay').style.display = 'block';
-        document.body.style.overflow = 'hidden';
-        
-        // 再次确认默认值设置
-        console.log('抽屉显示后 - importMethod:', this.importMethod, 'nameStrategy:', this.formData.nameStrategy);
-        console.log('抽屉显示后 - availableDatasets:', this.availableDatasets);
-        console.log('抽屉显示后 - filteredDatasets:', this.filteredDatasets);
-        console.log('抽屉显示后 - filteredDatasets.length:', this.filteredDatasets.length);
-        if (this.filteredDatasets.length > 0) {
-          console.log('第一个数据集对象:', this.filteredDatasets[0]);
-          console.log('第一个数据集名称:', this.filteredDatasets[0].name);
+        // 版本列表相关数据
+        versions: [],
+        versionsLoading: false,
+        versionsError: null,
+        currentPage: 1,
+        pageSize: 10,
+        totalVersions: 0,
+
+        // 导入数据相关数据
+        importMethod: 'existing', // 默认选中已有数据集
+        availableDatasets: [], // 可选数据集列表
+        datasetVersions: [], // 数据集版本列表
+        targetDatasetVersion: null, // 目标数据集版本（点击导入数据按钮时传入）
+        resourcePools: [], // 资源池列表
+        queues: [], // 队列列表
+        datasetTypeFilter: 'all', // 数据集类型筛选：all, BOS, PFS
+        resourcePoolCacheLoaded: false, // 资源池缓存是否已加载完成
+        resourcePoolLoadingStatus: '准备中...', // 资源池加载状态描述
+        // 缓存相关
+        resourcePoolCache: {}, // 资源池缓存，按类型分别缓存
+        resourcePoolCacheTime: {}, // 缓存时间，按类型分别记录
+        cacheExpiry: 5 * 60 * 1000, // 缓存过期时间：5分钟
+        formData: {
+          sourceDataset: '',
+          datasetVersion: '',
+          cleanData: false,
+          nameStrategy: 'target', // 默认选中保留目的文件
+          resourcePoolType: 'common', // 资源池类型，默认选中自运维资源池
+          resourcePool: '',
+          queue: ''
         }
-        
-        // 检查DOM中的单选按钮状态
-        const existingRadio = document.querySelector('input[value="existing"]');
-        const targetRadio = document.querySelector('input[value="target"]');
-        console.log('DOM检查 - existing radio checked:', existingRadio ? existingRadio.checked : 'not found');
-        console.log('DOM检查 - target radio checked:', targetRadio ? targetRadio.checked : 'not found');
-        
-        // 强制设置单选按钮的选中状态
-        if (existingRadio) {
-          existingRadio.checked = true;
-          console.log('强制设置已有数据集为选中状态');
+
+      }
+    },
+    computed: {
+      totalPages() {
+        return Math.ceil(this.totalVersions / this.pageSize);
+      },
+      filteredDatasets() {
+        if (!this.availableDatasets || this.availableDatasets.length === 0) {
+          return [];
         }
-        if (targetRadio) {
-          targetRadio.checked = true;
-          console.log('强制设置保留目的文件为选中状态');
+
+        // 根据类型筛选数据集
+        if (this.datasetTypeFilter === 'all') {
+          return this.availableDatasets;
         }
-        
-        // 检查源数据集下拉框
-        const sourceDatasetSelect = document.querySelector('select[v-model="formData.sourceDataset"]');
-        console.log('源数据集下拉框:', sourceDatasetSelect);
-        if (sourceDatasetSelect) {
-          console.log('下拉框选项数量:', sourceDatasetSelect.options.length);
-          for (let i = 0; i < sourceDatasetSelect.options.length; i++) {
-            console.log(`选项 ${i}:`, sourceDatasetSelect.options[i].text, sourceDatasetSelect.options[i].value);
+
+        return this.availableDatasets.filter(dataset => {
+          const storageType = dataset.storageType || dataset.storage_type;
+          return storageType === this.datasetTypeFilter;
+        });
+      },
+      filteredVersions() {
+        return this.datasetVersions && this.datasetVersions.length > 0 ? this.datasetVersions : [];
+      },
+      filteredResourcePools() {
+        return this.resourcePools && this.resourcePools.length > 0 ? this.resourcePools : [];
+      },
+      filteredQueues() {
+        return this.queues && this.queues.length > 0 ? this.queues : [];
+      }
+    },
+    methods: {
+      // 获取数据集显示文本
+      getDatasetDisplayText(dataset) {
+        if (!dataset) return '';
+
+        let displayText = `${dataset.name}`;
+
+        // 添加存储类型信息
+        const storageTypeText = dataset.storageType;
+        displayText += ` [ ${dataset.id} / ${storageTypeText}:`;
+
+        // 添加存储实例ID信息
+        const storageInstanceId = dataset.storageInstanceId || dataset.storage_instance_id || dataset.storageInstance;
+        if (storageInstanceId) {
+          displayText += `${storageInstanceId}]`;
+        }
+
+        return displayText;
+      },
+
+      // 获取版本显示文本
+      getVersionDisplayText(version) {
+        if (!version) return '';
+
+        let displayText = '';
+
+        // 添加版本号
+        if (version.version) {
+          displayText += `v${version.version} [${version.id} | `;
+        }
+
+        // 添加存储路径信息
+        // 如果路径太长，只显示最后一部分
+        const path = version.storagePath;
+        const shortPath = path.length > 25 ? '...' + path.slice(-22) : path;
+        displayText += `${shortPath} -> `;
+
+        const mountPath = version.mountPath;
+        const shortMountPath = mountPath.length > 25 ? '...' + mountPath.slice(-22) : mountPath;
+        displayText += ` ${shortMountPath}]`;
+
+        // 添加描述信息
+        if (version.description) {
+          displayText += ` - ${version.description}`;
+        }
+
+        return displayText;
+      },
+
+      // 获取队列显示文本
+      getQueueDisplayText(queue) {
+        if (!queue) return '';
+        let displayText = queue.queueName || queue.name || '未命名队列';
+
+        // 添加队列类型信息
+        if (queue.queueType) {
+          displayText += ` (${queue.queueType})`;
+        }
+
+        // 添加资源信息
+        if (queue.capability) {
+          const memoryGi = queue.capability.memoryGi;
+          const cpuCores = queue.capability.milliCPUcores;
+          if (memoryGi && cpuCores) {
+            const memoryGB = Math.round(parseInt(memoryGi) / (1024 * 1024 * 1024));
+            const cpuCoresNum = Math.round(parseInt(cpuCores) / 1000);
+            displayText += ` - ${cpuCoresNum}核/${memoryGB}GB`;
           }
         }
-        
-        // 强制重新渲染下拉框
+
+        // 添加加速卡信息
+        if (queue.capability?.acceleratorCardList?.length > 0) {
+          const accelerator = queue.capability.acceleratorCardList[0];
+          if (accelerator.acceleratorType && accelerator.acceleratorCount) {
+            displayText += ` - ${accelerator.acceleratorCount}x${accelerator.acceleratorType}`;
+          }
+        }
+
+        return displayText;
+      },
+
+      async showImportDrawer(version) {
+        // 保存目标数据集版本信息
+        this.targetDatasetVersion = version;
+
+        // 确保默认选中已有数据集
+        this.importMethod = 'existing';
+
+        // 确保默认选中保留目的文件
+        this.formData.nameStrategy = 'target';
+
+        console.log('设置默认值 - importMethod:', this.importMethod, 'nameStrategy:', this.formData.nameStrategy);
+
+        // 加载可选数据集列表
+        await this.loadAvailableDatasets();
+
+        // 加载资源池和队列列表（优先使用预加载的缓存）
+        await this.loadResourcePools();
+
+        console.log('数据集列表加载完成，数量:', this.availableDatasets.length);
+        console.log('数据集列表内容:', this.availableDatasets);
+
+        // 强制Vue.js更新
         this.$forceUpdate();
-        console.log('强制重新渲染Vue.js组件');
-        
-        // 延迟再次检查下拉框状态
-        setTimeout(() => {
+
+        // 使用$nextTick确保Vue.js响应式更新完成后再显示抽屉
+        this.$nextTick(() => {
+          // 数据集信息现在通过Vue.js数据绑定自动更新，无需手动设置DOM
+
+          // 显示抽屉
+          document.getElementById('drawer').style.display = 'flex';
+          document.getElementById('drawer-overlay').style.display = 'block';
+          document.body.style.overflow = 'hidden';
+
+          // 再次确认默认值设置
+          console.log('抽屉显示后 - importMethod:', this.importMethod, 'nameStrategy:', this.formData.nameStrategy);
+          console.log('抽屉显示后 - availableDatasets:', this.availableDatasets);
+          console.log('抽屉显示后 - filteredDatasets:', this.filteredDatasets);
+          console.log('抽屉显示后 - filteredDatasets.length:', this.filteredDatasets.length);
+          if (this.filteredDatasets.length > 0) {
+            console.log('第一个数据集对象:', this.filteredDatasets[0]);
+            console.log('第一个数据集名称:', this.filteredDatasets[0].name);
+          }
+
+          // 检查DOM中的单选按钮状态
+          const existingRadio = document.querySelector('input[value="existing"]');
+          const targetRadio = document.querySelector('input[value="target"]');
+          console.log('DOM检查 - existing radio checked:', existingRadio ? existingRadio.checked : 'not found');
+          console.log('DOM检查 - target radio checked:', targetRadio ? targetRadio.checked : 'not found');
+
+          // 强制设置单选按钮的选中状态
+          if (existingRadio) {
+            existingRadio.checked = true;
+            console.log('强制设置已有数据集为选中状态');
+          }
+          if (targetRadio) {
+            targetRadio.checked = true;
+            console.log('强制设置保留目的文件为选中状态');
+          }
+
+          // 检查源数据集下拉框
           const sourceDatasetSelect = document.querySelector('select[v-model="formData.sourceDataset"]');
+          console.log('源数据集下拉框:', sourceDatasetSelect);
           if (sourceDatasetSelect) {
-            console.log('延迟检查 - 下拉框选项数量:', sourceDatasetSelect.options.length);
+            console.log('下拉框选项数量:', sourceDatasetSelect.options.length);
             for (let i = 0; i < sourceDatasetSelect.options.length; i++) {
-              console.log(`延迟检查 - 选项 ${i}:`, sourceDatasetSelect.options[i].text, sourceDatasetSelect.options[i].value);
+              console.log(`选项 ${i}:`, sourceDatasetSelect.options[i].text, sourceDatasetSelect.options[i].value);
             }
           }
-        }, 100);
-      });
-    },
-    onSourceDatasetChange() {
-      // 当选择源数据集时，加载对应的版本列表
-      if (this.formData.sourceDataset) {
-        this.loadDatasetVersions(this.formData.sourceDataset);
-        // 清空之前选择的版本
+
+          // 强制重新渲染下拉框
+          this.$forceUpdate();
+          console.log('强制重新渲染Vue.js组件');
+
+          // 延迟再次检查下拉框状态
+          setTimeout(() => {
+            const sourceDatasetSelect = document.querySelector('select[v-model="formData.sourceDataset"]');
+            if (sourceDatasetSelect) {
+              console.log('延迟检查 - 下拉框选项数量:', sourceDatasetSelect.options.length);
+              for (let i = 0; i < sourceDatasetSelect.options.length; i++) {
+                console.log(`延迟检查 - 选项 ${i}:`, sourceDatasetSelect.options[i].text, sourceDatasetSelect.options[i].value);
+              }
+            }
+          }, 100);
+        });
+      },
+      onDatasetTypeFilterChange() {
+        // 当筛选类型改变时，清空已选择的数据集和版本
+        this.formData.sourceDataset = '';
         this.formData.datasetVersion = '';
-      } else {
         this.datasetVersions = [];
-        this.formData.datasetVersion = '';
-      }
-    },
-    async loadAvailableDatasets() {
-      try {
-        console.log('获取数据集列表...');
-        const response = await axios.get('/api?action=DescribeDatasets');
-        console.log('数据集列表API响应:', response.data);
-        
-        if (response.data && response.data.Datasets) {
-          this.availableDatasets = response.data.Datasets;
-          console.log('数据集列表加载成功:', this.availableDatasets);
-        } else if (response.data && response.data.datasets) {
-          this.availableDatasets = response.data.datasets;
-          console.log('数据集列表加载成功:', this.availableDatasets);
+        console.log('数据集类型筛选已更改为:', this.datasetTypeFilter);
+      },
+      onCleanDataChange() {
+        // 当清空数据状态改变时，清空同名保留策略选择
+        if (this.formData.cleanData) {
+          this.formData.nameStrategy = '';
+          console.log('清空数据已开启，清空同名保留策略选择');
+        }
+      },
+      onSourceDatasetChange() {
+        // 当选择源数据集时，加载对应的版本列表
+        if (this.formData.sourceDataset) {
+          this.loadDatasetVersions(this.formData.sourceDataset);
+          // 清空之前选择的版本
+          this.formData.datasetVersion = '';
         } else {
-          console.log('数据集列表为空或格式不正确');
+          this.datasetVersions = [];
+          this.formData.datasetVersion = '';
+        }
+      },
+      async loadAvailableDatasets() {
+        try {
+          console.log('获取数据集列表...');
+          const response = await axios.get('/api?action=DescribeDatasets');
+          console.log('数据集列表API响应:', response.data);
+
+          if (response.data && response.data.Datasets) {
+            this.availableDatasets = response.data.Datasets;
+            console.log('数据集列表加载成功:', this.availableDatasets);
+          } else if (response.data && response.data.datasets) {
+            this.availableDatasets = response.data.datasets;
+            console.log('数据集列表加载成功:', this.availableDatasets);
+          } else {
+            console.log('数据集列表为空或格式不正确');
+            this.availableDatasets = [];
+          }
+        } catch (error) {
+          console.error('获取数据集列表失败:', error);
           this.availableDatasets = [];
         }
-      } catch (error) {
-        console.error('获取数据集列表失败:', error);
-        this.availableDatasets = [];
-      }
-    },
-    async loadDatasetVersions(datasetId) {
-      if (!datasetId) {
-        this.datasetVersions = [];
-        return;
-      }
-      
-      try {
-        console.log('获取数据集版本列表:', datasetId);
-        const response = await axios.get('/api?action=DescribeDatasetVersions&datasetId=' + encodeURIComponent(datasetId) + '&pageNumber=1&pageSize=100');
-        console.log('数据集版本列表API响应:', response.data);
-        
-        if (response.data && response.data.Versions) {
-          this.datasetVersions = response.data.Versions;
-          console.log('数据集版本列表加载成功:', this.datasetVersions);
-        } else if (response.data && response.data.versions) {
-          this.datasetVersions = response.data.versions;
-          console.log('数据集版本列表加载成功:', this.datasetVersions);
-        } else {
-          console.log('数据集版本列表为空或格式不正确');
+      },
+      async loadDatasetVersions(datasetId) {
+        if (!datasetId) {
+          this.datasetVersions = [];
+          return;
+        }
+
+        try {
+          console.log('获取数据集版本列表:', datasetId);
+          const response = await axios.get('/api?action=DescribeDatasetVersions&datasetId=' + encodeURIComponent(datasetId) + '&pageNumber=1&pageSize=100');
+          console.log('数据集版本列表API响应:', response.data);
+
+          if (response.data && response.data.Versions) {
+            this.datasetVersions = response.data.Versions;
+            console.log('数据集版本列表加载成功:', this.datasetVersions);
+          } else if (response.data && response.data.versions) {
+            this.datasetVersions = response.data.versions;
+            console.log('数据集版本列表加载成功:', this.datasetVersions);
+          } else {
+            console.log('数据集版本列表为空或格式不正确');
+            this.datasetVersions = [];
+          }
+        } catch (error) {
+          console.error('获取数据集版本列表失败:', error);
           this.datasetVersions = [];
         }
-      } catch (error) {
-        console.error('获取数据集版本列表失败:', error);
-        this.datasetVersions = [];
-      }
-    },
-    async loadDataset() {
-      console.log('loadDataset called for ID:', this.datasetId);
-      this.loading = true;
-      this.error = null;
-      
-      try {
-        console.log('Making API request...');
-        const response = await axios.get('/api?action=DescribeDataset&datasetId=' + encodeURIComponent(this.datasetId));
-        console.log('API response received:', response.data);
-        const data = response.data;
-        
-        if (data.error) {
-          this.error = data.error;
+      },
+      async loadDataset() {
+        console.log('loadDataset called for ID:', this.datasetId);
+        this.loading = true;
+        this.error = null;
+
+        try {
+          console.log('Making API request...');
+          const response = await axios.get('/api?action=DescribeDataset&datasetId=' + encodeURIComponent(this.datasetId));
+          console.log('API response received:', response.data);
+          const data = response.data;
+
+          if (data.error) {
+            this.error = data.error;
+            return;
+          }
+
+          // 数据集详情直接在data中，而不是在data.dataset或data.Dataset中
+          this.dataset = data;
+          console.log('Dataset loaded:', this.dataset);
+          console.log('Dataset name:', this.dataset ? this.dataset.name : 'undefined');
+          console.log('Dataset ID:', this.dataset ? this.dataset.id : 'undefined');
+
+          // 预加载资源池数据（如果缓存中没有数据）
+          this.preloadResourcePools();
+
+        } catch (err) {
+          console.error('Error loading dataset:', err);
+          this.error = '加载数据集详情失败: ' + err.message;
+        } finally {
+          this.loading = false;
+        }
+      },
+      async loadVersions() {
+        console.log('loadVersions called for ID:', this.datasetId);
+        this.versionsLoading = true;
+        this.versionsError = null;
+
+        try {
+          console.log('Making versions API request...');
+          const response = await axios.get('/api?action=DescribeDatasetVersions&datasetId=' + encodeURIComponent(this.datasetId) + '&pageNumber=' + this.currentPage + '&pageSize=' + this.pageSize);
+          console.log('Versions API response received:', response.data);
+          const data = response.data;
+
+          if (data.error) {
+            this.versionsError = data.error;
+            return;
+          }
+
+          // 版本列表在data.versions中，总数在data.totalCount中
+          this.versions = data.versions || data.Versions || [];
+          this.totalVersions = data.totalCount || data.TotalCount || 0;
+          console.log('Versions loaded:', this.versions);
+        } catch (err) {
+          console.error('Error loading versions:', err);
+          this.versionsError = '加载版本列表失败: ' + err.message;
+        } finally {
+          this.versionsLoading = false;
+        }
+      },
+      switchTab(tabName) {
+        this.activeTab = tabName;
+        // 如果切换到版本列表tab且版本列表为空，则加载版本列表
+        if (tabName === 'versions' && this.versions.length === 0 && !this.versionsError) {
+          this.loadVersions();
+        }
+      },
+      prevPage() {
+        if (this.currentPage > 1) {
+          this.currentPage--;
+          this.loadVersions();
+        }
+      },
+      nextPage() {
+        if (this.currentPage < this.totalPages) {
+          this.currentPage++;
+          this.loadVersions();
+        }
+      },
+      async loadResourcePools(forceRefresh = false) {
+        console.log('开始加载资源池列表...', forceRefresh ? '(强制刷新)' : '(检查缓存)');
+
+        // 检查是否选择了资源池类型
+        if (!this.formData.resourcePoolType) {
+          console.log('未选择资源池类型，跳过加载');
+          this.resourcePools = [];
           return;
         }
-        
-        // 数据集详情直接在data中，而不是在data.dataset或data.Dataset中
-        this.dataset = data;
-        console.log('Dataset loaded:', this.dataset);
-        console.log('Dataset name:', this.dataset ? this.dataset.name : 'undefined');
-        console.log('Dataset ID:', this.dataset ? this.dataset.id : 'undefined');
-        
-        // 预加载资源池数据（如果缓存中没有数据）
-        this.preloadResourcePools();
-        
-      } catch (err) {
-        console.error('Error loading dataset:', err);
-        this.error = '加载数据集详情失败: ' + err.message;
-      } finally {
-        this.loading = false;
-      }
-    },
-    async loadVersions() {
-      console.log('loadVersions called for ID:', this.datasetId);
-      this.versionsLoading = true;
-      this.versionsError = null;
-      
-      try {
-        console.log('Making versions API request...');
-        const response = await axios.get('/api?action=DescribeDatasetVersions&datasetId=' + encodeURIComponent(this.datasetId) + '&pageNumber=' + this.currentPage + '&pageSize=' + this.pageSize);
-        console.log('Versions API response received:', response.data);
-        const data = response.data;
-        
-        if (data.error) {
-          this.versionsError = data.error;
-          return;
+
+        // 检查缓存是否有效（按资源池类型分别缓存）
+        const cacheKey = this.formData.resourcePoolType;
+        if (!forceRefresh && this.resourcePoolCache[cacheKey] && this.resourcePoolCacheTime[cacheKey]) {
+          const now = Date.now();
+          const cacheAge = now - this.resourcePoolCacheTime[cacheKey];
+
+          if (cacheAge < this.cacheExpiry) {
+            console.log(`使用缓存的${cacheKey}类型资源池数据，缓存年龄:`, Math.round(cacheAge / 1000), '秒');
+            this.resourcePools = this.resourcePoolCache[cacheKey];
+
+            // 如果有资源池，默认选择第一个
+            if (this.resourcePools.length > 0) {
+              this.formData.resourcePool = this.resourcePools[0].resourcePoolId || this.resourcePools[0].metadata?.id;
+              // 加载该资源池的队列
+              await this.loadQueues(this.formData.resourcePool);
+            }
+            return;
+          } else {
+            console.log(`${cacheKey}类型资源池缓存已过期，重新请求数据`);
+          }
         }
-        
-        // 版本列表在data.versions中，总数在data.totalCount中
-        this.versions = data.versions || data.Versions || [];
-        this.totalVersions = data.totalCount || data.TotalCount || 0;
-        console.log('Versions loaded:', this.versions);
-      } catch (err) {
-        console.error('Error loading versions:', err);
-        this.versionsError = '加载版本列表失败: ' + err.message;
-      } finally {
-        this.versionsLoading = false;
-      }
-    },
-    switchTab(tabName) {
-      this.activeTab = tabName;
-      // 如果切换到版本列表tab且版本列表为空，则加载版本列表
-      if (tabName === 'versions' && this.versions.length === 0 && !this.versionsError) {
-        this.loadVersions();
-      }
-    },
-    prevPage() {
-      if (this.currentPage > 1) {
-        this.currentPage--;
-        this.loadVersions();
-      }
-    },
-    nextPage() {
-      if (this.currentPage < this.totalPages) {
-        this.currentPage++;
-        this.loadVersions();
-      }
-    },
-    async loadResourcePools(forceRefresh = false) {
-      console.log('开始加载资源池列表...', forceRefresh ? '(强制刷新)' : '(检查缓存)');
-      
-      // 检查缓存是否有效
-      if (!forceRefresh && this.resourcePoolCache && this.resourcePoolCacheTime) {
-        const now = Date.now();
-        const cacheAge = now - this.resourcePoolCacheTime;
-        
-        if (cacheAge < this.cacheExpiry) {
-          console.log('使用缓存的资源池数据，缓存年龄:', Math.round(cacheAge / 1000), '秒');
-          this.resourcePools = this.resourcePoolCache;
-          
+
+        try {
+          const response = await axios.get(`/api?action=DescribeResourcePools&resourcePoolType=${this.formData.resourcePoolType}`);
+          console.log('资源池API响应:', response.data);
+
+          if (response.data.error) {
+            console.error('加载资源池失败:', response.data.error);
+            return;
+          }
+
+          // 处理新的API响应格式
+          console.log('资源池API完整响应:', JSON.stringify(response.data, null, 2));
+
+          // 新接口直接在根级别返回resourcePools数组
+          if (response.data.resourcePools && Array.isArray(response.data.resourcePools)) {
+            this.resourcePools = response.data.resourcePools;
+          } else if (response.data.result?.resourcePools) {
+            this.resourcePools = response.data.result.resourcePools;
+          } else if (response.data.ResourcePools) {
+            this.resourcePools = response.data.ResourcePools;
+          } else if (response.data.result?.ResourcePools) {
+            this.resourcePools = response.data.result.ResourcePools;
+          } else if (Array.isArray(response.data)) {
+            this.resourcePools = response.data;
+          } else {
+            console.warn('未识别的资源池API响应格式:', response.data);
+            this.resourcePools = [];
+          }
+          console.log('资源池列表加载完成:', this.resourcePools.length, '个资源池');
+
+          // 更新缓存（按资源池类型分别缓存）
+          this.resourcePoolCache[cacheKey] = [...this.resourcePools];
+          this.resourcePoolCacheTime[cacheKey] = Date.now();
+          console.log(`${cacheKey}类型资源池数据已缓存`);
+
           // 如果有资源池，默认选择第一个
           if (this.resourcePools.length > 0) {
-            this.formData.resourcePool = this.resourcePools[0].metadata.id;
+            this.formData.resourcePool = this.resourcePools[0].resourcePoolId || this.resourcePools[0].metadata?.id;
             // 加载该资源池的队列
             await this.loadQueues(this.formData.resourcePool);
           }
-          return;
-        } else {
-          console.log('缓存已过期，重新请求资源池数据');
+        } catch (error) {
+          console.error('加载资源池API调用失败:', error);
         }
-      }
-      
-      try {
-        const response = await axios.get('/api?action=DescribeResourcePools&resourcePoolType=common');
-        console.log('资源池API响应:', response.data);
-        
-        if (response.data.error) {
-          console.error('加载资源池失败:', response.data.error);
-          return;
-        }
-        
-        // 处理新的API响应格式
-        if (response.data.result?.resourcePools) {
-          this.resourcePools = response.data.result.resourcePools;
-        } else if (response.data.resourcePools) {
-          this.resourcePools = response.data.resourcePools;
-        } else if (response.data.ResourcePools) {
-          this.resourcePools = response.data.ResourcePools;
-        } else {
-          this.resourcePools = [];
-        }
-        console.log('资源池列表加载完成:', this.resourcePools.length, '个资源池');
-        
-        // 更新缓存
-        this.resourcePoolCache = [...this.resourcePools];
-        this.resourcePoolCacheTime = Date.now();
-        console.log('资源池数据已缓存');
-        
-        // 如果有资源池，默认选择第一个
-        if (this.resourcePools.length > 0) {
-          this.formData.resourcePool = this.resourcePools[0].metadata.id;
-          // 加载该资源池的队列
-          await this.loadQueues(this.formData.resourcePool);
-        }
-      } catch (error) {
-        console.error('加载资源池API调用失败:', error);
-      }
-    },
-    async loadQueues(resourcePoolId) {
-      if (!resourcePoolId) {
-        this.queues = [];
-        this.formData.queue = '';
-        return;
-      }
-      
-      console.log('开始加载队列列表，资源池ID:', resourcePoolId);
-      try {
-        const response = await axios.get('/api?action=DescribeQueues&resourcePoolId=' + encodeURIComponent(resourcePoolId));
-        console.log('队列API响应:', response.data);
-        
-        if (response.data.error) {
-          console.error('加载队列失败:', response.data.error);
-          return;
-        }
-        
-        // 处理新的API响应格式
-        if (response.data.result?.queues) {
-          this.queues = response.data.result.queues;
-        } else if (response.data.queues) {
-          this.queues = response.data.queues;
-        } else if (response.data.Queues) {
-          this.queues = response.data.Queues;
-        } else {
+      },
+      async loadQueues(resourcePoolId) {
+        if (!resourcePoolId) {
           this.queues = [];
+          this.formData.queue = '';
+          return;
         }
-        console.log('队列列表加载完成:', this.queues.length, '个队列');
-        
-        // 如果有队列，默认选择第一个
-        if (this.queues.length > 0) {
-          this.formData.queue = this.queues[0].name;
-        } else {
+
+        console.log('开始加载队列列表，资源池ID:', resourcePoolId);
+        try {
+          const response = await axios.get('/api?action=DescribeQueues&resourcePoolId=' + encodeURIComponent(resourcePoolId));
+          console.log('队列API响应:', response.data);
+
+          if (response.data.error) {
+            console.error('加载队列失败:', response.data.error);
+            return;
+          }
+
+          // 处理新的API响应格式
+          console.log('队列API完整响应:', JSON.stringify(response.data, null, 2));
+
+          this.queues = response.data.queues;
+          console.log('队列列表加载完成:', this.queues.length, '个队列');
+
+          // 如果有队列，默认选择第一个
+          if (this.queues.length > 0) {
+            this.formData.queue = this.queues[0].queueName || this.queues[0].name;
+          } else {
+            this.formData.queue = '';
+          }
+        } catch (error) {
+          console.error('加载队列API调用失败:', error);
+          this.queues = [];
           this.formData.queue = '';
         }
-      } catch (error) {
-        console.error('加载队列API调用失败:', error);
-        this.queues = [];
+      },
+      async onResourcePoolTypeChange() {
+        console.log('资源池类型选择变化:', this.formData.resourcePoolType);
+        // 重置资源池和队列选择
+        this.formData.resourcePool = '';
         this.formData.queue = '';
-      }
-    },
-    async onResourcePoolChange() {
-      console.log('资源池选择变化:', this.formData.resourcePool);
-      // 重置队列选择
-      this.formData.queue = '';
-      // 加载新的队列列表
-      await this.loadQueues(this.formData.resourcePool);
-    },
-    
-    // 刷新资源池列表
-    async refreshResourcePools() {
-      console.log('用户手动刷新资源池列表');
-      await this.loadResourcePools(true); // 强制刷新
-    },
-    
-    // 预加载资源池数据（在页面加载时调用）
-    async preloadResourcePools() {
-      console.log('预加载资源池数据...');
-      
-      // 检查是否已有缓存数据
-      if (this.resourcePoolCache && this.resourcePoolCacheTime) {
-        const now = Date.now();
-        const cacheAge = now - this.resourcePoolCacheTime;
-        
-        if (cacheAge < this.cacheExpiry) {
-          console.log('资源池数据已缓存，无需预加载，缓存年龄:', Math.round(cacheAge / 1000), '秒');
-          return;
+        this.resourcePools = [];
+        this.queues = [];
+
+        // 如果选择了资源池类型，加载对应类型的资源池
+        if (this.formData.resourcePoolType) {
+          await this.loadResourcePools();
         }
-      }
-      
-      // 如果没有缓存或缓存已过期，则预加载
-      console.log('开始预加载资源池数据...');
-      try {
-        const response = await axios.get('/api?action=DescribeResourcePools&resourcePoolType=common');
-        console.log('预加载资源池API响应:', response.data);
-        
-        if (response.data.error) {
-          console.error('预加载资源池失败:', response.data.error);
-          return;
+      },
+
+      async onResourcePoolChange() {
+        console.log('资源池选择变化:', this.formData.resourcePool);
+        // 重置队列选择
+        this.formData.queue = '';
+        // 加载新的队列列表
+        await this.loadQueues(this.formData.resourcePool);
+      },
+
+      // 刷新资源池列表
+      async refreshResourcePools() {
+        console.log('用户手动刷新资源池列表');
+        await this.loadResourcePools(true); // 强制刷新
+      },
+
+      // 刷新数据版本列表
+      async refreshDatasetVersions() {
+        console.log('用户手动刷新数据版本列表');
+        if (this.formData.sourceDataset) {
+          await this.loadDatasetVersions(this.formData.sourceDataset);
         }
-        
-        // 处理新的API响应格式并更新缓存
-        let resourcePools = [];
-        if (response.data.result?.resourcePools) {
-          resourcePools = response.data.result.resourcePools;
-        } else if (response.data.resourcePools) {
-          resourcePools = response.data.resourcePools;
-        } else if (response.data.ResourcePools) {
-          resourcePools = response.data.ResourcePools;
+      },
+
+      // 刷新队列列表
+      async refreshQueues() {
+        console.log('用户手动刷新队列列表');
+        if (this.formData.resourcePool) {
+          await this.loadQueues(this.formData.resourcePool);
         }
-        
-        this.resourcePoolCache = [...resourcePools];
-        this.resourcePoolCacheTime = Date.now();
-        console.log('资源池数据预加载完成，缓存了', this.resourcePoolCache.length, '个资源池');
-        
-      } catch (error) {
-        console.error('预加载资源池API调用失败:', error);
-        // 预加载失败不影响页面正常使用，只是会在打开抽屉时重新请求
-      }
-    },
-    buildImportCommand() {
-      // 构建数据导入的命令脚本
-      let command = `#!/bin/bash
+      },
+
+      // 刷新数据集列表
+      async refreshDatasets() {
+        console.log('用户手动刷新数据集列表');
+        await this.loadAvailableDatasets();
+      },
+
+      // 获取源路径
+      getSourcePath() {
+        if (!this.formData.sourceDataset || !this.formData.datasetVersion) return '';
+
+        // 获取源数据集信息
+        const sourceDataset = this.availableDatasets.find(d => d.id === this.formData.sourceDataset);
+        if (!sourceDataset) return '';
+
+        // 获取版本信息
+        const version = this.datasetVersions.find(v => v.id === this.formData.datasetVersion);
+        if (!version || !version.storagePath) return '';
+
+        // 构建源路径：存储实例:存储路径
+        const storageInstance = sourceDataset.storageInstanceId || sourceDataset.storage_instance_id || sourceDataset.storageInstance;
+        if (storageInstance) {
+          return `${storageInstance}:${version.storagePath}`;
+        } else {
+          return version.storagePath;
+        }
+      },
+
+      // 获取目标存储信息
+      getTargetStorageInfo() {
+        if (!this.dataset) return '加载中...';
+
+        const storageType = this.dataset.storageType || this.dataset.storage_type || '未知';
+        const storageInstance = this.dataset.storageInstance || this.dataset.storageInstanceId || '未知';
+
+        return `${storageType} (${storageInstance})`;
+      },
+
+      // 获取目标数据集版本
+      getTargetDatasetVersion() {
+        if (!this.dataset) return '加载中...';
+
+        const latestVersion = this.dataset.latestVersion || this.dataset.version;
+        return latestVersion || '未知';
+      },
+
+      // 获取目标数据集信息（当前版本）
+      getTargetDatasetInfo() {
+        // 使用点击导入数据按钮时传入的版本信息
+        const currentVersion = this.targetDatasetVersion;
+
+        return {
+          name: this.dataset.name,
+          storageType: this.dataset.storageType,
+          storagePath: currentVersion.storagePath,
+          mountPath: currentVersion.mountPath,
+          storageInstance: this.dataset.storageInstance
+        };
+      },
+
+      // 获取源数据集信息（选中版本）
+      getSourceDatasetInfo() {
+        // 从可选数据集中查找源数据集
+        const sourceDataset = this.availableDatasets.find(d => d.id === this.formData.sourceDataset);
+
+        // 获取版本信息
+        const version = this.datasetVersions.find(v => v.id === this.formData.datasetVersion);
+
+        return {
+          name: sourceDataset.name,
+          storageType: sourceDataset.storageType,
+          storagePath: version.storagePath,
+          mountPath: version.mountPath,
+          storageInstance: sourceDataset.storageInstance
+        };
+      },
+
+      // 获取目标存储路径
+      getTargetStoragePath() {
+        if (!this.dataset) return '加载中...';
+
+        const storagePath = this.dataset.storagePath || '/mnt/datasets/' + this.dataset.name;
+        return storagePath;
+      },
+
+      // 获取目标路径
+      getTargetPath() {
+        if (!this.dataset) return '未知目标数据集';
+
+        // 获取目标数据集的存储实例和存储路径
+        const storageInstance = this.dataset.storageInstance;
+        const storagePath = this.dataset.storagePath || '/mnt/datasets/' + this.dataset.name;
+
+        if (storageInstance) {
+          return `${storageInstance}:${storagePath}`;
+        } else {
+          return storagePath;
+        }
+      },
+
+      // 预加载资源池数据（在页面加载时调用）
+      async preloadResourcePools() {
+        console.log('预加载资源池数据...');
+        this.resourcePoolLoadingStatus = '正在并行加载资源池数据...';
+
+        // 预加载两种类型的资源池
+        const resourcePoolTypes = ['common', 'dedicatedV2'];
+
+        // 创建并行加载任务
+        const loadTasks = resourcePoolTypes.map(async (poolType) => {
+          // 检查该类型是否已有缓存数据
+          if (this.resourcePoolCache[poolType] && this.resourcePoolCacheTime[poolType]) {
+            const now = Date.now();
+            const cacheAge = now - this.resourcePoolCacheTime[poolType];
+
+            if (cacheAge < this.cacheExpiry) {
+              console.log(`${poolType}类型资源池数据已缓存，无需预加载，缓存年龄:`, Math.round(cacheAge / 1000), '秒');
+              return { poolType, success: true, fromCache: true };
+            }
+          }
+
+          // 如果没有缓存或缓存已过期，则预加载
+          console.log(`开始预加载${poolType}类型资源池数据...`);
+          try {
+            const response = await axios.get(`/api?action=DescribeResourcePools&resourcePoolType=${poolType}`);
+            console.log(`预加载${poolType}类型资源池API响应:`, response.data);
+
+            if (response.data.error) {
+              console.error(`预加载${poolType}类型资源池失败:`, response.data.error);
+              return { poolType, success: false, error: response.data.error };
+            }
+
+            // 处理新的API响应格式并更新缓存
+            console.log(`预加载${poolType}类型资源池API完整响应:`, JSON.stringify(response.data, null, 2));
+
+            let resourcePools = [];
+            // 新接口直接在根级别返回resourcePools数组
+            if (response.data.resourcePools && Array.isArray(response.data.resourcePools)) {
+              resourcePools = response.data.resourcePools;
+            } else if (response.data.result?.resourcePools) {
+              resourcePools = response.data.result.resourcePools;
+            } else if (response.data.ResourcePools) {
+              resourcePools = response.data.ResourcePools;
+            } else if (response.data.result?.ResourcePools) {
+              resourcePools = response.data.result.ResourcePools;
+            } else if (Array.isArray(response.data)) {
+              resourcePools = response.data;
+            } else {
+              console.warn(`预加载未识别的${poolType}类型资源池API响应格式:`, response.data);
+              resourcePools = [];
+            }
+
+            // 更新缓存（按类型分别缓存）
+            this.resourcePoolCache[poolType] = [...resourcePools];
+            this.resourcePoolCacheTime[poolType] = Date.now();
+            console.log(`${poolType}类型资源池数据预加载完成，缓存了`, resourcePools.length, '个资源池');
+
+            return { poolType, success: true, count: resourcePools.length };
+
+          } catch (error) {
+            console.error(`预加载${poolType}类型资源池API调用失败:`, error);
+            return { poolType, success: false, error: error.message };
+          }
+        });
+
+        // 等待所有任务完成
+        const results = await Promise.all(loadTasks);
+
+        // 统计结果
+        const successCount = results.filter(r => r.success).length;
+        const totalCount = results.length;
+        const fromCacheCount = results.filter(r => r.fromCache).length;
+        const newLoadCount = successCount - fromCacheCount;
+
+        console.log(`资源池预加载完成: 总计${totalCount}个类型，成功${successCount}个，其中${fromCacheCount}个来自缓存，${newLoadCount}个新加载`);
+
+        // 标记资源池缓存加载完成
+        this.resourcePoolCacheLoaded = true;
+        this.resourcePoolLoadingStatus = `资源池数据加载完成 (${successCount}/${totalCount})，导入数据功能已可用`;
+        console.log('资源池缓存预加载完成，导入数据按钮已启用');
+
+        // 延迟隐藏提示信息
+        setTimeout(() => {
+          this.resourcePoolLoadingStatus = '';
+        }, 2000);
+      },
+      buildImportCommand() {
+        // 构建数据导入的命令脚本
+        let command = `#!/bin/bash
+set -e  # 遇到错误立即退出
+
 echo "开始数据导入任务..."
-echo "数据集ID: $DATASET_ID"
-echo "导入方式: $IMPORT_METHOD"
-echo "源数据集: $SOURCE_DATASET"
-echo "数据版本: $DATASET_VERSION"
+echo "源路径: $SOURCE_PATH"
+echo "目标路径: $TARGET_PATH"
 echo "清空数据: $CLEAN_DATA"
 echo "同名保留策略: $NAME_STRATEGY"
 
-# 这里添加实际的数据导入逻辑
-# 可以调用相应的数据导入脚本或API
+# 检查源路径是否存在
+if [ ! -d "$SOURCE_PATH" ]; then
+    echo "错误: 源路径不存在: $SOURCE_PATH"
+    exit 1
+fi
 
-if [ "$IMPORT_METHOD" = "existing" ]; then
-    echo "从已有数据集导入数据..."
-    # 添加从已有数据集导入的逻辑
-    echo "源数据集: $SOURCE_DATASET"
-    echo "数据版本: $DATASET_VERSION"
-    
-    # 模拟数据导入过程
-    echo "正在复制数据..."
-    sleep 10
-    echo "数据导入完成"
+# 创建目标路径（如果不存在）
+mkdir -p "$TARGET_PATH"
+
+# 如果启用清空数据，先清空目标路径
+if [ "$CLEAN_DATA" = "true" ]; then
+    echo "清空目标路径: $TARGET_PATH"
+    rm -rf "$TARGET_PATH"/*
+    rm -rf "$TARGET_PATH"/.[^.]* 2>/dev/null || true  # 删除隐藏文件，忽略错误
+fi
+
+# 根据同名保留策略处理文件复制
+if [ "$NAME_STRATEGY" = "target" ]; then
+    echo "使用保留目的文件策略..."
+    # 使用 rsync 复制，保留目的文件
+    rsync -av --ignore-existing "$SOURCE_PATH"/ "$TARGET_PATH"/
+elif [ "$NAME_STRATEGY" = "source" ]; then
+    echo "使用保留源文件策略..."
+    # 使用 rsync 复制，覆盖目的文件
+    rsync -av "$SOURCE_PATH"/ "$TARGET_PATH"/
 else
-    echo "其他导入方式暂未实现"
+    echo "使用默认策略（保留源文件）..."
+    # 默认使用保留源文件策略
+    rsync -av "$SOURCE_PATH"/ "$TARGET_PATH"/
+fi
+
+# 验证复制结果
+echo "验证复制结果..."
+source_count=$(find "$SOURCE_PATH" -type f | wc -l)
+target_count=$(find "$TARGET_PATH" -type f | wc -l)
+echo "源路径文件数量: $source_count"
+echo "目标路径文件数量: $target_count"
+
+if [ "$source_count" -eq "$target_count" ]; then
+    echo "数据导入成功完成！"
+else
+    echo "警告: 文件数量不匹配，请检查复制结果"
+    exit 1
 fi
 
 echo "数据导入任务完成"`;
-      
-      return command;
-    },
-    // 提交导入表单
-    async submitImportForm() {
+
+        return command;
+      },
+      // 提交导入表单
+      async submitImportForm() {
         console.log('submitImportForm called');
-      // 表单验证
-      if (this.importMethod === 'existing' && (!this.formData.sourceDataset || !this.formData.datasetVersion)) {
-        alert('请选择源数据集和数据版本');
-        return;
-      }
-      
-      if (!this.formData.nameStrategy) {
-        alert('请选择同名保留策略');
-        return;
-      }
-      
-      if (!this.formData.resourcePool || !this.formData.queue) {
-        alert('请选择资源池和队列');
-        return;
-      }
-      
-      // 构建训练任务请求参数（参考AIHC文档格式）
-      const jobName = `import-data-${this.datasetId}-${Date.now()}`;
-      const requestParams = {
-        jobName: jobName,
-        jobType: "Training",
-        framework: "PyTorch",
-        queue: this.formData.queue,
-        spec: {
-          image: "registry.baidubce.com/public/pytorch:1.12.0-cuda11.3-cudnn8-devel",
-          command: ["/bin/bash"],
-          args: ["-c", this.buildImportCommand()],
-          resources: [],
-          envs: [
-            {
-              name: "DATASET_ID",
-              value: this.datasetId
-            },
-            {
-              name: "SOURCE_DATASET",
-              value: this.formData.sourceDataset || ""
-            },
-            {
-              name: "DATASET_VERSION",
-              value: this.formData.datasetVersion || ""
-            },
-            {
-              name: "CLEAN_DATA",
-              value: this.formData.cleanData ? "true" : "false"
-            },
-            {
-              name: "NAME_STRATEGY",
-              value: this.formData.nameStrategy
-            },
-            {
-              name: "IMPORT_METHOD",
-              value: this.importMethod
-            }
+        // 表单验证
+        if (this.importMethod === 'existing' && (!this.formData.sourceDataset || !this.formData.datasetVersion)) {
+          alert('请选择源数据集和数据版本');
+          return;
+        }
+
+        if (!this.formData.cleanData && !this.formData.nameStrategy) {
+          alert('请选择同名保留策略');
+          return;
+        }
+
+        if (!this.formData.resourcePoolType) {
+          alert('请选择资源池类型');
+          return;
+        }
+
+        if (!this.formData.resourcePool || !this.formData.queue) {
+          alert('请选择资源池和队列');
+          return;
+        }
+
+        // 构建训练任务请求参数（参考AIHC文档格式）
+        const jobName = `${this.datasetId}-${this.formData.datasetVersion}-${Date.now()}`;
+        const datasource = this.getDatasource();
+        const requestParams = {
+          name: jobName,
+          queue: this.formData.resourcePoolType == 'common' ? this.formData.queue : (this.queues.find(q => q.queueName == this.formData.queue)?.queueId),
+          jobType: "PyTorchJob",
+          command: this.buildImportCommand(),
+          jobSpec: {
+            replicas: 1,
+            image: "registry.baidubce.com/public/pytorch:1.12.0-cuda11.3-cudnn8-devel",
+            resources: [],
+            envs: [
+              {
+                name: "SOURCE_PATH",
+                value: datasource[1].mountPath
+              },
+              {
+                name: "TARGET_PATH",
+                value: datasource[0].mountPath
+              },
+              {
+                name: "CLEAN_DATA",
+                value: this.formData.cleanData ? "true" : "false"
+              },
+              {
+                name: "NAME_STRATEGY",
+                value: this.formData.nameStrategy
+              },
+              {
+                name: "IMPORT_METHOD",
+                value: this.importMethod
+              }
+            ],
+            enableRDMA: false
+          },
+          labels: [
+            "data-import",
+            `dataset-${this.datasetId}`
           ],
-          enableRDMA: false
-        },
-        labels: [
-          "data-import",
-          `dataset-${this.datasetId}`
-        ],
-        datasource: []
-      };
-      
-      console.log('创建训练任务请求参数:', requestParams);
-      
-      try {
-        // 显示加载状态
-        const submitBtn = document.querySelector('.form-actions .btn-primary');
-        if (submitBtn) {
-          submitBtn.textContent = '创建任务中...';
-          submitBtn.disabled = true;
+          "datasource": datasource
+        };
+
+        console.log('创建训练任务请求参数:', JSON.stringify(requestParams, null, 2));
+
+        try {
+          // 显示加载状态
+          const submitBtn = document.querySelector('.form-actions .btn-primary');
+          if (submitBtn) {
+            submitBtn.textContent = '创建任务中...';
+            submitBtn.disabled = true;
+          }
+
+          // 调用创建训练任务API
+          const response = await axios.post(`/api?action=CreateJob&resourcePoolId=${this.formData.resourcePoolType == 'common' ? this.formData.resourcePool : 'aihc-serverless'}`, requestParams);
+          console.log('创建训练任务API响应:', response.data);
+
+          if (response.data.error) {
+            alert('创建导入任务失败: ' + response.data.error);
+          } else {
+            const jobId = response.data.jobId || response.data.result?.jobId;
+            const jobName = response.data.jobName || response.data.result?.jobName;
+            alert(`导入任务创建成功！\n任务ID: ${jobId}\n任务名称: ${jobName}`);
+            // 关闭抽屉
+            closeDrawer();
+          }
+        } catch (error) {
+          console.error('创建训练任务API调用失败:', error);
+          alert('创建导入任务失败: ' + (error.response?.data?.error || error.message || '未知错误'));
+        } finally {
+          // 恢复按钮状态
+          const submitBtn = document.querySelector('.form-actions .btn-primary');
+          if (submitBtn) {
+            submitBtn.textContent = '确定';
+            submitBtn.disabled = false;
+          }
         }
-        
-        // 调用创建训练任务API
-        const response = await axios.post('/api?action=CreateJob&resourcePoolId=' + encodeURIComponent(this.formData.resourcePool), requestParams);
-        console.log('创建训练任务API响应:', response.data);
-        
-        if (response.data.error) {
-          alert('创建导入任务失败: ' + response.data.error);
+      },
+      getDatasource() {
+        const targetDatasetInfo = this.getTargetDatasetInfo();
+        const sourceDatasetInfo = this.getSourceDatasetInfo();
+        console.log('targetDatasetInfo', targetDatasetInfo);
+        console.log('sourceDatasetInfo', sourceDatasetInfo);
+
+        const targetDatasetType = targetDatasetInfo.storageType.toLowerCase();
+        const sourceDatasetType = sourceDatasetInfo.storageType.toLowerCase();
+        const targetDatasetName = targetDatasetType === 'pfs' ? targetDatasetInfo.storageInstance : '';
+        const sourceDatasetName = sourceDatasetType === 'pfs' ? sourceDatasetInfo.storageInstance : '';
+        const targetDatasetPath = targetDatasetType === 'pfs' ? targetDatasetInfo.storagePath : `${targetDatasetInfo.storageInstance}${targetDatasetInfo.storagePath}`;
+        const sourceDatasetPath = sourceDatasetType === 'pfs' ? sourceDatasetInfo.storagePath : `${sourceDatasetInfo.storageInstance}${sourceDatasetInfo.storagePath}`;
+        return [
+          // 目标数据集 DataSource
+          {
+            type: targetDatasetType,
+            name: targetDatasetName,
+            sourcePath: targetDatasetPath,
+            mountPath: "/mnt/target"
+          },
+          // 源数据集 DataSource
+          {
+            type: sourceDatasetType,
+            name: sourceDatasetName,
+            sourcePath: sourceDatasetPath,
+            mountPath: "/mnt/source"
+          }
+        ]
+      },
+      formatDate(dateStr) {
+        if (!dateStr) return 'N/A';
+        try {
+          const date = new Date(dateStr);
+          return date.toLocaleString('zh-CN');
+        } catch (e) {
+          return dateStr;
+        }
+      },
+      formatVisibility(visibilityScope) {
+        if (!visibilityScope) return 'N/A';
+        const visibilityMap = {
+          'ALL_PEOPLE': '所有人可见',
+          'USER_GROUP': '用户组可见',
+          'ONLY_OWNER': '仅所有者可见'
+        };
+        return visibilityMap[visibilityScope] || visibilityScope;
+      },
+      copyDatasetId(id) {
+        if (!id) return;
+
+        // 使用现代浏览器的Clipboard API
+        if (navigator.clipboard && window.isSecureContext) {
+          navigator.clipboard.writeText(id).then(() => {
+            this.showCopySuccess();
+          }).catch(err => {
+            console.error('复制失败:', err);
+            this.fallbackCopy(id);
+          });
         } else {
-          const jobId = response.data.jobId || response.data.result?.jobId;
-          const jobName = response.data.jobName || response.data.result?.jobName;
-          alert(`导入任务创建成功！\n任务ID: ${jobId}\n任务名称: ${jobName}`);
-          // 关闭抽屉
-          closeDrawer();
-        }
-      } catch (error) {
-        console.error('创建训练任务API调用失败:', error);
-        alert('创建导入任务失败: ' + (error.response?.data?.error || error.message || '未知错误'));
-      } finally {
-        // 恢复按钮状态
-        const submitBtn = document.querySelector('.form-actions .btn-primary');
-        if (submitBtn) {
-          submitBtn.textContent = '确定';
-          submitBtn.disabled = false;
-        }
-      }
-    },
-    formatDate(dateStr) {
-      if (!dateStr) return 'N/A';
-      try {
-        const date = new Date(dateStr);
-        return date.toLocaleString('zh-CN');
-      } catch (e) {
-        return dateStr;
-      }
-    },
-    formatVisibility(visibilityScope) {
-      if (!visibilityScope) return 'N/A';
-      const visibilityMap = {
-        'ALL_PEOPLE': '所有人可见',
-        'USER_GROUP': '用户组可见',
-        'ONLY_OWNER': '仅所有者可见'
-      };
-      return visibilityMap[visibilityScope] || visibilityScope;
-    },
-    copyDatasetId(id) {
-      if (!id) return;
-      
-      // 使用现代浏览器的Clipboard API
-      if (navigator.clipboard && window.isSecureContext) {
-        navigator.clipboard.writeText(id).then(() => {
-          this.showCopySuccess();
-        }).catch(err => {
-          console.error('复制失败:', err);
+          // 降级方案
           this.fallbackCopy(id);
-        });
-      } else {
-        // 降级方案
-        this.fallbackCopy(id);
-      }
-    },
-    fallbackCopy(text) {
-      // 创建临时文本区域
-      const textArea = document.createElement('textarea');
-      textArea.value = text;
-      textArea.style.position = 'fixed';
-      textArea.style.left = '-999999px';
-      textArea.style.top = '-999999px';
-      document.body.appendChild(textArea);
-      textArea.focus();
-      textArea.select();
-      
-      try {
-        document.execCommand('copy');
-        this.showCopySuccess();
-      } catch (err) {
-        console.error('复制失败:', err);
-      }
-      
-      document.body.removeChild(textArea);
-    },
-    showCopySuccess() {
-      // 显示复制成功提示
-      const toast = document.createElement('div');
-      toast.textContent = '数据集ID已复制到剪贴板';
-      toast.style.cssText = `
+        }
+      },
+      fallbackCopy(text) {
+        // 创建临时文本区域
+        const textArea = document.createElement('textarea');
+        textArea.value = text;
+        textArea.style.position = 'fixed';
+        textArea.style.left = '-999999px';
+        textArea.style.top = '-999999px';
+        document.body.appendChild(textArea);
+        textArea.focus();
+        textArea.select();
+
+        try {
+          document.execCommand('copy');
+          this.showCopySuccess();
+        } catch (err) {
+          console.error('复制失败:', err);
+        }
+
+        document.body.removeChild(textArea);
+      },
+      showCopySuccess() {
+        // 显示复制成功提示
+        const toast = document.createElement('div');
+        toast.textContent = '数据集ID已复制到剪贴板';
+        toast.style.cssText = `
         position: fixed;
         top: 20px;
         right: 20px;
@@ -1594,32 +2242,32 @@ echo "数据导入任务完成"`;
         box-shadow: 0 4px 12px rgba(0,0,0,0.15);
         animation: slideIn 0.3s ease;
       `;
-      
-      // 添加动画样式
-      const style = document.createElement('style');
-      style.textContent = `
+
+        // 添加动画样式
+        const style = document.createElement('style');
+        style.textContent = `
         @keyframes slideIn {
           from { transform: translateX(100%); opacity: 0; }
           to { transform: translateX(0); opacity: 1; }
         }
       `;
-      document.head.appendChild(style);
-      
-      document.body.appendChild(toast);
-      
-      // 3秒后自动移除
-      setTimeout(() => {
-        if (toast.parentNode) {
-          toast.parentNode.removeChild(toast);
-        }
-      }, 3000);
+        document.head.appendChild(style);
+
+        document.body.appendChild(toast);
+
+        // 3秒后自动移除
+        setTimeout(() => {
+          if (toast.parentNode) {
+            toast.parentNode.removeChild(toast);
+          }
+        }, 3000);
+      }
+    },
+    mounted() {
+      // 确保抽屉初始状态是隐藏的
+      this.drawerVisible = false;
+      this.loadDataset();
     }
-  },
-  mounted() {
-    // 确保抽屉初始状态是隐藏的
-    this.drawerVisible = false;
-    this.loadDataset();
-  }
-}).mount('#app');
+  }).mount('#app');
 </script>
 {% endblock %}

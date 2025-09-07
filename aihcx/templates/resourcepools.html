@@ -51,7 +51,7 @@
   max-width: 120px;
 }
 .resourcepools-table th.status-column {
-  width: 100px;
+  width: 150px;
   min-width: 100px;
   max-width: 100px;
 }
@@ -156,6 +156,57 @@
   color: #333;
   font-size: 20px;
 }
+/* 资源池类型Tab样式 */
+.resource-pool-tabs {
+  margin-bottom: 24px;
+  border-bottom: 2px solid #e9ecef;
+}
+
+.tab-list {
+  display: flex;
+  gap: 0;
+}
+
+.tab-item {
+  padding: 12px 24px;
+  border: none;
+  background: none;
+  border-bottom: 3px solid transparent;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  color: #666;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.tab-item:hover {
+  color: #409eff;
+  background: #f8f9fa;
+}
+
+.tab-item.active {
+  color: #409eff;
+  border-bottom-color: #409eff;
+  background: #f8f9fa;
+}
+
+.tab-count {
+  background: #e9ecef;
+  color: #666;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 400;
+}
+
+.tab-item.active .tab-count {
+  background: #409eff;
+  color: white;
+}
+
 .search-box {
   margin-bottom: 24px;
   display: flex;
@@ -399,13 +450,37 @@
     </div>
   </div>
 
+  <!-- 资源池类型Tab -->
+  <div class="resource-pool-tabs">
+    <div class="tab-list">
+      <button 
+        class="tab-item" 
+        :class="{ active: activeTab === 'common' }"
+        @click="switchTab('common')"
+      >
+        自运维资源池
+        <span class="tab-count">([[ getTabCount('common') ]])</span>
+      </button>
+      <button 
+        class="tab-item" 
+        :class="{ active: activeTab === 'dedicatedV2' }"
+        @click="switchTab('dedicatedV2')"
+      >
+        全托管资源池
+        <span class="tab-count">([[ getTabCount('dedicatedV2') ]])</span>
+      </button>
+    </div>
+  </div>
+
   <!-- 搜索和刷新 -->
   <div class="search-box">
     <input 
       type="text" 
       class="search-input" 
       v-model="searchQuery" 
-      placeholder="搜索资源池名称或创建者..."
+      @keyup.enter="search"
+      @input="onSearchInput"
+      placeholder="搜索资源池名称..."
     >
     <button 
       class="refresh-btn" 
@@ -463,22 +538,22 @@
         </tr>
       </thead>
       <tbody>
-        <tr v-for="pool in paginatedResourcePools" :key="pool.metadata.id">
+        <tr v-for="pool in paginatedResourcePools" :key="pool.resourcePoolId || pool.metadata?.id">
           <td>
-            <span class="pool-name" @click="showPoolDetail(pool)">[[ pool.metadata.name || 'N/A' ]]</span>
+            <span class="pool-name" @click="showPoolDetail(pool)">[[ pool.name || pool.metadata?.name || 'N/A' ]]</span>
             <br>
-            <span class="pool-id">[[ pool.metadata.id || 'N/A' ]]</span> <i class="fa-solid fa-copy copy-icon" @click="copyPoolId(pool.metadata.id)" title="复制资源池ID"></i>
+            <span class="pool-id">[[ pool.resourcePoolId || pool.metadata?.id || 'N/A' ]]</span> <i class="fa-solid fa-copy copy-icon" @click="copyPoolId(pool.resourcePoolId || pool.metadata?.id)" title="复制资源池ID"></i>
           </td>
-          <td class="creator-column" :title="pool.spec.createdBy || 'N/A'">[[ pool.spec.createdBy || 'N/A' ]]</td>
+          <td class="creator-column" :title="pool.createdBy || pool.spec?.createdBy || 'N/A'">[[ pool.createdBy || pool.spec?.createdBy || 'N/A' ]]</td>
                      <td class="status-column">
-             <span :class="['status', getStatusClass(pool.status.phase)]">
-               [[ formatStatus(pool.status.phase) ]]
+             <span :class="['status', getStatusClass(pool.phase)]">
+               [[ formatStatus(pool.phase) ]]
              </span>
            </td>
-           <td class="type-column" :title="pool.spec.k8sVersion || 'N/A'">[[ pool.spec.k8sVersion || 'N/A' ]]</td>
-          <td class="description-cell">[[ pool.spec.description || '暂无描述' ]]</td>
-          <td>[[ formatDate(pool.metadata.createdAt) ]]</td>
-          <td>[[ formatDate(pool.metadata.updatedAt) ]]</td>
+           <td class="type-column" :title="pool.k8sVersion || pool.spec?.k8sVersion || 'N/A'">[[ pool.k8sVersion || pool.spec?.k8sVersion || 'N/A' ]]</td>
+          <td class="description-cell">[[ pool.description || pool.spec?.description || '暂无描述' ]]</td>
+          <td>[[ formatDate(pool.createdAt) ]]</td>
+          <td>[[ formatDate(pool.updatedAt) ]]</td>
         </tr>
       </tbody>
     </table>
@@ -502,7 +577,7 @@
   </div>
 
   <!-- 空状态 -->
-  <div class="empty-state" v-if="!loading && !error && filteredResourcePools.length === 0">
+  <div class="empty-state" v-if="!loading && !error && resourcePools.length === 0">
     <h3>暂无资源池</h3>
     <p v-if="searchQuery">没有找到匹配"[[ searchQuery ]]"的资源池</p>
     <p v-else>您还没有创建任何资源池</p>
@@ -522,19 +597,19 @@
         <h3 class="drawer-section-title">基本信息</h3>
         <div class="drawer-field">
           <div class="drawer-field-label">资源池名称</div>
-          <div class="drawer-field-value">[[ selectedPool?.metadata?.name || 'N/A' ]]</div>
+          <div class="drawer-field-value">[[ selectedPool?.name || selectedPool?.metadata?.name || 'N/A' ]]</div>
         </div>
         <div class="drawer-field">
           <div class="drawer-field-label">资源池ID</div>
-          <div class="drawer-field-value">[[ selectedPool?.metadata?.id || 'N/A' ]]</div>
+          <div class="drawer-field-value">[[ selectedPool?.resourcePoolId || selectedPool?.metadata?.id || 'N/A' ]]</div>
         </div>
         <div class="drawer-field">
           <div class="drawer-field-label">描述</div>
-          <div class="drawer-field-value">[[ selectedPool?.spec?.description || '暂无描述' ]]</div>
+          <div class="drawer-field-value">[[ selectedPool?.description || selectedPool?.spec?.description || '暂无描述' ]]</div>
         </div>
         <div class="drawer-field">
           <div class="drawer-field-label">创建者</div>
-          <div class="drawer-field-value">[[ selectedPool?.spec?.createdBy || 'N/A' ]]</div>
+          <div class="drawer-field-value">[[ selectedPool?.createdBy || selectedPool?.spec?.createdBy || 'N/A' ]]</div>
         </div>
       </div>
 
@@ -543,12 +618,12 @@
         <h3 class="drawer-section-title">资源池信息</h3>
                  <div class="drawer-field">
            <div class="drawer-field-label">K8s版本</div>
-           <div class="drawer-field-value">[[ selectedPool?.spec?.k8sVersion || 'N/A' ]]</div>
+           <div class="drawer-field-value">[[ selectedPool?.k8sVersion || selectedPool?.spec?.k8sVersion || 'N/A' ]]</div>
          </div>
          <div class="drawer-field">
            <div class="drawer-field-label">状态</div>
-           <div class="drawer-field-value status" :class="getStatusClass(selectedPool?.status?.phase)">
-             [[ formatStatus(selectedPool?.status?.phase) ]]
+           <div class="drawer-field-value status" :class="getStatusClass(selectedPool?.phase)">
+             [[ formatStatus(selectedPool?.phase) ]]
            </div>
          </div>
         <div class="drawer-field" v-if="selectedPool?.spec?.associatedPfsId">
@@ -562,11 +637,11 @@
         <h3 class="drawer-section-title">时间信息</h3>
         <div class="drawer-field">
           <div class="drawer-field-label">创建时间</div>
-          <div class="drawer-field-value">[[ formatDate(selectedPool?.metadata?.createdAt) ]]</div>
+          <div class="drawer-field-value">[[ formatDate(selectedPool?.createdAt) ]]</div>
         </div>
         <div class="drawer-field">
           <div class="drawer-field-label">更新时间</div>
-          <div class="drawer-field-value">[[ formatDate(selectedPool?.metadata?.updatedAt) ]]</div>
+          <div class="drawer-field-value">[[ formatDate(selectedPool?.updatedAt) ]]</div>
         </div>
       </div>
     </div>
@@ -589,9 +664,16 @@ createApp({
       sortKey: 'createdAt',
       sortOrder: 'desc',
       currentPage: 1,
-      pageSize: 20,
+      pageSize: 100,
       showDrawer: false,
-      selectedPool: null
+      selectedPool: null,
+      apiTotalCount: 0,
+      searchTimeout: null,
+      activeTab: 'common', // 当前激活的tab
+      tabCounts: {
+        common: 0,
+        dedicatedV2: 0
+      }
     }
   },
   computed: {
@@ -601,9 +683,9 @@ createApp({
       }
       const query = this.searchQuery.toLowerCase();
       return this.resourcePools.filter(pool => 
-        (pool.metadata.name && pool.metadata.name.toLowerCase().includes(query)) ||
-        (pool.spec.description && pool.spec.description.toLowerCase().includes(query)) ||
-        (pool.spec.createdBy && pool.spec.createdBy.toLowerCase().includes(query))
+        ((pool.name || pool.metadata?.name) && (pool.name || pool.metadata?.name).toLowerCase().includes(query)) ||
+        (pool.spec?.description && pool.spec.description.toLowerCase().includes(query)) ||
+        (pool.createdBy || pool.spec?.createdBy && (pool.createdBy || pool.spec.createdBy).toLowerCase().includes(query))
       );
     },
     sortedResourcePools() {
@@ -611,26 +693,26 @@ createApp({
         let aVal, bVal;
         
         if (this.sortKey === 'name') {
-          aVal = a.metadata.name || '';
-          bVal = b.metadata.name || '';
+          aVal = a.name || a.metadata?.name || '';
+          bVal = b.name || b.metadata?.name || '';
         } else if (this.sortKey === 'createdBy') {
-          aVal = a.spec.createdBy || '';
-          bVal = b.spec.createdBy || '';
+          aVal = a.createdBy || a.spec?.createdBy || '';
+          bVal = b.createdBy || b.spec?.createdBy || '';
                  } else if (this.sortKey === 'status') {
-           aVal = a.status.phase || '';
-           bVal = b.status.phase || '';
+           aVal = a.phase || a.status?.phase || '';
+           bVal = b.phase || b.status?.phase || '';
          } else if (this.sortKey === 'type') {
-           aVal = a.spec.k8sVersion || '';
-           bVal = b.spec.k8sVersion || '';
+           aVal = a.k8sVersion || a.spec?.k8sVersion || '';
+           bVal = b.k8sVersion || b.spec?.k8sVersion || '';
         } else if (this.sortKey === 'description') {
-          aVal = a.spec.description || '';
-          bVal = b.spec.description || '';
+          aVal = a.description || a.spec?.description || '';
+          bVal = b.description || b.spec?.description || '';
         } else if (this.sortKey === 'createdAt') {
-          aVal = new Date(a.metadata.createdAt);
-          bVal = new Date(b.metadata.createdAt);
+          aVal = new Date(a.createdAt || a.metadata?.createdAt);
+          bVal = new Date(b.createdAt || b.metadata?.createdAt);
         } else if (this.sortKey === 'updatedAt') {
-          aVal = new Date(a.metadata.updatedAt);
-          bVal = new Date(b.metadata.updatedAt);
+          aVal = new Date(a.updatedAt || a.metadata?.updatedAt);
+          bVal = new Date(b.updatedAt || b.metadata?.updatedAt);
         } else {
           aVal = '';
           bVal = '';
@@ -656,51 +738,155 @@ createApp({
       });
     },
     paginatedResourcePools() {
-      const start = (this.currentPage - 1) * this.pageSize;
-      const end = start + this.pageSize;
-      return this.sortedResourcePools.slice(start, end);
+      // 使用服务端分页，直接返回当前页的数据
+      return this.resourcePools;
     },
     totalPages() {
-      return Math.ceil(this.filteredResourcePools.length / this.pageSize);
+      // 使用API总数量计算总页数
+      return Math.ceil(this.apiTotalCount / this.pageSize);
     },
     totalCount() {
-      return this.resourcePools.length;
+      return this.apiTotalCount || this.resourcePools.length;
     },
          activeCount() {
-       return this.resourcePools.filter(p => p.status.phase === 'active' || p.status.phase === 'running' || p.status.phase === 'ready').length;
+       return this.resourcePools.filter(p => {
+         const phase = p.phase || p.status?.phase;
+         return phase === 'active' || phase === 'running' || phase === 'ready';
+       }).length;
      },
      pendingCount() {
-       return this.resourcePools.filter(p => p.status.phase === 'pending' || p.status.phase === 'creating').length;
+       return this.resourcePools.filter(p => {
+         const phase = p.phase || p.status?.phase;
+         return phase === 'pending' || phase === 'creating';
+       }).length;
      },
      inactiveCount() {
-       return this.resourcePools.filter(p => p.status.phase === 'inactive' || p.status.phase === 'stopped' || p.status.phase === 'failed' || p.status.phase === 'delete_failed' || p.status.phase === 'error').length;
+       return this.resourcePools.filter(p => {
+         const phase = p.phase || p.status?.phase;
+         return phase === 'inactive' || phase === 'stopped' || phase === 'failed' || phase === 'delete_failed' || phase === 'error';
+       }).length;
      }
   },
   methods: {
+    // 获取API排序字段
+    getOrderByField() {
+      const fieldMap = {
+        'name': 'resourcePoolName',
+        'createdBy': 'resourcePoolName', // API不支持按创建者排序，使用名称
+        'status': 'resourcePoolName',    // API不支持按状态排序，使用名称
+        'type': 'resourcePoolName',      // API不支持按类型排序，使用名称
+        'description': 'resourcePoolName', // API不支持按描述排序，使用名称
+        'createdAt': 'createdAt',
+        'updatedAt': 'createdAt'         // API不支持按更新时间排序，使用创建时间
+      };
+      return fieldMap[this.sortKey] || 'resourcePoolName';
+    },
+    
+    // 切换tab
+    async switchTab(tabType) {
+      if (this.activeTab === tabType) return;
+      
+      this.activeTab = tabType;
+      this.currentPage = 1; // 重置到第一页
+      this.searchQuery = ''; // 清空搜索
+      await this.loadResourcePools();
+    },
+    
+    // 获取tab计数
+    getTabCount(tabType) {
+      return this.tabCounts[tabType] || 0;
+    },
+    
+    // 预加载所有tab的计数
+    async preloadTabCounts() {
+      const tabTypes = ['common', 'dedicatedV2'];
+      
+      for (const tabType of tabTypes) {
+        try {
+          const params = new URLSearchParams({
+            action: 'DescribeResourcePools',
+            resourcePoolType: tabType,
+            pageNumber: '1',
+            pageSize: '1' // 只需要获取总数，不需要具体数据
+          });
+          
+          const response = await axios.get(`/api?${params.toString()}`);
+          const data = response.data;
+          
+          if (data && !data.error) {
+            this.tabCounts[tabType] = data.totalCount || 0;
+          }
+        } catch (error) {
+          console.warn(`Failed to load count for ${tabType}:`, error);
+          this.tabCounts[tabType] = 0;
+        }
+      }
+    },
+    
     async loadResourcePools() {
       console.log('loadResourcePools called');
       this.loading = true;
       this.error = null;
       
       try {
-        console.log('Making API request...');
-        const response = await axios.get('/api/v1/resourcepools');
+        // 构建API请求参数
+        const params = new URLSearchParams({
+          action: 'DescribeResourcePools',
+          resourcePoolType: this.activeTab, // 根据当前tab使用不同的资源池类型
+          keywordType: 'resourcePoolName',
+          keyword: this.searchQuery || '',
+          orderBy: this.getOrderByField(),
+          order: this.sortOrder.toUpperCase(),
+          pageNumber: this.currentPage.toString(),
+          pageSize: this.pageSize.toString()
+        });
+        
+        console.log('Making API request with params:', params.toString());
+        const response = await axios.get(`/api?${params.toString()}`);
         console.log('API response received:', response.data);
         const data = response.data;
         
         if (data.error) {
           this.error = data.error;
+          this.loading = false;
           return;
         }
         
-        this.resourcePools = data.result?.resourcePools || [];
+        // 处理新的API响应格式
+        console.log('资源池API完整响应:', JSON.stringify(data, null, 2));
+        
+        // 新接口直接在根级别返回resourcePools数组
+        if (data.resourcePools && Array.isArray(data.resourcePools)) {
+          this.resourcePools = data.resourcePools;
+        } else if (data.result?.resourcePools) {
+          this.resourcePools = data.result.resourcePools;
+        } else if (data.ResourcePools) {
+          this.resourcePools = data.ResourcePools;
+        } else if (data.result?.ResourcePools) {
+          this.resourcePools = data.result.ResourcePools;
+        } else if (Array.isArray(data)) {
+          this.resourcePools = data;
+        } else {
+          console.warn('未识别的资源池API响应格式:', data);
+          this.resourcePools = [];
+        }
+        // 保存API返回的总数量
+        this.apiTotalCount = data.totalCount || 0;
+        
+        // 更新当前tab的计数
+        this.tabCounts[this.activeTab] = this.apiTotalCount;
+        
         console.log('Resource pools loaded:', this.resourcePools.length);
+        console.log('API total count:', this.apiTotalCount);
+        console.log('Loading state before setting to false:', this.loading);
         this.currentPage = 1; // 重置到第一页
       } catch (err) {
         console.error('Error loading resource pools:', err);
         this.error = '加载资源池列表失败: ' + err.message;
       } finally {
+        console.log('Setting loading to false in finally block');
         this.loading = false;
+        console.log('Loading state after setting to false:', this.loading);
       }
     },
     sortBy(key) {
@@ -710,15 +896,38 @@ createApp({
         this.sortKey = key;
         this.sortOrder = 'asc';
       }
+      this.currentPage = 1; // 重置到第一页
+      this.loadResourcePools(); // 重新加载数据
+    },
+    
+    // 搜索方法
+    search() {
+      this.currentPage = 1; // 重置到第一页
+      this.loadResourcePools(); // 重新加载数据
+    },
+    
+    // 搜索输入处理（防抖）
+    onSearchInput() {
+      // 清除之前的定时器
+      if (this.searchTimeout) {
+        clearTimeout(this.searchTimeout);
+      }
+      
+      // 设置新的定时器，500ms后执行搜索
+      this.searchTimeout = setTimeout(() => {
+        this.search();
+      }, 500);
     },
     prevPage() {
       if (this.currentPage > 1) {
         this.currentPage--;
+        this.loadResourcePools(); // 重新加载数据
       }
     },
     nextPage() {
       if (this.currentPage < this.totalPages) {
         this.currentPage++;
+        this.loadResourcePools(); // 重新加载数据
       }
     },
     formatDate(dateStr) {
@@ -831,9 +1040,13 @@ createApp({
       }, 3000);
     }
   },
-  mounted() {
-    console.log('Vue app mounted, loading resource pools...');
-    this.loadResourcePools();
+  async mounted() {
+    console.log('Vue app mounted, preloading tab counts and loading resource pools...');
+    console.log('Initial loading state:', this.loading);
+    // 预加载tab计数
+    await this.preloadTabCounts();
+    // 加载当前tab的资源池数据
+    await this.loadResourcePools();
   }
 }).mount('#app');
 </script>

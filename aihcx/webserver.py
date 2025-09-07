@@ -195,7 +195,7 @@ def proxy_aihc(subpath=None):
             print('找到action参数，开始透传请求...', params['action'])
             # 透传请求
 
-            if params['action'] in ['DescribeResourcePools', 'DescribeResourcePool']:
+            if params['action'] in ['DescribeResourcePools', 'DescribeResourcePool', 'DescribeQueues', 'DescribeQueue']:
                 aihc_client = AihcClient(aihc_sample_conf)
                 response = aihc_client.base_client._aihc_request(
                     http_method=http_method,
@@ -203,7 +203,7 @@ def proxy_aihc(subpath=None):
                     body=body,
                     params=params,
                 )
-                            # 返回响应
+                print('response', response)         # 返回响应
                 return jsonify(json.loads(response.raw_data)), 200
             else:
                 aihc_client = AIHCClient(aihc_sample_conf)
@@ -218,7 +218,7 @@ def proxy_aihc(subpath=None):
                     },
                     body_parser=parse_json
                 )
-                            # 返回响应
+                print('response', response)         # 返回响应
                 return jsonify(to_dict(response)), 200
 
         elif '/v1/' in url_path:
