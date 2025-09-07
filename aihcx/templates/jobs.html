@@ -710,12 +710,19 @@ createApp({
     },
     
     async loadPools() {
+      console.log('loadResourcePools called');
       this.poolsLoading = true;
       try {
-        // 只加载自运维资源池，全托管资源池使用固定的 aihc-serverless
-        console.log('开始加载资源池列表...');
-        const commonRes = await axios.get('/api?action=DescribeResourcePools&resourcePoolType=common&keywordType=resourcePoolName&keyword=&orderBy=createdAt&order=DESC&pageNumber=1&pageSize=100');
-        console.log('资源池API响应:', commonRes.data);
+        // 并行加载两种类型的资源池，让HTTP拦截器处理缓存
+        const [commonRes, dedicatedRes] = await Promise.all([
+          // 加载自运维资源池
+          axios.get('/api?action=DescribeResourcePools&resourcePoolType=common&keywordType=resourcePoolName&keyword=&orderBy=createdAt&order=DESC&pageNumber=1&pageSize=100'),
+          // 加载全托管资源池
+          axios.get('/api?action=DescribeResourcePools&resourcePoolType=dedicatedV2&keywordType=resourcePoolName&keyword=&orderBy=createdAt&order=DESC&pageNumber=1&pageSize=100')
+        ]);
+        
+        console.log('自运维资源池API响应:', commonRes.data);
+        console.log('全托管资源池API响应:', dedicatedRes.data);
         
         // 处理资源池数据
         const processPools = (data, type) => {
@@ -760,15 +767,10 @@ createApp({
         };
         
         const commonPools = processPools(commonRes.data, 'common');
+        const dedicatedPools = processPools(dedicatedRes.data, 'dedicatedV2');
         
-        // 添加固定的全托管资源池
-        const dedicatedPool = {
-          id: 'aihc-serverless',
-          name: '全托管资源池',
-          resourcePoolType: 'dedicatedV2'
-        };
-        
-        this.pools = [...commonPools, dedicatedPool];
+        // 合并所有资源池
+        this.pools = [...commonPools, ...dedicatedPools];
         
         // 如果当前选中的资源池不在新加载的列表中，重置选择
         if (this.selectedPoolId && !this.filteredPools.find(p => p.id === this.selectedPoolId)) {
@@ -778,7 +780,9 @@ createApp({
         // 如果没有选中的资源池，根据当前类型选择
         if (!this.selectedPoolId) {
           if (this.selectedPoolType === 'dedicatedV2') {
-            this.selectedPoolId = 'aihc-serverless';
+            // 查找可用的全托管资源池，如果没有则使用固定的 aihc-serverless
+            const availableDedicated = this.pools.filter(p => p.resourcePoolType === 'dedicatedV2');
+            this.selectedPoolId = availableDedicated.length > 0 ? availableDedicated[0].id : 'aihc-serverless';
           } else if (this.filteredPools.length > 0) {
             this.selectedPoolId = this.filteredPools[0].id;
           }
@@ -846,6 +850,7 @@ createApp({
       return [];
     },
     async loadJobs() {
+      console.log('loadJobs called');
       if (!this.selectedPoolId || this.poolsLoading) return;
       this.loading = true;
       this.error = null;
@@ -893,9 +898,12 @@ createApp({
         }
         
         const url = `/api?${queryParams.toString()}`;
+        console.log('Making API request with params:', queryParams.toString());
+        console.log('Request body:', requestBody);
         
         // 使用axios发送请求，让HTTP拦截器处理缓存
         const res = await axios.post(url, requestBody);
+        console.log('API response received:', res.data);
         const data = res?.data || {};
         
         this.jobs = this.extractJobsFromResponse(data);

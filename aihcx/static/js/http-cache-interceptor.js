@@ -93,7 +93,7 @@
     const cached = window.cacheManager.get(action, cacheKeyParams);
     
     if (cached) {
-      console.log('缓存命中:', action, cached);
+      console.log('缓存命中:', action);
       // 返回缓存数据，阻止实际请求
       return Promise.reject({
         isCached: true,
