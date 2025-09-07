@@ -102,6 +102,69 @@
   max-width: 100px;
   text-align: center;
 }
+.datasets-table th.storage-instance-column {
+  width: 200px;
+  min-width: 200px;
+  max-width: 250px;
+}
+.datasets-table td.storage-instance-column {
+  width: 200px;
+  min-width: 200px;
+  max-width: 250px;
+  padding: 12px 16px;
+}
+
+/* 存储类型徽章样式 */
+.storage-type-badge {
+  display: inline-block;
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.storage-type-badge.pfs {
+  background: #e3f2fd;
+  color: #1976d2;
+  border: 1px solid #bbdefb;
+}
+.storage-type-badge.bos {
+  background: #f3e5f5;
+  color: #7b1fa2;
+  border: 1px solid #ce93d8;
+}
+
+/* 存储实例信息样式 */
+.storage-instance-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.storage-instance-id {
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  font-size: 12px;
+  font-weight: 600;
+  color: #333;
+  background: #f8f9fa;
+  padding: 2px 6px;
+  border-radius: 4px;
+  /* border: 1px solid #e9ecef; */
+  word-break: break-all;
+}
+.storage-path {
+  font-size: 11px;
+  color: #666;
+  background: #f8f9fa;
+  padding: 2px 6px;
+  border-radius: 4px;
+  border: 1px solid #e9ecef;
+  word-break: break-all;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 .datasets-table td.description-cell {
   max-width: 200px;
   overflow: hidden;
@@ -332,6 +395,22 @@
   color: #666;
   font-weight: 500;
 }
+.stats-note {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  background: #f8f9fa;
+  border: 1px solid #e9ecef;
+  border-radius: 8px;
+  margin: 16px 0;
+  font-size: 14px;
+  color: #666;
+}
+.stats-note i {
+  color: #007bff;
+  font-size: 16px;
+}
 .pagination {
   margin-top: 24px;
   text-align: center;
@@ -410,10 +489,6 @@
       <div class="stat-label">总数据集</div>
     </div>
     <div class="stat-item">
-      <div class="stat-number">[[ activeCount ]]</div>
-      <div class="stat-label">可读写</div>
-    </div>
-    <div class="stat-item">
       <div class="stat-number">[[ pfsCount ]]</div>
       <div class="stat-label">PFS存储</div>
     </div>
@@ -421,6 +496,12 @@
       <div class="stat-number">[[ bosCount ]]</div>
       <div class="stat-label">BOS存储</div>
     </div>
+  </div>
+  
+  <!-- 统计信息说明 -->
+  <div v-if="!loading && !error && !hasApiStats" class="stats-note">
+    <i class="fas fa-info-circle"></i>
+    <span>统计信息基于当前页数据，可能不完整</span>
   </div>
 
   <!-- 搜索和筛选 -->
@@ -472,7 +553,7 @@
           @keyup.enter="search"
           @input="onSearchInput"
           class="filter-input" 
-          placeholder="多个实例用逗号分隔"
+          placeholder="输入存储实例ID，多个用逗号分隔"
         >
       </div>
       
@@ -521,6 +602,9 @@
                     存储类型
                     <span v-if="sortKey === 'storageType'">[[ sortOrder === 'asc' ? '↑' : '↓' ]]</span>
                   </th>
+                  <th class="storage-instance-column">
+                    存储实例
+                  </th>
                   <th @click="sortBy('description')">
                     描述
                     <span v-if="sortKey === 'description'">[[ sortOrder === 'asc' ? '↑' : '↓' ]]</span>
@@ -536,7 +620,7 @@
                 </tr>
               </thead>
       <tbody>
-                <tr v-for="dataset in paginatedDatasets" :key="dataset.id">
+                <tr v-for="dataset in sortedDatasets" :key="dataset.id">
           <td>
             <span class="dataset-name" @click="goToDatasetDetail(dataset.id)">[[ dataset.name || 'N/A' ]]</span>
             <br>
@@ -549,7 +633,14 @@
             </span>
           </td>
           <td class="visibility-column" :title="formatVisibility(dataset.visibilityScope)">[[ formatVisibility(dataset.visibilityScope) ]]</td>
-          <td class="storage-column">[[ dataset.storageType || 'N/A' ]]</td>
+          <td class="storage-column">
+            <span :class="['storage-type-badge', dataset.storageType?.toLowerCase()]">
+              [[ dataset.storageType || 'N/A' ]]
+            </span>
+          </td>
+          <td class="storage-instance-column" :title="getStorageInstanceInfo(dataset)">
+            <div class="owner-column">[[ dataset.storageInstance]]</div>
+          </td>
           <td class="description-cell" :data-tooltip="dataset.description || '暂无描述'">[[ dataset.description || '暂无描述' ]]</td>
           <td>[[ formatDate(dataset.createdAt) ]]</td>
           <td>[[ formatDate(dataset.updatedAt) ]]</td>
@@ -603,6 +694,9 @@ createApp({
       sortOrder: 'desc',
       currentPage: 1,
       pageSize: 20,
+      apiTotalCount: 0, // API返回的总数据量
+      apiPfsCount: 0, // API返回的PFS存储数据集数量
+      apiBosCount: 0, // API返回的BOS存储数据集数量
       // 筛选条件
       filters: {
         storageType: '',        // 存储类型
@@ -644,24 +738,26 @@ createApp({
         }
       });
     },
-    paginatedDatasets() {
-      const start = (this.currentPage - 1) * this.pageSize;
-      const end = start + this.pageSize;
-      return this.sortedDatasets.slice(start, end);
-    },
     totalPages() {
-      return Math.ceil(this.filteredDatasets.length / this.pageSize);
+      return Math.ceil(this.apiTotalCount / this.pageSize);
     },
     totalCount() {
-      return this.datasets.length;
-    },
-    activeCount() {
-      return this.datasets.filter(d => d.permission === 'rw').length;
+      return this.apiTotalCount;
     },
     pfsCount() {
+      // 优先使用API返回的统计信息
+      if (this.apiPfsCount > 0) {
+        return this.apiPfsCount;
+      }
+      // 如果没有API统计信息，基于当前页数据计算（可能不准确）
       return this.datasets.filter(d => d.storageType === 'PFS').length;
     },
     bosCount() {
+      // 优先使用API返回的统计信息
+      if (this.apiBosCount > 0) {
+        return this.apiBosCount;
+      }
+      // 如果没有API统计信息，基于当前页数据计算（可能不准确）
       return this.datasets.filter(d => d.storageType === 'BOS').length;
     },
     hasActiveFilters() {
@@ -669,6 +765,10 @@ createApp({
              this.filters.storageType || 
              this.filters.storageInstances || 
              this.filters.importFormat;
+    },
+    hasApiStats() {
+      // 检查是否有API返回的统计信息
+      return this.apiPfsCount > 0 || this.apiBosCount > 0;
     }
   },
   methods: {
@@ -710,13 +810,54 @@ createApp({
         }
         
         this.datasets = data.datasets || data.Datasets || [];
-        console.log('Datasets loaded:', this.datasets.length);
-        this.currentPage = 1; // 重置到第一页
+        this.apiTotalCount = data.totalCount || data.TotalCount || this.datasets.length;
+        
+        // 尝试获取统计信息（如果API提供的话）
+        this.apiPfsCount = data.pfsCount || data.PfsCount || 0;
+        this.apiBosCount = data.bosCount || data.BosCount || 0;
+        
+        console.log('Datasets loaded:', this.datasets.length, 'Total count:', this.apiTotalCount);
+        
+        // 如果API没有提供统计信息，则并行请求PFS和BOS的数量
+        if (this.apiPfsCount === 0 && this.apiBosCount === 0) {
+          this.loadStorageTypeStats();
+        }
       } catch (err) {
         console.error('Error loading datasets:', err);
         this.error = '加载数据集列表失败: ' + err.message;
       } finally {
         this.loading = false;
+      }
+    },
+    
+    // 并行请求PFS和BOS存储类型的数量统计
+    async loadStorageTypeStats() {
+      try {
+        console.log('开始加载存储类型统计信息...');
+        
+        // 并行请求PFS和BOS的数量
+        const [pfsResponse, bosResponse] = await Promise.all([
+          axios.get('/api?action=DescribeDatasets&storageType=PFS&pageNumber=1&pageSize=1'),
+          axios.get('/api?action=DescribeDatasets&storageType=BOS&pageNumber=1&pageSize=1')
+        ]);
+        
+        // 获取PFS数量
+        if (pfsResponse.data && !pfsResponse.data.error) {
+          this.apiPfsCount = pfsResponse.data.totalCount || pfsResponse.data.TotalCount || 0;
+        }
+        
+        // 获取BOS数量
+        if (bosResponse.data && !bosResponse.data.error) {
+          this.apiBosCount = bosResponse.data.totalCount || bosResponse.data.TotalCount || 0;
+        }
+        
+        console.log('存储类型统计加载完成 - PFS:', this.apiPfsCount, 'BOS:', this.apiBosCount);
+        
+      } catch (error) {
+        console.error('加载存储类型统计失败:', error);
+        // 如果请求失败，基于当前页数据计算（降级处理）
+        this.apiPfsCount = this.datasets.filter(d => d.storageType === 'PFS').length;
+        this.apiBosCount = this.datasets.filter(d => d.storageType === 'BOS').length;
       }
     },
     sortBy(key) {
@@ -795,6 +936,23 @@ createApp({
         'ONLY_OWNER': '仅所有者可见'
       };
       return visibilityMap[visibilityScope] || visibilityScope;
+    },
+    getStorageInstanceInfo(dataset) {
+      if (!dataset) return 'N/A';
+      
+      const storageInstance = dataset.storageInstance || dataset.storageInstanceId;
+      const storagePath = dataset.storagePath;
+      const storageType = dataset.storageType;
+      
+      let info = `存储类型: ${storageType || 'N/A'}`;
+      if (storageInstance) {
+        info += `\n存储实例: ${storageInstance}`;
+      }
+      if (storagePath) {
+        info += `\n存储路径: ${storagePath}`;
+      }
+      
+      return info;
     },
     goToDatasetDetail(datasetId) {
       if (datasetId) {

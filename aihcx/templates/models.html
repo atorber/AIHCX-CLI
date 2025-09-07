@@ -53,7 +53,6 @@
 .models-table th.status-column {
   width: 100px;
   min-width: 100px;
-  max-width: 100px;
 }
 .models-table th.type-column {
   width: 120px;
@@ -85,7 +84,6 @@
 .models-table td.status-column {
   width: 100px;
   min-width: 100px;
-  max-width: 100px;
   text-align: center;
 }
 .models-table td.type-column {
@@ -108,6 +106,7 @@
 }
 .status {
   padding: 6px 12px;
+  width: 80px;
   border-radius: 6px;
   font-size: 12px;
   font-weight: 500;
@@ -193,30 +192,6 @@
   box-shadow: 0 0 0 3px rgba(64, 158, 255, 0.1);
   background: #fff;
 }
-.stats {
-  display: flex;
-  gap: 24px;
-  margin-bottom: 24px;
-  padding: 20px;
-  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-  border-radius: 12px;
-  border: 1px solid #dee2e6;
-}
-.stat-item {
-  text-align: center;
-  flex: 1;
-}
-.stat-number {
-  font-size: 28px;
-  font-weight: bold;
-  color: #409eff;
-  margin-bottom: 4px;
-}
-.stat-label {
-  font-size: 13px;
-  color: #666;
-  font-weight: 500;
-}
 .pagination {
   margin-top: 24px;
   text-align: center;
@@ -278,6 +253,15 @@
   opacity: 1;
   transform: scale(1.1);
 }
+@keyframes slideIn {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
 .drawer-overlay {
   position: fixed;
   top: 0;
@@ -297,17 +281,21 @@
 .drawer {
   position: fixed;
   top: 0;
-  right: -500px;
-  width: 500px;
+  right: 0;
+  width: 50vw;
+  max-width: 800px;
+  min-width: 400px;
   height: 100vh;
   background: white;
-  box-shadow: -5px 0 25px rgba(0, 0, 0, 0.15);
+  box-shadow: -2px 0 20px rgba(0, 0, 0, 0.15);
   z-index: 10000;
-  transition: right 0.3s ease;
-  overflow-y: auto;
+  display: none;
+  flex-direction: column;
+  overflow: hidden;
+  animation: slideIn 0.3s ease-out;
 }
 .drawer.show {
-  right: 0;
+  display: flex;
 }
 .drawer-header {
   padding: 20px 24px;
@@ -395,33 +383,15 @@
 
 {% block content %}
 <div id="app">
-  <!-- 统计信息 -->
-  <div class="stats" v-if="!loading && !error">
-    <div class="stat-item">
-      <div class="stat-number">[[ totalCount ]]</div>
-      <div class="stat-label">总模型</div>
-    </div>
-    <div class="stat-item">
-      <div class="stat-number">[[ activeCount ]]</div>
-      <div class="stat-label">运行中</div>
-    </div>
-    <div class="stat-item">
-      <div class="stat-number">[[ pendingCount ]]</div>
-      <div class="stat-label">等待中</div>
-    </div>
-    <div class="stat-item">
-      <div class="stat-number">[[ failedCount ]]</div>
-      <div class="stat-label">失败</div>
-    </div>
-  </div>
-
   <!-- 搜索和刷新 -->
   <div class="search-box">
     <input 
       type="text" 
       class="search-input" 
       v-model="searchQuery" 
-             placeholder="搜索模型名称或所有者..."
+      @input="onSearchInput"
+      @keyup.enter="search"
+      placeholder="搜索模型名称或所有者..."
     >
     <button 
       class="refresh-btn" 
@@ -444,7 +414,7 @@
   </div>
 
   <!-- 模型表格 -->
-  <div v-if="!loading && !error && filteredModels.length > 0">
+  <div v-if="!loading && !error && sortedModels.length > 0">
     <table class="models-table">
       <thead>
         <tr>
@@ -481,7 +451,7 @@
         </tr>
       </thead>
       <tbody>
-        <tr v-for="model in paginatedModels" :key="model.id">
+        <tr v-for="model in sortedModels" :key="model.id">
           <td>
             <span class="model-name" @click="showModelDetail(model)">[[ model.name || 'N/A' ]]</span>
             <br>
@@ -521,7 +491,7 @@
   </div>
 
   <!-- 空状态 -->
-  <div class="empty-state" v-if="!loading && !error && filteredModels.length === 0">
+  <div class="empty-state" v-if="!loading && !error && sortedModels.length === 0">
     <h3>暂无模型</h3>
     <p v-if="searchQuery">没有找到匹配"[[ searchQuery ]]"的模型</p>
     <p v-else>您还没有创建任何模型</p>
@@ -609,27 +579,19 @@ createApp({
       loading: false,
       error: null,
       searchQuery: '',
+      searchTimeout: null,
       sortKey: 'createdAt',
       sortOrder: 'desc',
       currentPage: 1,
       pageSize: 20,
+      apiTotalCount: 0, // API返回的总数据量
       showDrawer: false,
       selectedModel: null
     }
   },
   computed: {
-    filteredModels() {
-      if (!this.searchQuery) {
-        return this.models;
-      }
-      const query = this.searchQuery.toLowerCase();
-             return this.models.filter(model => 
-         (model.name && model.name.toLowerCase().includes(query)) ||
-         (model.ownerName && model.ownerName.toLowerCase().includes(query))
-       );
-    },
     sortedModels() {
-      return [...this.filteredModels].sort((a, b) => {
+      return [...this.models].sort((a, b) => {
         let aVal = a[this.sortKey] || '';
         let bVal = b[this.sortKey] || '';
         
@@ -648,26 +610,9 @@ createApp({
         }
       });
     },
-    paginatedModels() {
-      const start = (this.currentPage - 1) * this.pageSize;
-      const end = start + this.pageSize;
-      return this.sortedModels.slice(start, end);
-    },
     totalPages() {
-      return Math.ceil(this.filteredModels.length / this.pageSize);
+      return Math.ceil(this.apiTotalCount / this.pageSize);
     },
-         totalCount() {
-       return this.models.length;
-     },
-     activeCount() {
-       return this.models.filter(m => m.initSource === 'UserUpload' || m.initSource === 'ModelHub' || m.initSource === 'Import').length;
-     },
-     pendingCount() {
-       return this.models.filter(m => m.initSource === 'Training').length;
-     },
-     failedCount() {
-       return this.models.filter(m => !m.initSource || m.initSource === 'Failed').length;
-     }
   },
   methods: {
     async loadModels() {
@@ -677,7 +622,20 @@ createApp({
       
       try {
         console.log('Making API request...');
-        const response = await axios.get('/api?action=DescribeModels');
+        
+        // 构建请求参数
+        const params = new URLSearchParams({
+          action: 'DescribeModels',
+          pageNumber: this.currentPage.toString(),
+          pageSize: this.pageSize.toString()
+        });
+        
+        // 添加搜索关键词参数
+        if (this.searchQuery.trim()) {
+          params.append('keyword', this.searchQuery.trim());
+        }
+        
+        const response = await axios.get(`/api?${params.toString()}`);
         console.log('API response received:', response.data);
         const data = response.data;
         
@@ -687,14 +645,33 @@ createApp({
         }
         
         this.models = data.models || data.Models || [];
-        console.log('Models loaded:', this.models.length);
-        this.currentPage = 1; // 重置到第一页
+        this.apiTotalCount = data.totalCount || data.TotalCount || this.models.length;
+        console.log('Models loaded:', this.models.length, 'Total count:', this.apiTotalCount);
       } catch (err) {
         console.error('Error loading models:', err);
         this.error = '加载模型列表失败: ' + err.message;
       } finally {
         this.loading = false;
       }
+    },
+    
+    // 搜索输入处理（防抖）
+    onSearchInput() {
+      // 清除之前的定时器
+      if (this.searchTimeout) {
+        clearTimeout(this.searchTimeout);
+      }
+      
+      // 设置新的定时器，500ms后执行搜索
+      this.searchTimeout = setTimeout(() => {
+        this.search();
+      }, 500);
+    },
+    
+    // 搜索方法
+    search() {
+      this.currentPage = 1; // 重置到第一页
+      this.loadModels();
     },
     sortBy(key) {
       if (this.sortKey === key) {
@@ -703,15 +680,19 @@ createApp({
         this.sortKey = key;
         this.sortOrder = 'asc';
       }
+      this.currentPage = 1; // 重置到第一页
+      this.loadModels(); // 重新加载数据
     },
     prevPage() {
       if (this.currentPage > 1) {
         this.currentPage--;
+        this.loadModels();
       }
     },
     nextPage() {
       if (this.currentPage < this.totalPages) {
         this.currentPage++;
+        this.loadModels();
       }
     },
     formatDate(dateStr) {
