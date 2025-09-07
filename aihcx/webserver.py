@@ -106,6 +106,10 @@ def jobs():
     default_pool_id = cfg.get('pool') or ''
     return render_template('jobs.html', default_pool_id=default_pool_id)
 
+@app.route('/jobs/<job_id>', methods=['GET'])
+def job_detail(job_id):
+    return render_template('job_detail.html', job_id=job_id)
+
 @app.route('/', methods=['GET'])
 def welcome():
     try:

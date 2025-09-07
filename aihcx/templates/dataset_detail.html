@@ -1206,6 +1206,51 @@
     font-size: 16px;
     color: #adb5bd;
   }
+  
+  /* 状态样式 */
+  .status {
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 500;
+    text-transform: uppercase;
+  }
+  
+  .status-pending {
+    background-color: #fff3cd;
+    color: #856404;
+    border: 1px solid #ffeaa7;
+  }
+  
+  .status-running {
+    background-color: #d1ecf1;
+    color: #0c5460;
+    border: 1px solid #bee5eb;
+  }
+  
+  .status-success {
+    background-color: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
+  }
+  
+  .status-error {
+    background-color: #f8d7da;
+    color: #721c24;
+    border: 1px solid #f5c6cb;
+  }
+  
+  .status-cancelled {
+    background-color: #e2e3e5;
+    color: #383d41;
+    border: 1px solid #d6d8db;
+  }
+  
+  .status-unknown {
+    background-color: #f8f9fa;
+    color: #6c757d;
+    border: 1px solid #dee2e6;
+  }
 </style>
 {% endblock %}
 
@@ -1281,6 +1326,9 @@
             </div>
             <div class="nav-tab" :class="{active: activeTab === 'versions'}" @click="switchTab('versions')">
                 版本列表
+            </div>
+            <div class="nav-tab" :class="{active: activeTab === 'imports'}" @click="switchTab('imports')">
+                导入记录
             </div>
       <div class="nav-tab" :class="{active: activeTab === 'resourcePools'}" @click="switchTab('resourcePools')" v-if="isPfsDataset">
         可用资源池
@@ -1391,6 +1439,71 @@
                     <!-- 无版本数据 -->
                     <div v-if="!versionsLoading && !versionsError && versions.length === 0" class="loading">
                         暂无版本数据
+                    </div>
+                </div>
+            </div>
+
+            <!-- 导入记录Tab -->
+            <div v-show="activeTab === 'imports'">
+                <div class="mt-3">
+                    <!-- 资源池载入状态提示 -->
+                    <div v-if="!resourcePoolCacheLoaded" class="resource-pool-loading-info">
+                        <i class="fas fa-spinner fa-spin"></i>
+                        <span>[[ resourcePoolLoadingStatus ]]</span>
+                    </div>
+                    
+                    <!-- 导入记录加载状态 -->
+                    <div v-if="importsLoading" class="loading">
+                        <i class="fas fa-spinner fa-spin"></i> 导入记录加载中...
+                    </div>
+                    
+                    <!-- 导入记录错误信息 -->
+                    <div v-if="importsError" class="error">
+                        <i class="fas fa-exclamation-circle"></i> [[ importsError ]]
+                    </div>
+                    
+                    <!-- 导入记录列表 -->
+                    <div v-if="resourcePoolCacheLoaded && !importsLoading && !importsError && imports.length > 0">
+                        <div class="table-container">
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th>任务名称</th>
+                                        <th>状态</th>
+                                        <th>创建时间</th>
+                                        <th>完成时间</th>
+                                        <th>操作</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr v-for="importJob in imports" :key="importJob.jobId">
+                                        <td>
+                                            <span class="job-name">[[ importJob.name ]]</span>
+                                            <br>
+                                            <span class="job-id">[[ importJob.jobId ]]</span>
+                                        </td>
+                                        <td>
+                                            <span class="status" :class="statusClass(importJob.status)">
+                                                [[ statusText(importJob.status) ]]
+                                            </span>
+                                        </td>
+                                        <td>[[ formatDate(importJob.createdAt) ]]</td>
+                                        <td>[[ formatDate(importJob.finishedAt) ]]</td>
+                                        <td>
+                                            <button class="btn-primary" @click="viewImportJob(importJob)">
+                                                查看详情
+                                            </button>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    
+                    <!-- 空状态 -->
+                    <div v-if="resourcePoolCacheLoaded && !importsLoading && !importsError && imports.length === 0" class="empty-state">
+                        <i class="fas fa-inbox"></i>
+                        <p>暂无导入记录</p>
                     </div>
                 </div>
             </div>
@@ -1724,6 +1837,11 @@ createApp({
       currentPage: 1,
       pageSize: 10,
       totalVersions: 0,
+      
+      // 导入记录相关数据
+      imports: [],
+      importsLoading: false,
+      importsError: null,
       
         // 导入数据相关数据
         importMethod: 'existing', // 默认选中已有数据集
@@ -2495,11 +2613,124 @@ createApp({
         this.versionsLoading = false;
       }
     },
+    async loadImports() {
+      console.log('loadImports called for dataset:', this.datasetId);
+      this.importsLoading = true;
+      this.importsError = null;
+      
+      try {
+        // 生成数据集ID的前缀用于搜索任务名称
+        const sanitizedDatasetId = this.datasetId.toLowerCase().replace(/[^a-z0-9.-]/g, '-');
+        const searchPrefix = `${sanitizedDatasetId}-`;
+        
+        // 等待页面资源池列表加载完成
+        console.log('等待页面资源池列表加载完成...');
+        const allResourcePools = await this.waitForResourcePools();
+        
+        if (allResourcePools.length === 0) {
+          throw new Error('无法获取资源池列表，请稍后重试');
+        }
+        
+        console.log('使用页面已加载的资源池列表:', allResourcePools.length, '个资源池');
+        console.log('搜索关键字:', searchPrefix);
+        
+        // 循环查询所有资源池的任务
+        const allImports = [];
+        const promises = allResourcePools.map(async (pool) => {
+          try {
+            const poolId = pool.resourcePoolId || pool.id;
+            const poolType = pool.resourcePoolType || pool.type;
+            
+            // 托管资源池类型统一使用 aihc-serverless
+            const actualPoolId = poolType === 'dedicatedV2' ? 'aihc-serverless' : poolId;
+            const requestBody = {
+              keywordType: 'name',
+              keyword: searchPrefix
+            };
+            console.log(`Querying jobs in resource pool: ${poolId} (type: ${poolType}, actual: ${actualPoolId})`);
+            
+            const response = await axios.post(`/api?action=DescribeJobs&resourcePoolId=${actualPoolId}`, requestBody);
+            
+            if (response.data.error) {
+              console.warn(`Failed to query jobs in pool ${poolId}:`, response.data.error);
+              return [];
+            }
+            
+            const jobs = response.data.jobs || response.data.result?.jobs || [];
+            console.log(`Found ${jobs.length} jobs in pool ${poolId} (${poolType})`);
+            console.log(`Jobs in pool ${poolId}:`, jobs.map(job => ({ name: job.name, jobId: job.jobId })));
+            return jobs;
+          } catch (err) {
+            console.warn(`Error querying pool ${pool.resourcePoolId || pool.id}:`, err);
+            return [];
+          }
+        });
+        
+        // 等待所有查询完成
+        const results = await Promise.all(promises);
+        
+        // 合并所有结果
+        results.forEach(jobs => {
+          allImports.push(...jobs);
+        });
+        
+        console.log('合并前所有任务数量:', allImports.length);
+        console.log('合并前所有任务名称:', allImports.map(job => job.name || job.jobName));
+        
+        // 直接使用API返回的任务列表，因为关键字搜索已经是包含匹配
+        this.imports = allImports;
+        
+        console.log('最终导入任务数量:', this.imports.length);
+        console.log('Loaded imports from all pools:', this.imports);
+        
+      } catch (err) {
+        console.error('Failed to load imports:', err);
+        this.importsError = '加载导入记录失败: ' + err.message;
+      } finally {
+        this.importsLoading = false;
+      }
+    },
+    async waitForResourcePools() {
+      // 如果资源池已经加载完成，直接返回
+      if (this.resourcePoolCacheLoaded && this.resourcePools && this.resourcePools.length > 0) {
+        console.log('资源池已加载完成，直接使用现有数据');
+        return this.resourcePools;
+      }
+      
+      // 如果正在加载中，等待加载完成
+      if (this.resourcePoolLoadingStatus && this.resourcePoolLoadingStatus.includes('正在')) {
+        console.log('资源池正在加载中，等待加载完成...');
+        return new Promise((resolve) => {
+          const checkInterval = setInterval(() => {
+            if (this.resourcePoolCacheLoaded && this.resourcePools && this.resourcePools.length > 0) {
+              clearInterval(checkInterval);
+              console.log('资源池加载完成，继续执行导入记录查询');
+              resolve(this.resourcePools);
+            }
+          }, 500);
+          
+          // 设置超时，避免无限等待
+          setTimeout(() => {
+            clearInterval(checkInterval);
+            console.warn('等待资源池加载超时，使用空列表');
+            resolve([]);
+          }, 30000); // 30秒超时
+        });
+      }
+      
+      // 如果既没有加载完成也没有在加载，返回空列表
+      console.warn('资源池未加载且未在加载中，返回空列表');
+      return [];
+    },
     switchTab(tabName) {
       this.activeTab = tabName;
       // 如果切换到版本列表tab且版本列表为空，则加载版本列表
       if (tabName === 'versions' && this.versions.length === 0 && !this.versionsError) {
         this.loadVersions();
+      }
+      // 如果切换到导入记录tab且导入记录为空，则加载导入记录
+      if (tabName === 'imports' && this.imports.length === 0 && !this.importsError) {
+        this.loadImports();
       }
         // 如果切换到资源池tab，检查并准备可用资源池数据
         if (tabName === 'resourcePools' && this.isPfsDataset) {
@@ -2937,7 +3168,19 @@ createApp({
         // 标记资源池缓存加载完成
         this.resourcePoolCacheLoaded = true;
         this.resourcePoolLoadingStatus = `资源池数据加载完成 (${successCount}/${totalCount})，导入数据功能已可用`;
+        
+        // 合并所有类型的资源池到 this.resourcePools
+        this.resourcePools = [];
+        resourcePoolTypes.forEach(poolType => {
+          if (this.resourcePoolCache[poolType]) {
+            this.resourcePools.push(...this.resourcePoolCache[poolType]);
+          }
+        });
+        console.log('资源池列表合并完成，总计:', this.resourcePools.length, '个资源池');
         console.log('资源池缓存预加载完成，导入数据按钮已启用');
+        
+        // 触发资源池加载完成事件
+        this.$emit('resourcePoolsLoaded');
 
         // 延迟隐藏提示信息
         setTimeout(() => {
@@ -3036,7 +3279,10 @@ echo "数据导入任务完成"`;
       }
       
         // 构建训练任务请求参数（参考AIHC文档格式）
-        const jobName = `${this.datasetId}-${this.formData.datasetVersion}-${Date.now()}`;
+        // 确保任务名称符合 DNS-1123 子域名规范：只能包含小写字母、数字、连字符和点号
+        const sanitizedDatasetId = this.datasetId.toLowerCase().replace(/[^a-z0-9.-]/g, '-');
+        const sanitizedVersion = this.formData.datasetVersion.toLowerCase().replace(/[^a-z0-9.-]/g, '-');
+        const jobName = `${sanitizedDatasetId}-${sanitizedVersion}-${Date.now()}`;
         const datasource = this.getDatasource();
       const requestParams = {
           name: jobName,
@@ -3072,8 +3318,14 @@ echo "数据导入任务完成"`;
             enableRDMA: false
           },
           labels: [
-            "data-import",
-            `dataset-${this.datasetId}`
+            {
+              "key": "type",
+              "value": "data-import"
+            },
+            {
+              "key": "dataset",
+              "value": `dataset-${this.datasetId}`
+            }
           ],
           "datasource": datasource
         };
@@ -3131,14 +3383,14 @@ echo "数据导入任务完成"`;
             type: targetDatasetType,
             name: targetDatasetName,
             sourcePath: targetDatasetPath,
-            mountPath: targetDatasetInfo.mountPath
+            mountPath: '/mnt/target'
           },
           // 源数据集 DataSource
           {
             type: sourceDatasetType,
             name: sourceDatasetName,
             sourcePath: sourceDatasetPath,
-            mountPath: sourceDatasetInfo.mountPath
+            mountPath: '/mnt/source'
           }
         ]
     },
@@ -3150,6 +3402,35 @@ echo "数据导入任务完成"`;
       } catch (e) {
         return dateStr;
       }
+    },
+    statusText(status) {
+      const statusMap = {
+        'Pending': '等待中',
+        'Running': '运行中',
+        'Succeeded': '成功',
+        'Failed': '失败',
+        'Cancelled': '已取消',
+        'Unknown': '未知'
+      };
+      return statusMap[status] || status || '未知';
+    },
+    statusClass(status) {
+      const classMap = {
+        'Pending': 'status-pending',
+        'Running': 'status-running',
+        'Succeeded': 'status-success',
+        'Failed': 'status-error',
+        'Cancelled': 'status-cancelled',
+        'Unknown': 'status-unknown'
+      };
+      return classMap[status] || 'status-unknown';
+    },
+    viewImportJob(importJob) {
+      // 从任务数据中获取资源池ID
+      const resourcePoolId = importJob.resourcePoolId || 'aihc-serverless';
+      
+      // 跳转到任务详情页面，传递资源池ID和来源页面参数
+      window.location.href = `/jobs/${importJob.jobId}?resourcePoolId=${resourcePoolId}&from=imports&datasetId=${this.datasetId}`;
     },
     formatVisibility(visibilityScope) {
       if (!visibilityScope) return 'N/A';

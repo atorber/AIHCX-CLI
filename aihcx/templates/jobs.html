@@ -428,7 +428,7 @@
     <!-- <select class="select" v-model="selectedQueue" @change="onQueueChange" :disabled="!selectedPoolId">
       <option value="">全部队列</option>
     </select> -->
-    <select class="select" v-model="selectedStatus" @change="onStatusChange">
+    <!-- <select class="select" v-model="selectedStatus" @change="onStatusChange">
       <option value="">全部状态</option>
       <option value="running">运行中</option>
       <option value="pending">等待中</option>
@@ -436,7 +436,7 @@
       <option value="failed">失败</option>
       <option value="created">已创建</option>
       <option value="creating">创建中</option>
-    </select>
+    </select> -->
     <input class="search-input" v-model="searchQuery" @input="onSearchInput" placeholder="搜索任务名称或ID..." />
     <button class="refresh-btn" @click="loadJobs" :disabled="loading || poolsLoading">[[ loading ? '加载中...' : '刷新' ]]</button>
   </div>
@@ -988,40 +988,12 @@ createApp({
       this.loadJobs();
     },
     // 显示任务详情
-    async showJobDetail(job) {
-      this.showDetailDrawer = true;
-      this.detailLoading = true;
-      this.detailError = null;
-      this.jobDetail = null;
+    showJobDetail(job) {
+      // 确定实际使用的资源池ID
+      const actualPoolId = this.selectedPoolType === 'dedicatedV2' ? 'aihc-serverless' : this.selectedPoolId;
       
-      try {
-        // 确定实际使用的资源池ID
-        const actualPoolId = this.selectedPoolType === 'dedicatedV2' ? 'aihc-serverless' : this.selectedPoolId;
-        
-        // 构建查询参数
-        const queryParams = new URLSearchParams({
-          action: 'DescribeJob',
-          resourcePoolId: actualPoolId
-        });
-        
-        // 构建请求体
-        const requestBody = {
-          jobId: job.jobId,
-          needDetail: true // 获取详细信息，包括Pod列表
-        };
-        
-        const url = `/api?${queryParams.toString()}`;
-        const res = await axios.post(url, requestBody);
-        const data = res?.data || {};
-        
-        // 处理任务详情数据
-        this.jobDetail = this.processJobDetail(data);
-      } catch (e) {
-        this.detailError = '加载任务详情失败: ' + (e.response?.data?.error || e.message || e);
-        console.error('Failed to load job detail:', e);
-      } finally {
-        this.detailLoading = false;
-      }
+      // 跳转到任务详情页面，传递资源池ID和来源页面参数
+      window.location.href = `/jobs/${job.jobId}?resourcePoolId=${actualPoolId}&from=jobs`;
     },
     // 关闭详情抽屉
     closeDetailDrawer() {

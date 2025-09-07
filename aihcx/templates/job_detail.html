@@ -1,0 +1,679 @@
+{% extends "base.html" %}
+{% from "components/navigation.html" import navigation %}
+
+{% block title %}AIHCX 任务详情{% endblock %}
+
+{% block header_title %}📋 任务详情{% endblock %}
+{% block header_subtitle %}查看训练任务详细信息{% endblock %}
+
+{% block extra_css %}
+<style>
+    .action-bar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+    }
+    
+    .btn-back {
+        background: #6c757d;
+        color: white;
+        border: none;
+        padding: 8px 16px;
+        border-radius: 6px;
+        cursor: pointer;
+        text-decoration: none;
+        display: inline-block;
+        font-size: 14px;
+    }
+    
+    .btn-back:hover {
+        background: #5a6268;
+    }
+    
+    .job-card {
+        background: var(--panel-bg);
+        border-radius: var(--radius);
+        box-shadow: var(--shadow);
+        border: 1px solid var(--border);
+        margin-bottom: 24px;
+        overflow: hidden;
+    }
+    
+    .job-card-header {
+        background: #f8f9fa;
+        padding: 16px 24px;
+        border-bottom: 1px solid var(--border);
+    }
+    
+    .job-card-header h5 {
+        margin: 0;
+        font-size: 18px;
+        font-weight: 600;
+        color: var(--text);
+    }
+    
+    .job-card-body {
+        padding: 24px;
+    }
+    
+    .info-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 20px;
+    }
+    
+    .info-item {
+        margin-bottom: 16px;
+    }
+    
+    .info-label {
+        font-weight: 600;
+        color: #495057;
+        margin-bottom: 4px;
+        font-size: 14px;
+    }
+    
+    .info-value {
+        font-size: 15px;
+        color: var(--text);
+        word-break: break-all;
+    }
+    
+    .status {
+        padding: 4px 8px;
+        border-radius: 4px;
+        font-size: 12px;
+        font-weight: 500;
+        text-transform: uppercase;
+    }
+    
+    .status-pending {
+        background-color: #fff3cd;
+        color: #856404;
+        border: 1px solid #ffeaa7;
+    }
+    
+    .status-running {
+        background-color: #d1ecf1;
+        color: #0c5460;
+        border: 1px solid #bee5eb;
+    }
+    
+    .status-success {
+        background-color: #d4edda;
+        color: #155724;
+        border: 1px solid #c3e6cb;
+    }
+    
+    .status-error {
+        background-color: #f8d7da;
+        color: #721c24;
+        border: 1px solid #f5c6cb;
+    }
+    
+    .status-cancelled {
+        background-color: #e2e3e5;
+        color: #383d41;
+        border: 1px solid #d6d8db;
+    }
+    
+    .status-unknown {
+        background-color: #f8f9fa;
+        color: #6c757d;
+        border: 1px solid #dee2e6;
+    }
+    
+    .loading {
+        text-align: center;
+        padding: 40px;
+        color: var(--muted);
+    }
+    
+    .error {
+        text-align: center;
+        padding: 40px;
+        color: #dc3545;
+        background: #f8d7da;
+        border: 1px solid #f5c6cb;
+        border-radius: 8px;
+        margin: 20px 0;
+    }
+    
+    .empty-state {
+        text-align: center;
+        padding: 40px;
+        color: var(--muted);
+    }
+    
+    .empty-state i {
+        font-size: 48px;
+        color: #adb5bd;
+        margin-bottom: 16px;
+    }
+    
+    .command-container {
+        background: #f8f9fa;
+        border: 1px solid #e9ecef;
+        border-radius: 6px;
+        padding: 16px;
+        font-family: 'Courier New', monospace;
+        font-size: 13px;
+        white-space: pre-wrap;
+        word-break: break-all;
+        max-height: 300px;
+        overflow-y: auto;
+    }
+    
+    .labels-container {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+    
+    .label-tag {
+        background: #e9ecef;
+        color: #495057;
+        padding: 4px 8px;
+        border-radius: 4px;
+        font-size: 12px;
+        font-family: monospace;
+    }
+    
+    .env-container {
+        background: #f8f9fa;
+        border: 1px solid #e9ecef;
+        border-radius: 6px;
+        padding: 16px;
+    }
+    
+    .env-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 8px 0;
+        border-bottom: 1px solid #e9ecef;
+    }
+    
+    .env-item:last-child {
+        border-bottom: none;
+    }
+    
+    .env-name {
+        font-weight: 600;
+        color: #495057;
+        font-family: monospace;
+        font-size: 13px;
+    }
+    
+    .env-value {
+        color: var(--text);
+        font-family: monospace;
+        font-size: 13px;
+        word-break: break-all;
+        max-width: 60%;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div id="app">
+    <div class="page-container">
+        <!-- 操作栏 -->
+        <div class="action-bar">
+            <a :href="backUrl" class="btn-back">
+                [[ backText ]]
+            </a>
+        </div>
+
+        <!-- 加载状态 -->
+        <div v-if="loading" class="loading">
+            <i class="fas fa-spinner fa-spin"></i> 任务详情加载中...
+        </div>
+
+        <!-- 错误信息 -->
+        <div v-if="error" class="error">
+            <i class="fas fa-exclamation-circle"></i> [[ error ]]
+        </div>
+
+        <!-- 任务详情 -->
+        <div v-if="jobDetail && !loading && !error">
+            <!-- 基本信息 -->
+            <div class="job-card">
+                <div class="job-card-header">
+                    <h5>基本信息</h5>
+                </div>
+                <div class="job-card-body">
+                    <div class="info-grid">
+                        <div class="info-item">
+                            <div class="info-label">任务名称</div>
+                            <div class="info-value">[[ jobDetail.name ]]</div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-label">任务ID</div>
+                            <div class="info-value">[[ jobDetail.jobId ]]</div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-label">状态</div>
+                            <div class="info-value">
+                                <span class="status" :class="statusClass(jobDetail.status)">
+                                    [[ statusText(jobDetail.status) ]]
+                                </span>
+                            </div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-label">任务类型</div>
+                            <div class="info-value">[[ jobDetail.jobType ]]</div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-label">优先级</div>
+                            <div class="info-value">[[ jobDetail.priority ]]</div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-label">队列</div>
+                            <div class="info-value">[[ jobDetail.queueName ]]</div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-label">资源池ID</div>
+                            <div class="info-value">[[ jobDetail.resourcePoolId ]]</div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-label">创建时间</div>
+                            <div class="info-value">[[ formatDate(jobDetail.createdAt) ]]</div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-label">完成时间</div>
+                            <div class="info-value">[[ formatDate(jobDetail.finishedAt) ]]</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 任务规格 -->
+            <div class="job-card" v-if="jobDetail.jobSpec">
+                <div class="job-card-header">
+                    <h5>任务规格</h5>
+                </div>
+                <div class="job-card-body">
+                    <div class="info-grid">
+                        <div class="info-item">
+                            <div class="info-label">镜像</div>
+                            <div class="info-value">[[ jobDetail.jobSpec.image ]]</div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-label">副本数</div>
+                            <div class="info-value">[[ jobDetail.jobSpec.replicas ]]</div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-label">启用RDMA</div>
+                            <div class="info-value">[[ jobDetail.jobSpec.enableRDMA ? '是' : '否' ]]</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 执行命令 -->
+            <div class="job-card" v-if="jobDetail.command">
+                <div class="job-card-header">
+                    <h5>执行命令</h5>
+                </div>
+                <div class="job-card-body">
+                    <div class="command-container">[[ jobDetail.command ]]</div>
+                </div>
+            </div>
+
+            <!-- 环境变量 -->
+            <div class="job-card" v-if="jobDetail.jobSpec && jobDetail.jobSpec.envs && jobDetail.jobSpec.envs.length > 0">
+                <div class="job-card-header">
+                    <h5>环境变量</h5>
+                </div>
+                <div class="job-card-body">
+                    <div class="env-container">
+                        <div class="env-item" v-for="env in jobDetail.jobSpec.envs" :key="env.name">
+                            <span class="env-name">[[ env.name ]]</span>
+                            <span class="env-value">[[ env.value ]]</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 标签 -->
+            <div class="job-card" v-if="jobDetail.labels && jobDetail.labels.length > 0">
+                <div class="job-card-header">
+                    <h5>标签</h5>
+                </div>
+                <div class="job-card-body">
+                    <div class="labels-container">
+                        <span class="label-tag" v-for="label in jobDetail.labels" :key="label.key">
+                            [[ label.key ]]: [[ label.value ]]
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Pod信息 -->
+            <div class="job-card" v-if="jobDetail.pods && jobDetail.pods.length > 0">
+                <div class="job-card-header">
+                    <h5>Pod信息</h5>
+                </div>
+                <div class="job-card-body">
+                    <div v-for="pod in jobDetail.pods" :key="pod.name" style="margin-bottom: 16px;">
+                        <div class="info-item">
+                            <div class="info-label">Pod名称</div>
+                            <div class="info-value">[[ pod.name ]]</div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-label">状态</div>
+                            <div class="info-value">
+                                <span class="status" :class="statusClass(pod.status)">
+                                    [[ statusText(pod.status) ]]
+                                </span>
+                            </div>
+                        </div>
+                        <div class="info-item" v-if="pod.nodeName">
+                            <div class="info-label">节点</div>
+                            <div class="info-value">[[ pod.nodeName ]]</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 空状态 -->
+        <div v-if="!loading && !error && !jobDetail" class="empty-state">
+            <i class="fas fa-inbox"></i>
+            <p>未找到任务详情</p>
+        </div>
+    </div>
+</div>
+
+<script>
+const { createApp } = Vue;
+
+createApp({
+  delimiters: ['[[', ']]'],
+  data() {
+    return {
+      jobId: null,
+      jobDetail: null,
+      loading: false,
+      error: null,
+      fromPage: null,
+      datasetId: null,
+      backUrl: '/jobs',
+      backText: '← 返回任务列表'
+    }
+  },
+  methods: {
+    async loadJobDetail() {
+      this.loading = true;
+      this.error = null;
+      
+      try {
+        // 从URL参数获取jobId和resourcePoolId
+        const urlParams = new URLSearchParams(window.location.search);
+        // 从URL路径中提取jobId: /jobs/job-xxx -> job-xxx
+        const pathParts = window.location.pathname.split('/');
+        this.jobId = urlParams.get('jobId') || pathParts[pathParts.length - 1];
+        
+        
+        if (!this.jobId) {
+          throw new Error('缺少任务ID参数');
+        }
+        
+        // 获取资源池ID（从URL参数或默认值）
+        const resourcePoolId = urlParams.get('resourcePoolId') || 'aihc-serverless';
+        
+        // 构建查询参数
+        const queryParams = new URLSearchParams({
+          action: 'DescribeJob',
+          resourcePoolId: resourcePoolId
+        });
+        
+        // 构建请求体
+        const requestBody = {
+          jobId: this.jobId,
+          needDetail: true
+        };
+        
+        const url = `/api?${queryParams.toString()}`;
+        
+        const res = await axios.post(url, requestBody);
+        const data = res?.data || {};
+        
+        
+        // 处理任务详情数据
+        this.jobDetail = this.processJobDetail(data);
+      } catch (e) {
+        this.error = '加载任务详情失败: ' + (e.response?.data?.error || e.message || e);
+        console.error('Failed to load job detail:', e);
+      } finally {
+        this.loading = false;
+      }
+    },
+    
+    processJobDetail(data) {
+      // 尝试从不同的响应结构中提取任务详情
+      const job = data?.result || data?.job || data?.Job || data;
+      
+      if (!job) {
+        throw new Error('无法解析任务详情数据');
+      }
+      
+      return {
+        jobId: job.jobId || job.id || job.jobID || '',
+        name: job.name || job.jobName || '',
+        status: job.status || job.state || job.phase || '',
+        jobType: job.jobType || job.type || '',
+        priority: job.priority || '',
+        queueName: job.queueName || job.queue || '',
+        resourcePoolId: job.resourcePoolId || job.resourcePool || '',
+        description: job.description || job.desc || '',
+        createdAt: job.createdAt || job.createdTime || job.creationTime || '',
+        updatedAt: job.updatedAt || job.updatedTime || job.updateTime || '',
+        finishedAt: job.finishedAt || job.finishedTime || job.completionTime || '',
+        command: job.command || '',
+        jobSpec: job.jobSpec || job.spec || {},
+        labels: job.labels || [],
+        pods: job.pods || job.Pods || job.podList || []
+      };
+    },
+    
+    statusText(status) {
+      const statusMap = {
+        'Pending': '等待中',
+        'Running': '运行中',
+        'Succeeded': '成功',
+        'Failed': '失败',
+        'Cancelled': '已取消',
+        'ManualTermination': '手动终止',
+        'Unknown': '未知'
+      };
+      return statusMap[status] || status || '未知';
+    },
+    
+    statusClass(status) {
+      const classMap = {
+        'Pending': 'status-pending',
+        'Running': 'status-running',
+        'Succeeded': 'status-success',
+        'Failed': 'status-error',
+        'Cancelled': 'status-cancelled',
+        'ManualTermination': 'status-cancelled',
+        'Unknown': 'status-unknown'
+      };
+      return classMap[status] || 'status-unknown';
+    },
+    
+    formatDate(dateStr) {
+      if (!dateStr) return 'N/A';
+      try {
+        const date = new Date(dateStr);
+        return date.toLocaleString('zh-CN');
+      } catch (e) {
+        return dateStr;
+      }
+    }
+  },
+  methods: {
+    // 检测来源页面并设置返回链接
+    detectSourcePage() {
+      const urlParams = new URLSearchParams(window.location.search);
+      this.fromPage = urlParams.get('from');
+      this.datasetId = urlParams.get('datasetId');
+      
+      if (this.fromPage === 'imports' && this.datasetId) {
+        this.backUrl = `/datasets/${this.datasetId}?tab=imports`;
+        this.backText = '← 返回导入记录';
+      } else if (this.fromPage === 'jobs') {
+        this.backUrl = '/jobs';
+        this.backText = '← 返回任务列表';
+      } else {
+        // 默认返回任务列表
+        this.backUrl = '/jobs';
+        this.backText = '← 返回任务列表';
+      }
+    }
+  },
+  
+  async mounted() {
+    // 检测来源页面
+    this.detectSourcePage();
+    
+    // 加载任务详情
+    await this.loadJobDetail();
+  },
+  
+  methods: {
+    // 检测来源页面并设置返回链接
+    detectSourcePage() {
+      const urlParams = new URLSearchParams(window.location.search);
+      this.fromPage = urlParams.get('from');
+      this.datasetId = urlParams.get('datasetId');
+      
+      if (this.fromPage === 'imports' && this.datasetId) {
+        this.backUrl = `/datasets/${this.datasetId}?tab=imports`;
+        this.backText = '← 返回导入记录';
+      } else if (this.fromPage === 'jobs') {
+        this.backUrl = '/jobs';
+        this.backText = '← 返回任务列表';
+      } else {
+        // 默认返回任务列表
+        this.backUrl = '/jobs';
+        this.backText = '← 返回任务列表';
+      }
+    },
+    
+    async loadJobDetail() {
+      this.loading = true;
+      this.error = null;
+      
+      try {
+        // 从URL参数获取jobId和resourcePoolId
+        const urlParams = new URLSearchParams(window.location.search);
+        // 从URL路径中提取jobId: /jobs/job-xxx -> job-xxx
+        const pathParts = window.location.pathname.split('/');
+        this.jobId = urlParams.get('jobId') || pathParts[pathParts.length - 1];
+        
+        
+        if (!this.jobId) {
+          throw new Error('缺少任务ID参数');
+        }
+        
+        // 获取资源池ID（从URL参数或默认值）
+        const resourcePoolId = urlParams.get('resourcePoolId') || 'aihc-serverless';
+        
+        // 构建查询参数
+        const queryParams = new URLSearchParams({
+          action: 'DescribeJob',
+          resourcePoolId: resourcePoolId
+        });
+        
+        // 构建请求体
+        const requestBody = {
+          jobId: this.jobId,
+          needDetail: true
+        };
+        
+        const url = `/api?${queryParams.toString()}`;
+        
+        const res = await axios.post(url, requestBody);
+        const data = res?.data || {};
+        
+        
+        // 处理任务详情数据
+        this.jobDetail = this.processJobDetail(data);
+      } catch (e) {
+        this.error = '加载任务详情失败: ' + (e.response?.data?.error || e.message || e);
+        console.error('Failed to load job detail:', e);
+      } finally {
+        this.loading = false;
+      }
+    },
+    
+    processJobDetail(data) {
+      // 尝试从不同的响应结构中提取任务详情
+      const job = data?.result || data?.job || data?.Job || data;
+      
+      if (!job) {
+        throw new Error('无法解析任务详情数据');
+      }
+      
+      return {
+        jobId: job.jobId || job.id || job.jobID || '',
+        name: job.name || job.jobName || '',
+        status: job.status || job.state || job.phase || '',
+        jobType: job.jobType || job.type || '',
+        priority: job.priority || '',
+        queueName: job.queueName || job.queue || '',
+        resourcePoolId: job.resourcePoolId || job.resourcePool || '',
+        description: job.description || job.desc || '',
+        createdAt: job.createdAt || job.createdTime || job.creationTime || '',
+        updatedAt: job.updatedAt || job.updatedTime || job.updateTime || '',
+        finishedAt: job.finishedAt || job.finishedTime || job.completionTime || '',
+        command: job.command || '',
+        jobSpec: job.jobSpec || job.spec || {},
+        labels: job.labels || [],
+        pods: job.pods || job.Pods || job.podList || []
+      };
+    },
+    
+    statusText(status) {
+      const statusMap = {
+        'Pending': '等待中',
+        'Running': '运行中',
+        'Succeeded': '成功',
+        'Failed': '失败',
+        'Cancelled': '已取消',
+        'ManualTermination': '手动终止',
+        'Unknown': '未知'
+      };
+      return statusMap[status] || status || '未知';
+    },
+    
+    statusClass(status) {
+      const classMap = {
+        'Pending': 'status-pending',
+        'Running': 'status-running',
+        'Succeeded': 'status-success',
+        'Failed': 'status-failed',
+        'Cancelled': 'status-cancelled',
+        'ManualTermination': 'status-cancelled',
+        'Unknown': 'status-unknown'
+      };
+      return classMap[status] || 'status-unknown';
+    },
+    
+    formatDate(dateStr) {
+      if (!dateStr) return 'N/A';
+      try {
+        const date = new Date(dateStr);
+        return date.toLocaleString('zh-CN');
+      } catch (e) {
+        return dateStr;
+      }
+    }
+  }
+}).mount('#app');
+</script>
+{% endblock %}
