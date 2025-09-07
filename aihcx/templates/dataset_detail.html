@@ -462,6 +462,81 @@
     font-style: italic;
   }
 
+  .transfer-summary .warning-message {
+    color: #dc3545;
+    font-weight: 500;
+    background: #f8d7da;
+    padding: 4px 8px;
+    border-radius: 4px;
+    border: 1px solid #f5c6cb;
+  }
+
+  /* 冲突提示消息样式 */
+  .conflict-message {
+    position: fixed;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 10000;
+    animation: slideDown 0.3s ease-out;
+  }
+
+  .conflict-content {
+    background: #fff3cd;
+    border: 1px solid #ffeaa7;
+    border-radius: 8px;
+    padding: 12px 16px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 300px;
+    max-width: 500px;
+  }
+
+  .conflict-icon {
+    font-size: 18px;
+    flex-shrink: 0;
+  }
+
+  .conflict-text {
+    color: #856404;
+    font-weight: 500;
+    flex: 1;
+  }
+
+  .conflict-close {
+    background: none;
+    border: none;
+    color: #856404;
+    font-size: 18px;
+    font-weight: bold;
+    cursor: pointer;
+    padding: 0;
+    width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: background-color 0.2s;
+  }
+
+  .conflict-close:hover {
+    background-color: rgba(133, 100, 4, 0.1);
+  }
+
+  @keyframes slideDown {
+    from {
+      opacity: 0;
+      transform: translateX(-50%) translateY(-20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+  }
+
   .action-buttons {
     display: flex;
     gap: 12px;
@@ -1047,7 +1122,7 @@
           <span class="summary-value">[[ getTargetStorageInfo() ]]</span>
         </div>
         <div class="summary-item">
-          <span class="summary-label">路径:</span>
+          <span class="summary-label">存储路径:</span>
           <span class="summary-value">[[ getTargetStoragePath() ]]</span>
         </div>
       </div>
@@ -1121,7 +1196,7 @@
             ]])</span>
         </label>
         <div class="version-group">
-          <select v-model="formData.datasetVersion" class="form-control">
+          <select v-model="formData.datasetVersion" @change="onDatasetVersionChange" class="form-control">
             <option value="">请选择数据版本</option>
             <option v-for="version in filteredVersions" :key="version.id" :value="version.id"
               v-text="getVersionDisplayText(version)">
@@ -1178,7 +1253,7 @@
       <div class="form-group">
         <label class="form-label required">
           资源池
-          <span class="count-badge" :class="{ 'zero-count': resourcePools.length === 0 }">([[ resourcePools.length
+          <span class="count-badge" :class="{ 'zero-count': filteredResourcePools.length === 0 }">([[ filteredResourcePools.length
             ]])</span>
         </label>
         <div class="resource-pool-group">
@@ -1200,7 +1275,7 @@
       <div class="form-group">
         <label class="form-label required">
           队列
-          <span class="count-badge" :class="{ 'zero-count': queues.length === 0 }">([[ queues.length ]])</span>
+          <span class="count-badge" :class="{ 'zero-count': filteredQueues.length === 0 }">([[ filteredQueues.length ]])</span>
         </label>
         <div class="queue-group">
           <select v-model="formData.queue" class="form-control" :disabled="!formData.resourcePool">
@@ -1219,7 +1294,10 @@
 
     <div class="form-actions">
       <div class="transfer-summary">
-        <span v-if="getSourcePath()">
+        <span v-if="checkSourceTargetSame()" class="warning-message">
+          ⚠️ 源数据集版本和目标数据集版本的存储实例和路径不能完全相同
+        </span>
+        <span v-else-if="getSourcePath()">
           从 <span class="source-path">[[ getSourcePath() ]]</span> 转储到 <span class="target-path">[[ getTargetPath()
             ]]</span>
         </span>
@@ -1229,7 +1307,12 @@
       </div>
       <div class="action-buttons">
         <button type="button" class="btn btn-secondary" onclick="closeDrawer()">取消</button>
-        <button type="button" class="btn btn-primary" @click="submitImportForm">确定</button>
+        <button type="button" class="btn btn-primary" 
+                @click="submitImportForm" 
+                :disabled="!canSubmitImport"
+                :title="getImportButtonDisabledReason || '确定导入数据'">
+          确定
+        </button>
       </div>
     </div>
   </div>
@@ -1318,13 +1401,91 @@
         return this.datasetVersions && this.datasetVersions.length > 0 ? this.datasetVersions : [];
       },
       filteredResourcePools() {
-        return this.resourcePools && this.resourcePools.length > 0 ? this.resourcePools : [];
+        if (!this.resourcePools || this.resourcePools.length === 0) {
+          return [];
+        }
+        
+        // 获取需要过滤的存储实例ID列表
+        const requiredStorageIds = this.getRequiredStorageIds();
+        
+        // 如果没有需要过滤的存储实例，返回所有资源池
+        if (requiredStorageIds.length === 0) {
+          return this.resourcePools;
+        }
+        
+        // 过滤资源池：只返回绑定了所有必需存储实例的资源池
+        return this.resourcePools.filter(pool => {
+          if (!pool.bindingStorages || !Array.isArray(pool.bindingStorages)) {
+            return false;
+          }
+          
+          // 检查资源池是否绑定了所有必需的存储实例
+          const boundStorageIds = pool.bindingStorages.map(storage => storage.id);
+          return requiredStorageIds.every(requiredId => boundStorageIds.includes(requiredId));
+        });
       },
       filteredQueues() {
         return this.queues && this.queues.length > 0 ? this.queues : [];
+      },
+      // 检查是否可以提交导入表单
+      canSubmitImport() {
+        // 基本表单验证
+        if (!this.formData.resourcePool || !this.formData.queue || !this.formData.sourceDataset || !this.formData.datasetVersion) {
+          return false;
+        }
+        
+        // 检查源数据集和目标数据集是否相同
+        if (this.checkSourceTargetSame()) {
+          return false;
+        }
+        
+        return true;
+      },
+      // 获取导入按钮的禁用原因
+      getImportButtonDisabledReason() {
+        if (!this.formData.resourcePool || !this.formData.queue) {
+          return '请选择资源池和队列';
+        }
+        if (!this.formData.sourceDataset) {
+          return '请选择源数据集';
+        }
+        if (!this.formData.datasetVersion) {
+          return '请选择数据版本';
+        }
+        if (this.checkSourceTargetSame()) {
+          return '源数据集版本和目标数据集版本的存储实例和路径不能完全相同';
+        }
+        return '';
       }
     },
     methods: {
+      // 获取需要过滤的存储实例ID列表
+      getRequiredStorageIds() {
+        const storageIds = [];
+        
+        // 获取目标数据集的存储实例ID
+        if (this.dataset && this.dataset.storageType && this.dataset.storageType.toLowerCase() === 'pfs') {
+          const targetStorageId = this.dataset.storageInstance || this.dataset.storageInstanceId;
+          if (targetStorageId) {
+            storageIds.push(targetStorageId);
+          }
+        }
+        
+        // 获取源数据集的存储实例ID
+        if (this.formData.sourceDataset && this.importMethod === 'existing') {
+          const sourceDataset = this.availableDatasets.find(d => d.id === this.formData.sourceDataset);
+          if (sourceDataset && sourceDataset.storageType && sourceDataset.storageType.toLowerCase() === 'pfs') {
+            const sourceStorageId = sourceDataset.storageInstance || sourceDataset.storageInstanceId;
+            if (sourceStorageId) {
+              storageIds.push(sourceStorageId);
+            }
+          }
+        }
+        
+        // 去重并返回
+        return [...new Set(storageIds)];
+      },
+      
       // 获取数据集显示文本
       getDatasetDisplayText(dataset) {
         if (!dataset) return '';
@@ -1514,6 +1675,114 @@
           this.datasetVersions = [];
           this.formData.datasetVersion = '';
         }
+        
+        // 重新过滤资源池（因为源数据集变化可能影响可用的资源池）
+        this.refilterResourcePools();
+      },
+      
+      onDatasetVersionChange() {
+        // 当选择数据版本时，检查存储实例和路径是否相同
+        if (this.checkSourceTargetSame()) {
+          // 如果存储实例和路径相同，清空选择并显示提示
+          this.formData.datasetVersion = '';
+          
+          // 显示用户友好的提示
+          this.showConflictMessage('源数据集版本和目标数据集版本的存储实例和路径不能完全相同，请选择其他版本');
+          
+          console.log('源数据集版本和目标数据集版本的存储实例和路径不能完全相同，已清空版本选择');
+        }
+      },
+      
+      
+      // 显示冲突提示消息
+      showConflictMessage(message = '源数据集版本和目标数据集版本的存储实例和路径不能完全相同，请选择其他版本') {
+        // 移除已存在的冲突消息
+        const existingMessage = document.querySelector('.conflict-message');
+        if (existingMessage) {
+          existingMessage.remove();
+        }
+        
+        // 创建提示消息元素
+        const messageDiv = document.createElement('div');
+        messageDiv.className = 'conflict-message';
+        messageDiv.innerHTML = `
+          <div class="conflict-content">
+            <span class="conflict-icon">⚠️</span>
+            <span class="conflict-text">${message}</span>
+            <button class="conflict-close" onclick="this.parentElement.parentElement.remove()">×</button>
+          </div>
+        `;
+        
+        // 添加到页面顶部
+        const container = document.querySelector('.drawer-content') || document.body;
+        container.insertBefore(messageDiv, container.firstChild);
+        
+        // 3秒后自动移除
+        setTimeout(() => {
+          if (messageDiv.parentNode) {
+            messageDiv.remove();
+          }
+        }, 3000);
+      },
+      
+      // 重新过滤资源池
+      refilterResourcePools() {
+        const requiredStorageIds = this.getRequiredStorageIds();
+        console.log('需要过滤的存储实例ID:', requiredStorageIds);
+        
+        // 检查当前选择的资源池是否仍然可用
+        const filteredPools = this.filteredResourcePools;
+        const currentPoolId = this.formData.resourcePool;
+        
+        console.log(`资源池过滤结果: 原始${this.resourcePools.length}个，过滤后${filteredPools.length}个`);
+        
+        if (currentPoolId && !filteredPools.find(pool => (pool.resourcePoolId || pool.metadata?.id) === currentPoolId)) {
+          // 当前选择的资源池不可用，清空选择
+          this.formData.resourcePool = '';
+          this.formData.queue = '';
+          this.queues = [];
+          console.log('当前选择的资源池不可用，已清空选择');
+        }
+      },
+      
+      // 检查源数据集和目标数据集是否相同
+      checkSourceTargetSame() {
+        if (!this.formData.sourceDataset || !this.formData.datasetVersion) {
+          return false;
+        }
+        
+        // 获取源数据集信息
+        const sourceDataset = this.availableDatasets.find(d => d.id === this.formData.sourceDataset);
+        const sourceVersion = this.datasetVersions.find(v => v.id === this.formData.datasetVersion);
+        
+        if (!sourceDataset || !sourceVersion) {
+          return false;
+        }
+        
+        // 获取目标数据集信息
+        const targetVersion = this.targetDatasetVersion;
+        
+        if (!targetVersion) {
+          return false;
+        }
+        
+        // 比较存储实例和路径
+        const sourceStorageInstance = sourceDataset.storageInstance || sourceDataset.storageInstanceId;
+        const targetStorageInstance = this.dataset.storageInstance || this.dataset.storageInstanceId;
+        const sourceStoragePath = sourceVersion.storagePath;
+        const targetStoragePath = targetVersion.storagePath;
+        
+        const isSame = sourceStorageInstance === targetStorageInstance && 
+                      sourceStoragePath === targetStoragePath;
+        
+        if (isSame) {
+          console.log('源数据集和目标数据集相同:', {
+            source: `${sourceStorageInstance}:${sourceStoragePath}`,
+            target: `${targetStorageInstance}:${targetStoragePath}`
+          });
+        }
+        
+        return isSame;
       },
       async loadAvailableDatasets() {
         try {
@@ -1660,9 +1929,13 @@
             console.log(`使用缓存的${cacheKey}类型资源池数据，缓存年龄:`, Math.round(cacheAge / 1000), '秒');
             this.resourcePools = this.resourcePoolCache[cacheKey];
 
-            // 如果有资源池，默认选择第一个
-            if (this.resourcePools.length > 0) {
-              this.formData.resourcePool = this.resourcePools[0].resourcePoolId || this.resourcePools[0].metadata?.id;
+            // 重新过滤资源池
+            this.refilterResourcePools();
+            
+            // 如果有可用的资源池，默认选择第一个
+            const filteredPools = this.filteredResourcePools;
+            if (filteredPools.length > 0) {
+              this.formData.resourcePool = filteredPools[0].resourcePoolId || filteredPools[0].metadata?.id;
               // 加载该资源池的队列
               await this.loadQueues(this.formData.resourcePool);
             }
@@ -1706,9 +1979,13 @@
           this.resourcePoolCacheTime[cacheKey] = Date.now();
           console.log(`${cacheKey}类型资源池数据已缓存`);
 
-          // 如果有资源池，默认选择第一个
-          if (this.resourcePools.length > 0) {
-            this.formData.resourcePool = this.resourcePools[0].resourcePoolId || this.resourcePools[0].metadata?.id;
+          // 重新过滤资源池
+          this.refilterResourcePools();
+          
+          // 如果有可用的资源池，默认选择第一个
+          const filteredPools = this.filteredResourcePools;
+          if (filteredPools.length > 0) {
+            this.formData.resourcePool = filteredPools[0].resourcePoolId || filteredPools[0].metadata?.id;
             // 加载该资源池的队列
             await this.loadQueues(this.formData.resourcePool);
           }
@@ -1734,7 +2011,7 @@
           }
 
           // 处理新的API响应格式
-          console.log('队列API完整响应:', JSON.stringify(response.data, null, 2));
+          // console.log('队列API完整响应:', JSON.stringify(response.data, null, 2));
 
           this.queues = response.data.queues;
           console.log('队列列表加载完成:', this.queues.length, '个队列');
@@ -1762,6 +2039,8 @@
         // 如果选择了资源池类型，加载对应类型的资源池
         if (this.formData.resourcePoolType) {
           await this.loadResourcePools();
+          // 加载完成后重新过滤资源池
+          this.refilterResourcePools();
         }
       },
 
@@ -1835,15 +2114,26 @@
       // 获取目标数据集版本
       getTargetDatasetVersion() {
         if (!this.dataset) return '加载中...';
+        if (!this.targetDatasetVersion) return '加载中...';
 
-        const latestVersion = this.dataset.latestVersion || this.dataset.version;
-        return latestVersion || '未知';
+        const targetVersion = this.targetDatasetVersion.version;
+        return targetVersion;
       },
 
       // 获取目标数据集信息（当前版本）
       getTargetDatasetInfo() {
         // 使用点击导入数据按钮时传入的版本信息
         const currentVersion = this.targetDatasetVersion;
+        
+        if (!currentVersion) {
+          return {
+            name: this.dataset?.name || '未知',
+            storageType: this.dataset?.storageType || '未知',
+            storagePath: '加载中...',
+            mountPath: '加载中...',
+            storageInstance: this.dataset?.storageInstance || '未知'
+          };
+        }
 
         return {
           name: this.dataset.name,
@@ -1874,18 +2164,19 @@
       // 获取目标存储路径
       getTargetStoragePath() {
         if (!this.dataset) return '加载中...';
+        if (!this.targetDatasetVersion) return '加载中...';
 
-        const storagePath = this.dataset.storagePath || '/mnt/datasets/' + this.dataset.name;
+        const storagePath = this.targetDatasetVersion.storagePath;
         return storagePath;
       },
 
       // 获取目标路径
       getTargetPath() {
-        if (!this.dataset) return '未知目标数据集';
+        if (!this.dataset || !this.targetDatasetVersion) return '未知目标数据集';
 
-        // 获取目标数据集的存储实例和存储路径
+        // 获取目标数据集的存储实例和存储路径（使用目标版本信息）
         const storageInstance = this.dataset.storageInstance;
-        const storagePath = this.dataset.storagePath || '/mnt/datasets/' + this.dataset.name;
+        const storagePath = this.targetDatasetVersion.storagePath;
 
         if (storageInstance) {
           return `${storageInstance}:${storagePath}`;
@@ -2043,6 +2334,13 @@ echo "数据导入任务完成"`;
       // 提交导入表单
       async submitImportForm() {
         console.log('submitImportForm called');
+        
+        // 检查源数据集版本和目标数据集版本的存储实例和路径是否相同
+        if (this.checkSourceTargetSame()) {
+          alert('源数据集版本和目标数据集版本的存储实例和路径不能完全相同，请重新选择');
+          return;
+        }
+        
         // 表单验证
         if (this.importMethod === 'existing' && (!this.formData.sourceDataset || !this.formData.datasetVersion)) {
           alert('请选择源数据集和数据版本');
@@ -2160,14 +2458,14 @@ echo "数据导入任务完成"`;
             type: targetDatasetType,
             name: targetDatasetName,
             sourcePath: targetDatasetPath,
-            mountPath: "/mnt/target"
+            mountPath: targetDatasetInfo.mountPath
           },
           // 源数据集 DataSource
           {
             type: sourceDatasetType,
             name: sourceDatasetName,
             sourcePath: sourceDatasetPath,
-            mountPath: "/mnt/source"
+            mountPath: sourceDatasetInfo.mountPath
           }
         ]
       },
