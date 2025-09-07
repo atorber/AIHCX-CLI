@@ -1,0 +1,154 @@
+---
+description:
+globs:
+alwaysApply: true
+---
+# AIHCX CLI 开发规则
+
+## Vue.js 开发规则
+
+### 1. Vue.js 结构配置
+- 生命周期钩子（mounted, created等）必须在 methods 对象外部定义
+- 使用统一的分隔符配置：`delimiters: ['[[', ']]']`
+- 模板中统一使用 `[[ ]]` 语法，不要混合使用 `{{ }}`
+
+```javascript
+// ✅ 正确结构
+createApp({
+  data() { return { ... } },
+  methods: { ... },
+  async mounted() { ... }  // 在methods外部
+}).mount('#app');
+
+// ❌ 错误：mounted在methods内部
+createApp({
+  methods: {
+    mounted() { ... }  // 错误位置
+  }
+})
+```
+
+### 2. 模板语法规则
+- 在Vue.js模板中只使用Vue.js语法，不要使用Jinja2语法
+- 使用Vue.js三元运算符而不是Jinja2的if语句
+- 确保模板语法与分隔符配置匹配
+
+```html
+<!-- ✅ 正确：Vue.js语法 -->
+<div>{{ jobDetail.name }}</div>
+<div>{{ jobDetail.enableRDMA ? '是' : '否' }}</div>
+
+<!-- ❌ 错误：Jinja2语法在Vue.js中 -->
+<div>{% if jobDetail.enableRDMA %}是{% else %}否{% endif %}</div>
+```
+
+### 3. 数据绑定规则
+- 所有模板变量必须在data()中定义
+- 确保数据正确初始化（如jobDetail: null）
+- 使用v-if进行条件渲染
+
+```javascript
+// ✅ 正确初始化
+data() {
+  return {
+    jobDetail: null,
+    loading: false,
+    error: null
+  }
+}
+```
+
+## 代码组织规则
+
+### 4. 方法定义规则
+- 每个方法只定义一次，避免重复定义
+- 确保对象结构完整，正确关闭括号
+- 方法定义在正确的对象中
+
+### 5. 参数传递规则
+- 跳转时传递所有必要参数
+- 提供合理的默认值
+- 验证URL参数解析逻辑
+
+```javascript
+// ✅ 正确：传递所有必要参数
+window.location.href = `/jobs/${jobId}?resourcePoolId=${poolId}&from=imports&datasetId=${datasetId}`;
+
+// ✅ 正确：提供默认值
+const resourcePoolId = urlParams.get('resourcePoolId') || 'aihc-serverless';
+```
+
+## 调试和清理规则
+
+### 6. 调试信息管理
+- 开发完成后移除所有console.log调试信息
+- 只保留必要的console.error错误日志
+- 移除页面上的调试信息区域
+
+### 7. 代码提交前检查
+- 验证Vue.js对象结构正确
+- 确保模板语法与配置匹配
+- 检查数据绑定是否正常工作
+- 确保所有必要参数都正确传递
+- 移除所有临时调试代码
+- 验证所有功能正常工作
+
+## 常见错误避免
+
+### 8. 避免的错误模式
+- ❌ 将mounted放在methods内部
+- ❌ 混合使用Vue.js和Jinja2语法
+- ❌ 在模板中使用未定义的变量
+- ❌ 在生产代码中保留调试日志
+- ❌ 跳转时缺少必要参数
+- ❌ 重复定义相同方法
+
+### 9. 快速诊断指南
+- 页面显示占位符 → 检查分隔符配置和模板语法
+- `this.methodName is not a function` → 检查方法定义位置
+- API请求失败 → 检查参数传递和URL解析
+
+## 最佳实践
+
+### 10. 开发阶段
+- 使用详细的调试日志
+- 添加临时调试信息区域
+- 频繁测试功能
+
+### 11. 测试阶段
+- 移除调试日志
+- 清理调试信息区域
+- 进行完整的功能测试
+
+### 12. 生产阶段
+- 只保留必要的错误日志
+- 确保代码结构清晰
+- 验证所有功能正常
+
+## 文件结构规则
+
+### 13. 模板文件组织
+- 保持HTML、CSS、JavaScript分离
+- 使用清晰的注释分隔不同部分
+- 确保缩进和格式一致
+
+### 14. 方法命名规则
+- 使用描述性的方法名
+- 异步方法使用async/await
+- 错误处理使用try/catch
+
+```javascript
+// ✅ 好的方法命名
+async loadJobDetail() { ... }
+detectSourcePage() { ... }
+processJobDetail(data) { ... }
+
+// ✅ 错误处理
+try {
+  const result = await apiCall();
+  this.data = result;
+} catch (e) {
+  this.error = '操作失败: ' + e.message;
+  console.error('API调用失败:', e);
+}
+```
