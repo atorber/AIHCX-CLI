@@ -9,13 +9,6 @@
   // 可缓存的API动作
   const CACHEABLE_ACTIONS = [
     'DescribeResourcePools',
-    'DescribeDatasets', 
-    'DescribeDatasetVersions',
-    'DescribeDataset',
-    'DescribeJobs',
-    'DescribeJob',
-    'DescribeModels',
-    'DescribeQueues'
   ];
   
   // 不可缓存的API动作（实时性要求高）
