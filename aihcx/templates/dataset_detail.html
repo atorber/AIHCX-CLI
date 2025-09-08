@@ -8,117 +8,117 @@
 
 {% block extra_css %}
 <style>
-    .action-bar {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 20px;
-    }
-    
-    .btn-back {
-        background: #6c757d;
-        color: white;
-        border: none;
-        padding: 8px 16px;
-        border-radius: 6px;
-        cursor: pointer;
-        text-decoration: none;
-        display: inline-block;
-        font-size: 14px;
-    }
-    
-    .btn-back:hover {
-        background: #5a6268;
-    }
-    
-    .dataset-card {
-        background: var(--panel-bg);
-        border-radius: var(--radius);
-        box-shadow: var(--shadow);
-        border: 1px solid var(--border);
-        margin-bottom: 24px;
-        overflow: hidden;
-    }
-    
-    .dataset-card-header {
-        background: #f8f9fa;
-        padding: 16px 24px;
-        border-bottom: 1px solid var(--border);
-    }
-    
-    .dataset-card-header h5 {
-        margin: 0;
-        font-size: 18px;
-        font-weight: 600;
-        color: var(--text);
-    }
-    
-    .dataset-card-body {
-        padding: 24px;
-    }
-    
-    .info-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-        gap: 20px;
-    }
-    
-    .info-item {
-        margin-bottom: 16px;
-    }
-    
-    .info-label {
-        font-weight: 600;
-        color: #495057;
-        margin-bottom: 4px;
-        font-size: 14px;
-    }
-    
-    .info-value {
-        font-size: 15px;
-        color: var(--text);
-        word-break: break-all;
-    }
-    
-    .nav-tabs {
-        display: flex;
-        border-bottom: 1px solid var(--border);
-        margin-bottom: 24px;
-    }
-    
-    .nav-tab {
-        padding: 12px 20px;
-        cursor: pointer;
-        border-bottom: 3px solid transparent;
-        color: var(--muted);
-        font-weight: 500;
-        transition: all 0.2s ease;
-    }
-    
-    .nav-tab.active {
-        color: var(--primary);
-        border-bottom-color: var(--primary);
-    }
-    
-    .nav-tab:hover:not(.active) {
-        color: var(--text);
-        background: #f8f9fa;
-    }
-    
-    .tab-content {
-        min-height: 300px;
-    }
-    
+  .action-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+  }
+
+  .btn-back {
+    background: #6c757d;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 6px;
+    cursor: pointer;
+    text-decoration: none;
+    display: inline-block;
+    font-size: 14px;
+  }
+
+  .btn-back:hover {
+    background: #5a6268;
+  }
+
+  .dataset-card {
+    background: var(--panel-bg);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    border: 1px solid var(--border);
+    margin-bottom: 24px;
+    overflow: hidden;
+  }
+
+  .dataset-card-header {
+    background: #f8f9fa;
+    padding: 16px 24px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .dataset-card-header h5 {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--text);
+  }
+
+  .dataset-card-body {
+    padding: 24px;
+  }
+
+  .info-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 20px;
+  }
+
+  .info-item {
+    margin-bottom: 16px;
+  }
+
+  .info-label {
+    font-weight: 600;
+    color: #495057;
+    margin-bottom: 4px;
+    font-size: 14px;
+  }
+
+  .info-value {
+    font-size: 15px;
+    color: var(--text);
+    word-break: break-all;
+  }
+
+  .nav-tabs {
+    display: flex;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 24px;
+  }
+
+  .nav-tab {
+    padding: 12px 20px;
+    cursor: pointer;
+    border-bottom: 3px solid transparent;
+    color: var(--muted);
+    font-weight: 500;
+    transition: all 0.2s ease;
+  }
+
+  .nav-tab.active {
+    color: var(--primary);
+    border-bottom-color: var(--primary);
+  }
+
+  .nav-tab:hover:not(.active) {
+    color: var(--text);
+    background: #f8f9fa;
+  }
+
+  .tab-content {
+    min-height: 300px;
+  }
+
   .loading,
   .error {
-        text-align: center;
-        padding: 40px 20px;
-        color: var(--muted);
-    }
-    
-    .error {
-        color: #dc3545;
-    }
+    text-align: center;
+    padding: 40px 20px;
+    color: var(--muted);
+  }
+
+  .error {
+    color: #dc3545;
+  }
 
   .resource-pool-loading-info {
     background: #e3f2fd;
@@ -137,55 +137,55 @@
     font-size: 16px;
     color: #1976d2;
   }
-    
-    .table-container {
-        overflow-x: auto;
-        border-radius: var(--radius);
-        box-shadow: var(--shadow);
-        border: 1px solid var(--border);
-    }
-    
-    .versions-table {
-        width: 100%;
-        border-collapse: collapse;
-        background: var(--panel-bg);
-    }
-    
-    .versions-table th {
-        background: #f8f9fa;
-        padding: 14px 16px;
-        text-align: left;
-        font-weight: 600;
-        color: #495057;
-        border-bottom: 1px solid var(--border);
-        font-size: 14px;
-    }
-    
-    .versions-table td {
-        padding: 14px 16px;
-        border-bottom: 1px solid var(--border);
-        font-size: 14px;
-    }
-    
-    .versions-table tr:hover {
-        background: #f8f9fa;
-    }
-    
-    .btn-primary {
-        background: var(--primary);
-        color: white;
-        border: none;
-        padding: 6px 12px;
-        border-radius: 6px;
-        cursor: pointer;
-        font-size: 13px;
-        font-weight: 500;
-        transition: all 0.2s ease;
-    }
-    
-    .btn-primary:hover {
-        background: var(--primary-600);
-    }
+
+  .table-container {
+    overflow-x: auto;
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    border: 1px solid var(--border);
+  }
+
+  .versions-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: var(--panel-bg);
+  }
+
+  .versions-table th {
+    background: #f8f9fa;
+    padding: 14px 16px;
+    text-align: left;
+    font-weight: 600;
+    color: #495057;
+    border-bottom: 1px solid var(--border);
+    font-size: 14px;
+  }
+
+  .versions-table td {
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--border);
+    font-size: 14px;
+  }
+
+  .versions-table tr:hover {
+    background: #f8f9fa;
+  }
+
+  .btn-primary {
+    background: var(--primary);
+    color: white;
+    border: none;
+    padding: 6px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 500;
+    transition: all 0.2s ease;
+  }
+
+  .btn-primary:hover {
+    background: var(--primary-600);
+  }
 
   .btn-primary:disabled {
     background: #6c757d;
@@ -199,66 +199,66 @@
     border-color: #6c757d;
     transform: none;
   }
-    
-    .pagination {
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        margin-top: 24px;
-        gap: 8px;
-    }
-    
-    .pagination button {
-        padding: 8px 14px;
-        border: 1px solid var(--border);
-        background: var(--panel-bg);
-        border-radius: 6px;
-        cursor: pointer;
-        font-size: 14px;
-        transition: all 0.2s ease;
-    }
-    
-    .pagination button:hover:not(:disabled) {
-        background: #f8f9fa;
-    }
-    
-    .pagination button:disabled {
-        opacity: 0.6;
-        cursor: not-allowed;
-    }
-    
-    .pagination-info {
-        margin: 0 16px;
-        color: var(--muted);
-        font-size: 14px;
-    }
-    
-    .drawer {
-        position: fixed;
-        top: 0;
-        right: 0;
+
+  .pagination {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-top: 24px;
+    gap: 8px;
+  }
+
+  .pagination button {
+    padding: 8px 14px;
+    border: 1px solid var(--border);
+    background: var(--panel-bg);
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: all 0.2s ease;
+  }
+
+  .pagination button:hover:not(:disabled) {
+    background: #f8f9fa;
+  }
+
+  .pagination button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+
+  .pagination-info {
+    margin: 0 16px;
+    color: var(--muted);
+    font-size: 14px;
+  }
+
+  .drawer {
+    position: fixed;
+    top: 0;
+    right: 0;
     width: 50vw;
     max-width: 800px;
     min-width: 400px;
     height: 100vh;
-        background-color: white;
+    background-color: white;
     box-shadow: -2px 0 20px rgba(0, 0, 0, 0.15);
     z-index: 10000;
     display: none;
-        flex-direction: column;
+    flex-direction: column;
     overflow: hidden;
     animation: slideIn 0.3s ease-out;
-    }
-    
-    .drawer-overlay {
-        position: fixed;
-        top: 0;
-        left: 0;
+  }
+
+  .drawer-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
     width: 100vw;
     height: 100vh;
     background-color: rgba(0, 0, 0, 0.5);
     z-index: 9999;
-        display: none;
+    display: none;
     animation: fadeIn 0.3s ease-out;
   }
 
@@ -280,20 +280,20 @@
     to {
       opacity: 1;
     }
-    }
-    
-    .drawer-header {
+  }
+
+  .drawer-header {
     padding: 24px 24px 16px 24px;
-        border-bottom: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
     position: relative;
-    }
-    
-    .drawer-header h4 {
+  }
+
+  .drawer-header h4 {
     margin: 0 0 8px 0;
-        font-size: 20px;
-        font-weight: 600;
-        color: var(--text);
-    }
+    font-size: 20px;
+    font-weight: 600;
+    color: var(--text);
+  }
 
   .drawer-description {
     margin: 0;
@@ -301,38 +301,38 @@
     color: var(--muted);
     line-height: 1.5;
   }
-    
-    .drawer-close {
-        background: none;
-        border: none;
-        font-size: 24px;
-        cursor: pointer;
-        color: var(--muted);
+
+  .drawer-close {
+    background: none;
+    border: none;
+    font-size: 24px;
+    cursor: pointer;
+    color: var(--muted);
     width: 40px;
     height: 40px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        border-radius: 50%;
-        transition: all 0.2s ease;
-    }
-    
-    .drawer-close:hover {
-        background: #f1f3f4;
-        color: var(--text);
-    }
-    
-    .form-group {
-        margin-bottom: 20px;
-    }
-    
-    .form-label {
-        display: block;
-        margin-bottom: 8px;
-        font-weight: 500;
-        color: #495057;
-        font-size: 14px;
-    }
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: all 0.2s ease;
+  }
+
+  .drawer-close:hover {
+    background: #f1f3f4;
+    color: var(--text);
+  }
+
+  .form-group {
+    margin-bottom: 20px;
+  }
+
+  .form-label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 500;
+    color: #495057;
+    font-size: 14px;
+  }
 
   .count-badge {
     display: inline-block;
@@ -351,22 +351,22 @@
     color: #d32f2f;
     border-color: #ffcdd2;
   }
-    
-    .form-control {
-        width: 100%;
-        padding: 10px 12px;
-        border: 1px solid var(--border);
-        border-radius: 6px;
-        font-size: 14px;
-        transition: all 0.2s ease;
+
+  .form-control {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    font-size: 14px;
+    transition: all 0.2s ease;
     box-sizing: border-box;
     max-width: 100%;
     min-width: 0;
-    }
-    
-    .form-control:focus {
-        outline: none;
-        border-color: var(--primary);
+  }
+
+  .form-control:focus {
+    outline: none;
+    border-color: var(--primary);
     box-shadow: 0 0 0 3px rgba(43, 109, 239, 0.12);
   }
 
@@ -383,18 +383,18 @@
   select.form-control {
     min-width: 100%;
     max-width: 100%;
-    }
-    
-    .radio-group {
-        display: flex;
-        gap: 20px;
-        margin-bottom: 16px;
-        flex-wrap: wrap;
-    }
-    
-    .radio-item {
-        display: flex;
-        align-items: center;
+  }
+
+  .radio-group {
+    display: flex;
+    gap: 20px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+  }
+
+  .radio-item {
+    display: flex;
+    align-items: center;
     cursor: pointer;
     padding: 8px 12px;
     border-radius: 6px;
@@ -406,7 +406,7 @@
   }
 
   .radio-item input[type="radio"] {
-        margin-right: 8px;
+    margin-right: 8px;
     width: 16px;
     height: 16px;
     accent-color: var(--primary);
@@ -416,18 +416,18 @@
     font-size: 14px;
     color: var(--text);
     cursor: pointer;
-    }
-    
-    .checkbox-item {
-        display: flex;
-        align-items: center;
-        margin-bottom: 16px;
-    }
-    
-    .checkbox-item input {
-        margin-right: 8px;
-    }
-    
+  }
+
+  .checkbox-item {
+    display: flex;
+    align-items: center;
+    margin-bottom: 16px;
+  }
+
+  .checkbox-item input {
+    margin-right: 8px;
+  }
+
   .transfer-summary {
     flex: 1;
     font-size: 13px;
@@ -626,6 +626,7 @@
       opacity: 0;
       transform: translateY(-5px);
     }
+
     to {
       opacity: 1;
       transform: translateY(0);
@@ -692,6 +693,7 @@
       opacity: 0;
       transform: translateX(-50%) translateY(-20px);
     }
+
     to {
       opacity: 1;
       transform: translateX(-50%) translateY(0);
@@ -699,8 +701,8 @@
   }
 
   .action-buttons {
-        display: flex;
-        gap: 12px;
+    display: flex;
+    gap: 12px;
     flex-shrink: 0;
   }
 
@@ -708,33 +710,33 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-        margin-top: 32px;
+    margin-top: 32px;
     padding: 20px 20px;
-        border-top: 1px solid var(--border);
+    border-top: 1px solid var(--border);
     position: sticky;
     bottom: 0;
     background: white;
     z-index: 10;
-    }
-    
-    .btn {
+  }
+
+  .btn {
     padding: 12px 24px;
-        border: none;
+    border: none;
     border-radius: 8px;
-        cursor: pointer;
-        font-size: 14px;
-        font-weight: 500;
-        transition: all 0.2s ease;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    transition: all 0.2s ease;
     min-width: 100px;
     height: 40px;
     display: flex;
     align-items: center;
     justify-content: center;
-    }
-    
+  }
+
   .btn-primary {
     background: var(--primary);
-        color: white;
+    color: white;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   }
 
@@ -749,20 +751,20 @@
     color: var(--text);
     border: 1px solid var(--border);
     box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
-    }
-    
-    .btn-secondary:hover {
+  }
+
+  .btn-secondary:hover {
     background: var(--hover);
     border-color: var(--primary);
     color: var(--primary);
     transform: translateY(-1px);
-    }
-    
-    .copy-btn {
-        margin-left: 10px;
-        padding: 4px 8px;
-        font-size: 12px;
-    }
+  }
+
+  .copy-btn {
+    margin-left: 10px;
+    padding: 4px 8px;
+    font-size: 12px;
+  }
 
   .drawer-content {
     flex: 1;
@@ -1107,13 +1109,13 @@
     border: 1px solid #e9ecef;
     border-radius: 12px;
     padding: 20px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
     transition: all 0.2s ease;
   }
 
   .resource-pool-card:hover {
     transform: translateY(-2px);
-    box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
   }
 
   .resource-pool-header {
@@ -1206,7 +1208,7 @@
     font-size: 16px;
     color: #adb5bd;
   }
-  
+
   /* 状态样式 */
   .status {
     padding: 4px 8px;
@@ -1215,43 +1217,43 @@
     font-weight: 500;
     text-transform: uppercase;
   }
-  
+
   .status-pending {
     background-color: #fff3cd;
     color: #856404;
     border: 1px solid #ffeaa7;
   }
-  
+
   .status-running {
     background-color: #d1ecf1;
     color: #0c5460;
     border: 1px solid #bee5eb;
   }
-  
+
   .status-success {
     background-color: #d4edda;
     color: #155724;
     border: 1px solid #c3e6cb;
   }
-  
+
   .status-error {
     background-color: #f8d7da;
     color: #721c24;
     border: 1px solid #f5c6cb;
   }
-  
+
   .status-cancelled {
     background-color: #e2e3e5;
     color: #383d41;
     border: 1px solid #d6d8db;
   }
-  
+
   .status-unknown {
     background-color: #f8f9fa;
     color: #6c757d;
     border: 1px solid #dee2e6;
   }
-  
+
   /* 命令行容器样式 */
   .command-container {
     border: 1px solid #e0e0e0;
@@ -1259,7 +1261,7 @@
     background-color: #f8f9fa;
     overflow: hidden;
   }
-  
+
   .command-header {
     display: flex;
     justify-content: space-between;
@@ -1268,12 +1270,12 @@
     background-color: #e9ecef;
     border-bottom: 1px solid #e0e0e0;
   }
-  
+
   .command-title {
     font-weight: 600;
     color: #495057;
   }
-  
+
   .btn-copy {
     background-color: #007bff;
     color: white;
@@ -1284,11 +1286,11 @@
     font-size: 12px;
     transition: background-color 0.2s;
   }
-  
+
   .btn-copy:hover {
     background-color: #0056b3;
   }
-  
+
   .command-content {
     padding: 16px;
     background-color: #2d3748;
@@ -1298,7 +1300,7 @@
     line-height: 1.5;
     overflow-x: auto;
   }
-  
+
   .command-text {
     color: #e2e8f0;
     background: none;
@@ -1307,23 +1309,23 @@
     white-space: pre-wrap;
     word-break: break-all;
   }
-  
+
   .command-hint {
     padding: 12px 16px;
     background-color: #fff3cd;
     border-top: 1px solid #ffeaa7;
   }
-  
+
   .command-hint p {
     margin: 0 0 8px 0;
     font-size: 13px;
     color: #856404;
   }
-  
+
   .command-hint p:last-child {
     margin-bottom: 0;
   }
-  
+
   .command-hint code {
     background-color: #f8f9fa;
     padding: 2px 4px;
@@ -1331,7 +1333,7 @@
     font-size: 12px;
     color: #e83e8c;
   }
-  
+
   /* 信息提示框样式 */
   .info-box {
     display: flex;
@@ -1342,27 +1344,27 @@
     border-radius: 6px;
     margin-bottom: 16px;
   }
-  
+
   .info-icon {
     font-size: 20px;
     margin-right: 12px;
     margin-top: 2px;
   }
-  
+
   .info-content h4 {
     margin: 0 0 8px 0;
     color: #1976d2;
     font-size: 16px;
     font-weight: 600;
   }
-  
+
   .info-content p {
     margin: 0 0 8px 0;
     color: #424242;
     font-size: 14px;
     line-height: 1.5;
   }
-  
+
   .info-content p:last-child {
     margin-bottom: 0;
   }
@@ -1371,257 +1373,259 @@
 
 {% block content %}
 <div id="app">
-    <div class="page-container">
-        <!-- 操作栏 -->
-        <div class="action-bar">
-            <a href="/datasets" class="btn-back">
-                <i class="fas fa-arrow-left"></i> 返回数据集列表
-            </a>
+  <div class="page-container">
+    <!-- 操作栏 -->
+    <div class="action-bar">
+      <a href="/datasets" class="btn-back">
+        <i class="fas fa-arrow-left"></i> 返回数据集列表
+      </a>
 
+    </div>
+
+    <!-- 加载状态 -->
+    <div v-if="loading" class="loading">
+      <i class="fas fa-spinner fa-spin"></i> 数据加载中...
+    </div>
+
+    <!-- 错误信息 -->
+    <div v-if="error" class="error">
+      <i class="fas fa-exclamation-circle"></i> [[ error ]]
+    </div>
+
+    <!-- 数据集基本信息 -->
+    <div v-if="dataset && !loading">
+      <div class="dataset-card">
+        <div class="dataset-card-header">
+          <h5>[[ dataset.name ]]</h5>
         </div>
-        
-        <!-- 加载状态 -->
-        <div v-if="loading" class="loading">
-            <i class="fas fa-spinner fa-spin"></i> 数据加载中...
-        </div>
-        
-        <!-- 错误信息 -->
-        <div v-if="error" class="error">
-            <i class="fas fa-exclamation-circle"></i> [[ error ]]
-        </div>
-        
-        <!-- 数据集基本信息 -->
-        <div v-if="dataset && !loading">
-            <div class="dataset-card">
-                <div class="dataset-card-header">
-                    <h5>[[ dataset.name ]]</h5>
+        <div class="dataset-card-body">
+          <div class="info-grid">
+            <div>
+              <div class="info-item">
+                <div class="info-label">数据集ID</div>
+                <div class="info-value">
+                  [[ dataset.id ]]
+                  <button @click="copyDatasetId(dataset.id)" class="copy-btn">复制</button>
                 </div>
-                <div class="dataset-card-body">
-                    <div class="info-grid">
-                        <div>
-                            <div class="info-item">
-                                <div class="info-label">数据集ID</div>
-                                <div class="info-value">
-                                    [[ dataset.id ]]
-                                    <button @click="copyDatasetId(dataset.id)" class="copy-btn">复制</button>
-                                </div>
-                            </div>
-                            <div class="info-item">
-                                <div class="info-label">创建时间</div>
-                                <div class="info-value">[[ formatDate(dataset.createdAt) ]]</div>
-                            </div>
-                            <div class="info-item">
-                                <div class="info-label">更新时间</div>
-                                <div class="info-value">[[ formatDate(dataset.updatedAt) ]]</div>
-                            </div>
-                        </div>
-                        <div>
-                            <div class="info-item">
-                                <div class="info-label">存储类型</div>
-                                <div class="info-value">[[ dataset.storageType ]]</div>
-                            </div>
-                            <div class="info-item">
-                                <div class="info-label">可见范围</div>
-                                <div class="info-value">[[ formatVisibility(dataset.visibilityScope) ]]</div>
-                            </div>
-                            <div class="info-item">
-                                <div class="info-label">最新版本</div>
-                                <div class="info-value">[[ dataset.latestVersion ]]</div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+              </div>
+              <div class="info-item">
+                <div class="info-label">创建时间</div>
+                <div class="info-value">[[ formatDate(dataset.createdAt) ]]</div>
+              </div>
+              <div class="info-item">
+                <div class="info-label">更新时间</div>
+                <div class="info-value">[[ formatDate(dataset.updatedAt) ]]</div>
+              </div>
             </div>
+            <div>
+              <div class="info-item">
+                <div class="info-label">存储类型</div>
+                <div class="info-value">[[ dataset.storageType ]]</div>
+              </div>
+              <div class="info-item">
+                <div class="info-label">可见范围</div>
+                <div class="info-value">[[ formatVisibility(dataset.visibilityScope) ]]</div>
+              </div>
+              <div class="info-item">
+                <div class="info-label">最新版本</div>
+                <div class="info-value">[[ dataset.latestVersion ]]</div>
+              </div>
+            </div>
+          </div>
         </div>
-        
-        <!-- Tab导航 -->
-        <div class="nav-tabs" v-if="dataset && !loading">
-            <div class="nav-tab" :class="{active: activeTab === 'basic'}" @click="switchTab('basic')">
-                基本信息
-            </div>
-            <div class="nav-tab" :class="{active: activeTab === 'versions'}" @click="switchTab('versions')">
-                版本列表
-            </div>
-            <div class="nav-tab" :class="{active: activeTab === 'imports'}" @click="switchTab('imports')">
-                导入记录
-            </div>
-      <div class="nav-tab" :class="{active: activeTab === 'resourcePools'}" @click="switchTab('resourcePools')" v-if="isPfsDataset">
+      </div>
+    </div>
+
+    <!-- Tab导航 -->
+    <div class="nav-tabs" v-if="dataset && !loading">
+      <div class="nav-tab" :class="{active: activeTab === 'basic'}" @click="switchTab('basic')">
+        基本信息
+      </div>
+      <div class="nav-tab" :class="{active: activeTab === 'versions'}" @click="switchTab('versions')">
+        版本列表
+      </div>
+      <div class="nav-tab" :class="{active: activeTab === 'imports'}" @click="switchTab('imports')">
+        导入记录
+      </div>
+      <div class="nav-tab" :class="{active: activeTab === 'resourcePools'}" @click="switchTab('resourcePools')"
+        v-if="isPfsDataset">
         可用资源池
       </div>
-        </div>
-        
-        <!-- Tab内容 -->
-        <div class="tab-content">
-            <!-- 基本信息Tab -->
-            <div v-show="activeTab === 'basic'" v-if="dataset && !loading">
+    </div>
+
+    <!-- Tab内容 -->
+    <div class="tab-content">
+      <!-- 基本信息Tab -->
+      <div v-show="activeTab === 'basic'" v-if="dataset && !loading">
         <!-- 资源池载入状态提示 -->
         <div v-if="!resourcePoolCacheLoaded" class="resource-pool-loading-info">
           <i class="fas fa-spinner fa-spin"></i>
           <span>[[ resourcePoolLoadingStatus ]]</span>
         </div>
 
-                <div class="dataset-card">
-                    <div class="dataset-card-body">
-                        <h6>详细信息</h6>
-                        <div class="info-grid">
-                            <div>
-                                <div class="info-item">
-                                    <div class="info-label">所有者</div>
-                                    <div class="info-value">[[ dataset.ownerName ]] ([[ dataset.owner ]])</div>
-                                </div>
-                                <div class="info-item">
-                                    <div class="info-label">导入格式</div>
-                                    <div class="info-value">[[ dataset.importFormat ]]</div>
-                                </div>
-                            </div>
-                            <div>
-                                <div class="info-item">
-                                    <div class="info-label">存储实例</div>
-                                    <div class="info-value">[[ dataset.storageInstance ]]</div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+        <div class="dataset-card">
+          <div class="dataset-card-body">
+            <h6>详细信息</h6>
+            <div class="info-grid">
+              <div>
+                <div class="info-item">
+                  <div class="info-label">所有者</div>
+                  <div class="info-value">[[ dataset.ownerName ]] ([[ dataset.owner ]])</div>
                 </div>
+                <div class="info-item">
+                  <div class="info-label">导入格式</div>
+                  <div class="info-value">[[ dataset.importFormat ]]</div>
+                </div>
+              </div>
+              <div>
+                <div class="info-item">
+                  <div class="info-label">存储实例</div>
+                  <div class="info-value">[[ dataset.storageInstance ]]</div>
+                </div>
+              </div>
             </div>
-            
-            <!-- 版本列表Tab -->
-            <div v-show="activeTab === 'versions'">
-                <div class="mt-3">
+          </div>
+        </div>
+      </div>
+
+      <!-- 版本列表Tab -->
+      <div v-show="activeTab === 'versions'">
+        <div class="mt-3">
           <!-- 资源池载入状态提示 -->
           <div v-if="!resourcePoolCacheLoaded" class="resource-pool-loading-info">
             <i class="fas fa-spinner fa-spin"></i>
             <span>[[ resourcePoolLoadingStatus ]]</span>
           </div>
 
-                    <!-- 版本列表加载状态 -->
-                    <div v-if="versionsLoading" class="loading">
-                        <i class="fas fa-spinner fa-spin"></i> 版本列表加载中...
-                    </div>
-                    
-                    <!-- 版本列表错误信息 -->
-                    <div v-if="versionsError" class="error">
-                        <i class="fas fa-exclamation-circle"></i> [[ versionsError ]]
-                    </div>
-                    
-                    <!-- 版本列表 -->
-                    <div v-if="!versionsLoading && !versionsError && versions.length > 0">
-                        <div class="table-container">
-                            <table class="versions-table">
-                                <thead>
-                                    <tr>
-                                        <th>版本</th>
-                                        <th>创建时间</th>
-                                        <th>创建者</th>
-                                        <th>存储路径</th>
-                                        <th>挂载路径</th>
-                                        <th>操作</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <tr v-for="version in versions" :key="version.id">
-                                        <td>[[ version.version ]]</td>
-                                        <td>[[ formatDate(version.createdAt) ]]</td>
-                                        <td>[[ version.createUserName ]]</td>
-                                        <td>[[ version.storagePath ]]</td>
-                                        <td>[[ version.mountPath ]]</td>
-                                        <td>
+          <!-- 版本列表加载状态 -->
+          <div v-if="versionsLoading" class="loading">
+            <i class="fas fa-spinner fa-spin"></i> 版本列表加载中...
+          </div>
+
+          <!-- 版本列表错误信息 -->
+          <div v-if="versionsError" class="error">
+            <i class="fas fa-exclamation-circle"></i> [[ versionsError ]]
+          </div>
+
+          <!-- 版本列表 -->
+          <div v-if="!versionsLoading && !versionsError && versions.length > 0">
+            <div class="table-container">
+              <table class="versions-table">
+                <thead>
+                  <tr>
+                    <th>版本</th>
+                    <th>创建时间</th>
+                    <th>创建者</th>
+                    <th>存储路径</th>
+                    <th>挂载路径</th>
+                    <th>操作</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="version in versions" :key="version.id">
+                    <td>[[ version.version ]]</td>
+                    <td>[[ formatDate(version.createdAt) ]]</td>
+                    <td>[[ version.createUserName ]]</td>
+                    <td>[[ version.storagePath ]]</td>
+                    <td>[[ version.mountPath ]]</td>
+                    <td>
                       <button @click="showImportDrawer(version)" class="btn-primary"
                         :disabled="!resourcePoolCacheLoaded"
                         :title="resourcePoolCacheLoaded ? '导入数据' : '资源池缓存加载中，请稍候...'">
                         导入数据
                       </button>
-                                        </td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
-                        
-                        <!-- 分页 -->
-                        <div class="pagination">
-                            <button @click="prevPage" :disabled="currentPage === 1">
-                                <i class="fas fa-chevron-left"></i> 上一页
-                            </button>
-                            <span class="pagination-info">
-                                第 [[ currentPage ]] 页，共 [[ totalPages ]] 页
-                            </span>
-                            <button @click="nextPage" :disabled="currentPage === totalPages">
-                                下一页 <i class="fas fa-chevron-right"></i>
-                            </button>
-                        </div>
-                    </div>
-                    
-                    <!-- 无版本数据 -->
-                    <div v-if="!versionsLoading && !versionsError && versions.length === 0" class="loading">
-                        暂无版本数据
-                    </div>
-                </div>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
             </div>
 
-            <!-- 导入记录Tab -->
-            <div v-show="activeTab === 'imports'">
-                <div class="mt-3">
-                    <!-- 资源池载入状态提示 -->
-                    <div v-if="!resourcePoolCacheLoaded" class="resource-pool-loading-info">
-                        <i class="fas fa-spinner fa-spin"></i>
-                        <span>[[ resourcePoolLoadingStatus ]]</span>
-                    </div>
-                    
-                    <!-- 导入记录加载状态 -->
-                    <div v-if="importsLoading" class="loading">
-                        <i class="fas fa-spinner fa-spin"></i> 导入记录加载中...
-                    </div>
-                    
-                    <!-- 导入记录错误信息 -->
-                    <div v-if="importsError" class="error">
-                        <i class="fas fa-exclamation-circle"></i> [[ importsError ]]
-                    </div>
-                    
-                    <!-- 导入记录列表 -->
-                    <div v-if="resourcePoolCacheLoaded && !importsLoading && !importsError && imports.length > 0">
-                        <div class="table-container">
-                            <table class="table">
-                                <thead>
-                                    <tr>
-                                        <th>任务名称</th>
-                                        <th>状态</th>
-                                        <th>创建时间</th>
-                                        <th>完成时间</th>
-                                        <th>操作</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <tr v-for="importJob in imports" :key="importJob.jobId">
-                                        <td>
-                                            <span class="job-name">[[ importJob.name ]]</span>
-                                            <br>
-                                            <span class="job-id">[[ importJob.jobId ]]</span>
-                                        </td>
-                                        <td>
-                                            <span class="status" :class="statusClass(importJob.status)">
-                                                [[ statusText(importJob.status) ]]
-                                            </span>
-                                        </td>
-                                        <td>[[ formatDate(importJob.createdAt) ]]</td>
-                                        <td>[[ formatDate(importJob.finishedAt) ]]</td>
-                                        <td>
-                                            <button class="btn-primary" @click="viewImportJob(importJob)">
-                                                查看详情
-                                            </button>
-                                        </td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                    
-                    <!-- 空状态 -->
-                    <div v-if="resourcePoolCacheLoaded && !importsLoading && !importsError && imports.length === 0" class="empty-state">
-                        <i class="fas fa-inbox"></i>
-                        <p>暂无导入记录</p>
-                    </div>
-                </div>
+            <!-- 分页 -->
+            <div class="pagination">
+              <button @click="prevPage" :disabled="currentPage === 1">
+                <i class="fas fa-chevron-left"></i> 上一页
+              </button>
+              <span class="pagination-info">
+                第 [[ currentPage ]] 页，共 [[ totalPages ]] 页
+              </span>
+              <button @click="nextPage" :disabled="currentPage === totalPages">
+                下一页 <i class="fas fa-chevron-right"></i>
+              </button>
             </div>
+          </div>
+
+          <!-- 无版本数据 -->
+          <div v-if="!versionsLoading && !versionsError && versions.length === 0" class="loading">
+            暂无版本数据
+          </div>
+        </div>
+      </div>
+
+      <!-- 导入记录Tab -->
+      <div v-show="activeTab === 'imports'">
+        <div class="mt-3">
+          <!-- 资源池载入状态提示 -->
+          <div v-if="!resourcePoolCacheLoaded" class="resource-pool-loading-info">
+            <i class="fas fa-spinner fa-spin"></i>
+            <span>[[ resourcePoolLoadingStatus ]]</span>
+          </div>
+
+          <!-- 导入记录加载状态 -->
+          <div v-if="importsLoading" class="loading">
+            <i class="fas fa-spinner fa-spin"></i> 导入记录加载中...
+          </div>
+
+          <!-- 导入记录错误信息 -->
+          <div v-if="importsError" class="error">
+            <i class="fas fa-exclamation-circle"></i> [[ importsError ]]
+          </div>
+
+          <!-- 导入记录列表 -->
+          <div v-if="resourcePoolCacheLoaded && !importsLoading && !importsError && imports.length > 0">
+            <div class="table-container">
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th>任务名称</th>
+                    <th>状态</th>
+                    <th>创建时间</th>
+                    <th>完成时间</th>
+                    <th>操作</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="importJob in imports" :key="importJob.jobId">
+                    <td>
+                      <span class="job-name">[[ importJob.name ]]</span>
+                      <br>
+                      <span class="job-id">[[ importJob.jobId ]]</span>
+                    </td>
+                    <td>
+                      <span class="status" :class="statusClass(importJob.status)">
+                        [[ statusText(importJob.status) ]]
+                      </span>
+                    </td>
+                    <td>[[ formatDate(importJob.createdAt) ]]</td>
+                    <td>[[ formatDate(importJob.finishedAt) ]]</td>
+                    <td>
+                      <button class="btn-primary" @click="viewImportJob(importJob)">
+                        查看详情
+                      </button>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- 空状态 -->
+          <div v-if="resourcePoolCacheLoaded && !importsLoading && !importsError && imports.length === 0"
+            class="empty-state">
+            <i class="fas fa-inbox"></i>
+            <p>暂无导入记录</p>
+          </div>
+        </div>
+      </div>
 
       <!-- 可用资源池Tab -->
       <div v-show="activeTab === 'resourcePools'" v-if="isPfsDataset">
@@ -1629,7 +1633,7 @@
           <!-- 资源池错误信息 -->
           <div v-if="resourcePoolError" class="error">
             <i class="fas fa-exclamation-circle"></i> [[ resourcePoolError ]]
-        </div>
+          </div>
 
           <!-- 可用资源池列表 -->
           <div v-if="!resourcePoolError">
@@ -1642,7 +1646,8 @@
                 <div v-for="pool in availableResourcePools" :key="pool.resourcePoolId" class="resource-pool-card">
                   <div class="resource-pool-header">
                     <h5 class="resource-pool-name">[[ pool.name || pool.metadata?.name || pool.resourcePoolId ]]</h5>
-                    <span class="resource-pool-type" :class="pool.resourcePoolType === 'dedicatedV2' ? 'dedicated' : ''">
+                    <span class="resource-pool-type"
+                      :class="pool.resourcePoolType === 'dedicatedV2' ? 'dedicated' : ''">
                       [[ pool.resourcePoolType === 'dedicatedV2' ? '全托管' : '自运维' ]]
                     </span>
                   </div>
@@ -1675,23 +1680,23 @@
         </div>
       </div>
     </div>
-</div>
+  </div>
 
-<!-- 导入数据抽屉遮罩 -->
+  <!-- 导入数据抽屉遮罩 -->
   <div id="drawer-overlay" class="drawer-overlay" onclick="closeDrawer()"></div>
 
-<!-- 导入数据抽屉 -->
+  <!-- 导入数据抽屉 -->
   <div id="drawer" class="drawer">
     <div class="drawer-header">
       <div style="display: flex; justify-content: space-between; align-items: flex-start;">
         <div>
-        <h4>导入数据</h4>
+          <h4>导入数据</h4>
           <p class="drawer-description">将数据导入到当前数据集,后续可以在百舸负载中挂载使用</p>
         </div>
         <button class="drawer-close" onclick="closeDrawer()" style="margin-left: 20px; flex-shrink: 0;">&times;</button>
       </div>
     </div>
-    
+
     <div class="drawer-content">
       <!-- 目标数据集信息 -->
       <div class="target-dataset-summary">
@@ -1714,9 +1719,9 @@
       </div>
 
       <!-- 导入方式选择 -->
-            <div class="form-group">
-                <label class="form-label">导入方式</label>
-                <div class="radio-group">
+      <div class="form-group">
+        <label class="form-label">导入方式</label>
+        <div class="radio-group">
           <label class="radio-item">
             <input type="radio" v-model="importMethod" value="existing" name="importMethod">
             <span class="radio-label">已有数据集</span>
@@ -1745,91 +1750,56 @@
             <input type="radio" v-model="importMethod" value="tool" name="importMethod">
             <span class="radio-label">工具上传</span>
           </label>
-                    </div>
-                    </div>
+        </div>
+      </div>
 
       <!-- 对象存储配置 -->
       <div v-if="importMethod === 'object'" class="form-group">
         <label class="form-label required">接入点</label>
-        <input 
-          type="text" 
-          v-model="formData.objectStorageEndpoint" 
-          class="form-control" 
-          placeholder="请输入对象存储接入点"
-        >
+        <input type="text" v-model="formData.objectStorageEndpoint" class="form-control" placeholder="请输入对象存储接入点">
       </div>
-      
+
       <div v-if="importMethod === 'object'" class="form-group">
         <label class="form-label required">Access Key</label>
-        <input 
-          type="text" 
-          v-model="formData.objectStorageAccessKey" 
-          class="form-control" 
-          placeholder="请输入Access Key"
-        >
+        <input type="text" v-model="formData.objectStorageAccessKey" class="form-control" placeholder="请输入Access Key">
       </div>
-      
+
       <div v-if="importMethod === 'object'" class="form-group">
         <label class="form-label required">Secret Key</label>
-        <input 
-          type="password" 
-          v-model="formData.objectStorageSecretKey" 
-          class="form-control" 
-          placeholder="请输入Secret Key"
-        >
+        <input type="password" v-model="formData.objectStorageSecretKey" class="form-control"
+          placeholder="请输入Secret Key">
       </div>
-      
+
       <div v-if="importMethod === 'object'" class="form-group">
         <label class="form-label required">存储桶</label>
-        <input 
-          type="text" 
-          v-model="formData.objectStorageBucket" 
-          class="form-control" 
-          placeholder="请输入存储桶名称"
-        >
+        <input type="text" v-model="formData.objectStorageBucket" class="form-control" placeholder="请输入存储桶名称">
       </div>
 
       <!-- HuggingFace配置 -->
       <div v-if="importMethod === 'huggingface'" class="form-group">
         <label class="form-label required">源地址</label>
-        <input 
-          type="text" 
-          v-model="formData.huggingfaceSourceUrl" 
-          class="form-control" 
-          placeholder="请输入HuggingFace数据集地址，如：microsoft/DialoGPT-medium"
-        >
+        <input type="text" v-model="formData.huggingfaceSourceUrl" class="form-control"
+          placeholder="请输入HuggingFace数据集地址，如：microsoft/DialoGPT-medium">
       </div>
-      
+
       <div v-if="importMethod === 'huggingface'" class="form-group">
         <label class="form-label">Access Token</label>
-        <input 
-          type="password" 
-          v-model="formData.huggingfaceAccessToken" 
-          class="form-control" 
-          placeholder="请输入HuggingFace Access Token（可选）"
-        >
+        <input type="password" v-model="formData.huggingfaceAccessToken" class="form-control"
+          placeholder="请输入HuggingFace Access Token（可选）">
         <p class="form-hint">Access Token用于访问私有数据集，公开数据集可不填写</p>
       </div>
 
       <!-- 自定义下载配置 -->
       <div v-if="importMethod === 'custom'" class="form-group">
         <label class="form-label required">镜像地址</label>
-        <input 
-          type="text" 
-          v-model="formData.customDownloadImageUrl" 
-          class="form-control" 
-          placeholder="请输入Docker镜像地址，如：registry.baidubce.com/public/pytorch:1.12.0-cuda11.3-cudnn8-devel"
-        >
+        <input type="text" v-model="formData.customDownloadImageUrl" class="form-control"
+          placeholder="请输入Docker镜像地址，如：registry.baidubce.com/public/pytorch:1.12.0-cuda11.3-cudnn8-devel">
       </div>
-      
+
       <div v-if="importMethod === 'custom'" class="form-group">
         <label class="form-label required">启动命令</label>
-        <textarea 
-          v-model="formData.customDownloadStartCommand" 
-          class="form-control" 
-          rows="4"
-          placeholder="请输入启动命令，如：pip install datasets && python download_data.py"
-        ></textarea>
+        <textarea v-model="formData.customDownloadStartCommand" class="form-control" rows="4"
+          placeholder="请输入启动命令，如：pip install datasets && python download_data.py"></textarea>
         <p class="form-hint">支持多行命令，每行一个命令；目标数据集挂载路径为/mnt/target，也可以使用环境变量$TARGET_PATH</p>
       </div>
 
@@ -1889,9 +1859,9 @@
           <button type="button" @click="refreshDatasets" class="btn-refresh" title="刷新数据集列表" :disabled="loading">
             <span>🔄</span>
           </button>
-                </div>
-            </div>
-            
+        </div>
+      </div>
+
       <div v-if="importMethod === 'existing'" class="form-group">
         <label class="form-label required">
           数据版本
@@ -1910,110 +1880,112 @@
             <span>🔄</span>
           </button>
         </div>
-                </div>
-                
+      </div>
+
       <!-- 其他配置项（工具上传时隐藏） -->
       <div v-if="importMethod !== 'tool'">
-      <!-- 清空数据选项 -->
-                <div class="form-group">
-        <div class="toggle-group">
-          <label class="toggle-label">
-            <input type="checkbox" v-model="formData.cleanData" @change="onCleanDataChange" class="toggle-input">
-            <span class="toggle-slider"></span>
-            清空数据
-          </label>
-          <p class="toggle-description">开启清空数据会在导入开始时先删除当前数据集目录下所有文件</p>
-                </div>
-            </div>
-            
-      <!-- 同名保留策略 -->
-      <div class="form-group" :class="{ 'disabled-group': formData.cleanData }">
-        <label class="form-label" :class="{ 'required': !formData.cleanData }">同名保留策略</label>
-        <div class="radio-group" :class="{ 'disabled': formData.cleanData }">
-          <label class="radio-item">
-            <input type="radio" value="target" v-model="formData.nameStrategy" name="nameStrategy"
-              :disabled="formData.cleanData">
-            <span class="radio-label">保留目的文件</span>
-          </label>
-          <label class="radio-item">
-            <input type="radio" value="source" v-model="formData.nameStrategy" name="nameStrategy"
-              :disabled="formData.cleanData">
-            <span class="radio-label">保留源文件</span>
-          </label>
+        <!-- 清空数据选项 -->
+        <div class="form-group">
+          <div class="toggle-group">
+            <label class="toggle-label">
+              <input type="checkbox" v-model="formData.cleanData" @change="onCleanDataChange" class="toggle-input">
+              <span class="toggle-slider"></span>
+              清空数据
+            </label>
+            <p class="toggle-description">开启清空数据会在导入开始时先删除当前数据集目录下所有文件</p>
+          </div>
         </div>
-        <p v-if="formData.cleanData" class="disabled-hint">清空数据时无需选择同名保留策略</p>
-            </div>
-            
-      <!-- 资源池类型 -->
-            <div class="form-group">
-        <label class="form-label required">资源池类型</label>
-        <select v-model="formData.resourcePoolType" @change="onResourcePoolTypeChange" class="form-control">
-          <option value="">请选择资源池类型</option>
-          <option value="common">自运维资源池</option>
-          <option value="dedicatedV2">全托管资源池</option>
-        </select>
-                    </div>
 
-      <!-- 资源池 -->
-      <div class="form-group">
-        <label class="form-label required">
-          资源池
-          <span class="count-badge" :class="{ 'zero-count': filteredResourcePools.length === 0 }">([[ filteredResourcePools.length
-            ]])</span>
-        </label>
-        <div class="resource-pool-group">
-          <select v-model="formData.resourcePool" @change="onResourcePoolChange" class="form-control"
-            :disabled="!formData.resourcePoolType">
-            <option value="">请选择资源池</option>
-            <option v-for="pool in filteredResourcePools" :key="pool.resourcePoolId || pool.metadata?.id"
-              :value="pool.resourcePoolId || pool.metadata?.id" v-text="pool.name || pool.metadata?.name">
-            </option>
+        <!-- 同名保留策略 -->
+        <div class="form-group" :class="{ 'disabled-group': formData.cleanData }">
+          <label class="form-label" :class="{ 'required': !formData.cleanData }">同名保留策略</label>
+          <div class="radio-group" :class="{ 'disabled': formData.cleanData }">
+            <label class="radio-item">
+              <input type="radio" value="target" v-model="formData.nameStrategy" name="nameStrategy"
+                :disabled="formData.cleanData">
+              <span class="radio-label">保留目的文件</span>
+            </label>
+            <label class="radio-item">
+              <input type="radio" value="source" v-model="formData.nameStrategy" name="nameStrategy"
+                :disabled="formData.cleanData">
+              <span class="radio-label">保留源文件</span>
+            </label>
+          </div>
+          <p v-if="formData.cleanData" class="disabled-hint">清空数据时无需选择同名保留策略</p>
+        </div>
+
+        <!-- 资源池类型 -->
+        <div class="form-group">
+          <label class="form-label required">资源池类型</label>
+          <select v-model="formData.resourcePoolType" @change="onResourcePoolTypeChange" class="form-control">
+            <option value="">请选择资源池类型</option>
+            <option value="common">自运维资源池</option>
+            <option value="dedicatedV2">全托管资源池</option>
           </select>
-          <button type="button" @click="refreshResourcePools" class="btn-refresh" title="刷新资源池列表"
-            :disabled="!formData.resourcePoolType">
-            <span>🔄</span>
-          </button>
-                    </div>
-        <!-- 资源池过滤提示 -->
-        <div v-if="getResourcePoolFilterHint" class="filter-hint">
-          <div class="filter-hint-content">
-            <span class="filter-hint-icon">ℹ️</span>
-            <div class="filter-hint-text">
-              <div class="filter-hint-title">资源池过滤提示</div>
-              <div class="filter-hint-message" v-text="getResourcePoolFilterHint"></div>
-              <div class="filter-hint-actions">
-                <button type="button" @click="showResourcePoolDetails" class="btn-details">
-                  查看各数据集可选择的资源池
-                </button>
+        </div>
+
+        <!-- 资源池 -->
+        <div class="form-group">
+          <label class="form-label required">
+            资源池
+            <span class="count-badge" :class="{ 'zero-count': filteredResourcePools.length === 0 }">([[
+              filteredResourcePools.length
+              ]])</span>
+          </label>
+          <div class="resource-pool-group">
+            <select v-model="formData.resourcePool" @change="onResourcePoolChange" class="form-control"
+              :disabled="!formData.resourcePoolType">
+              <option value="">请选择资源池</option>
+              <option v-for="pool in filteredResourcePools" :key="pool.resourcePoolId || pool.metadata?.id"
+                :value="pool.resourcePoolId || pool.metadata?.id" v-text="pool.name || pool.metadata?.name">
+              </option>
+            </select>
+            <button type="button" @click="refreshResourcePools" class="btn-refresh" title="刷新资源池列表"
+              :disabled="!formData.resourcePoolType">
+              <span>🔄</span>
+            </button>
+          </div>
+          <!-- 资源池过滤提示 -->
+          <div v-if="getResourcePoolFilterHint" class="filter-hint">
+            <div class="filter-hint-content">
+              <span class="filter-hint-icon">ℹ️</span>
+              <div class="filter-hint-text">
+                <div class="filter-hint-title">资源池过滤提示</div>
+                <div class="filter-hint-message" v-text="getResourcePoolFilterHint"></div>
+                <div class="filter-hint-actions">
+                  <button type="button" @click="showResourcePoolDetails" class="btn-details">
+                    查看各数据集可选择的资源池
+                  </button>
                 </div>
+              </div>
             </div>
           </div>
         </div>
-            </div>
-            
-      <!-- 队列 -->
-            <div class="form-group">
-        <label class="form-label required">
-          队列
-          <span class="count-badge" :class="{ 'zero-count': filteredQueues.length === 0 }">([[ filteredQueues.length ]])</span>
-        </label>
-        <div class="queue-group">
-          <select v-model="formData.queue" class="form-control" :disabled="!formData.resourcePool">
-            <option value="">请选择队列</option>
-            <option v-for="queue in filteredQueues" :key="queue.queueId || queue.name"
-              :value="queue.queueName || queue.name" v-text="getQueueDisplayText(queue)">
-            </option>
-          </select>
-          <button type="button" @click="refreshQueues" class="btn-refresh" title="刷新队列列表"
-            :disabled="!formData.resourcePool">
-            <span>🔄</span>
-          </button>
+
+        <!-- 队列 -->
+        <div class="form-group">
+          <label class="form-label required">
+            队列
+            <span class="count-badge" :class="{ 'zero-count': filteredQueues.length === 0 }">([[ filteredQueues.length
+              ]])</span>
+          </label>
+          <div class="queue-group">
+            <select v-model="formData.queue" class="form-control" :disabled="!formData.resourcePool">
+              <option value="">请选择队列</option>
+              <option v-for="queue in filteredQueues" :key="queue.queueId" :value="queue.queueName"
+                v-text="getQueueDisplayText(queue)">
+              </option>
+            </select>
+            <button type="button" @click="refreshQueues" class="btn-refresh" title="刷新队列列表"
+              :disabled="!formData.resourcePool">
+              <span>🔄</span>
+            </button>
+          </div>
         </div>
-            </div>
-        </div>
-      </div> <!-- 结束其他配置项的条件div -->
-        
-        <div class="form-actions">
+      </div>
+    </div> <!-- 结束其他配置项的条件div -->
+
+    <div class="form-actions">
       <div class="transfer-summary">
         <span v-if="checkSourceTargetSame()" class="warning-message">
           ⚠️ 源数据集版本和目标数据集版本的存储实例和路径不能完全相同
@@ -2025,13 +1997,11 @@
         <span v-else-if="importMethod === 'existing'" class="empty-hint">
           请选择源数据集和版本
         </span>
-        </div>
+      </div>
       <div class="action-buttons">
         <button type="button" class="btn btn-secondary" onclick="closeDrawer()">取消</button>
-        <button type="button" class="btn btn-primary" 
-                @click="submitImportForm" 
-                :disabled="!canSubmitImport"
-                :title="getImportButtonDisabledReason || '确定导入数据'">
+        <button type="button" class="btn btn-primary" @click="submitImportForm" :disabled="!canSubmitImport"
+          :title="getImportButtonDisabledReason || '确定导入数据'">
           确定
         </button>
       </div>
@@ -2053,31 +2023,31 @@
   // 从Jinja2模板获取数据集ID
   const DATASET_ID = '{{ dataset_id }}';
 
-const { createApp } = Vue;
+  const { createApp } = Vue;
 
-createApp({
-  delimiters: ['[[', ']]'],
-  data() {
-    return {
-      dataset: null,
-      loading: false,
-      error: null,
+  createApp({
+    delimiters: ['[[', ']]'],
+    data() {
+      return {
+        dataset: null,
+        loading: false,
+        error: null,
         datasetId: DATASET_ID,
-      activeTab: 'basic', // 默认显示基本信息tab
-      
-      // 版本列表相关数据
-      versions: [],
-      versionsLoading: false,
-      versionsError: null,
-      currentPage: 1,
-      pageSize: 100,
-      totalVersions: 0,
-      
-      // 导入记录相关数据
-      imports: [],
-      importsLoading: false,
-      importsError: null,
-      
+        activeTab: 'basic', // 默认显示基本信息tab
+
+        // 版本列表相关数据
+        versions: [],
+        versionsLoading: false,
+        versionsError: null,
+        currentPage: 1,
+        pageSize: 100,
+        totalVersions: 0,
+
+        // 导入记录相关数据
+        imports: [],
+        importsLoading: false,
+        importsError: null,
+
         // 导入数据相关数据
         importMethod: 'existing', // 默认选中已有数据集
         availableDatasets: [], // 可选数据集列表
@@ -2092,13 +2062,13 @@ createApp({
         resourcePoolCache: {}, // 资源池缓存，按类型分别缓存
         resourcePoolCacheTime: {}, // 缓存时间，按类型分别记录
         cacheExpiry: 5 * 60 * 1000, // 缓存过期时间：5分钟
-        
+
         // 可用资源池相关数据
         resourcePoolError: null, // 资源池错误信息
-      formData: {
+        formData: {
           sourceDataset: '',
           datasetVersion: '',
-        cleanData: false,
+          cleanData: false,
           nameStrategy: 'target', // 默认选中保留目的文件
           resourcePoolType: 'common', // 资源池类型，默认选中自运维资源池
           resourcePool: '',
@@ -2116,11 +2086,11 @@ createApp({
           customDownloadStartCommand: ''
         }
 
-    }
-  },
-  computed: {
-    totalPages() {
-      return Math.ceil(this.totalVersions / this.pageSize);
+      }
+    },
+    computed: {
+      totalPages() {
+        return Math.ceil(this.totalVersions / this.pageSize);
       },
       filteredDatasets() {
         if (!this.availableDatasets || this.availableDatasets.length === 0) {
@@ -2144,27 +2114,44 @@ createApp({
         if (!this.resourcePools || this.resourcePools.length === 0) {
           return [];
         }
-        
+
         // 获取需要过滤的存储实例ID列表
         const requiredStorageIds = this.getRequiredStorageIds();
-        
+
         // 如果没有需要过滤的存储实例，返回所有资源池
         if (requiredStorageIds.length === 0) {
           return this.resourcePools;
         }
-        
+
         // 过滤资源池：只返回绑定了所有必需存储实例的资源池
         return this.resourcePools.filter(pool => {
           if (!pool.bindingStorages || !Array.isArray(pool.bindingStorages)) {
             return false;
           }
-          
+
           // 检查资源池是否绑定了所有必需的存储实例
           const boundStorageIds = pool.bindingStorages.map(storage => storage.id);
           return requiredStorageIds.every(requiredId => boundStorageIds.includes(requiredId));
         });
       },
       filteredQueues() {
+        if (this.formData.resourcePoolType !== 'common') {
+          const childQueues = [];
+          const queues = this.queues && this.queues.length > 0 ? this.queues : [];
+          console.log('filteredQueues', queues);
+          if (queues.length > 0) {
+            for (const queue of queues) {
+              console.log('queue', queue);
+              if (queue.children && queue.children.length > 0) {
+                for (const childQueue of queue.children) {
+                  childQueues.push(childQueue);
+                }
+              }
+            }
+            console.log('childQueues', childQueues); 
+          }
+          this.queues = childQueues.length > 0 ? childQueues : this.queues;
+        }
         return this.queues && this.queues.length > 0 ? this.queues : [];
       },
       // 检查是否有可用的资源池
@@ -2174,26 +2161,26 @@ createApp({
       // 获取资源池过滤提示信息
       getResourcePoolFilterHint() {
         const requiredStorageIds = this.getRequiredStorageIds();
-        
+
         if (requiredStorageIds.length === 0) {
           return null; // 不需要过滤，不显示提示
         }
-        
+
         if (this.hasAvailableResourcePools) {
           return null; // 有可用资源池，不显示提示
         }
-        
+
         // 检查是否有PFS类型的数据集
         const hasPfsDataset = this.hasPfsDataset();
         if (!hasPfsDataset) {
           return null; // 没有PFS类型数据集，不显示过滤提示
         }
-        
+
         // 没有可用的资源池，生成提示信息
         const targetStorageId = this.dataset?.storageInstance || this.dataset?.storageInstanceId;
         const sourceDataset = this.availableDatasets.find(d => d.id === this.formData.sourceDataset);
         const sourceStorageId = sourceDataset?.storageInstance || sourceDataset?.storageInstanceId;
-        
+
         let hint = '当前没有同时绑定以下PFS存储实例的资源池：\n';
         if (targetStorageId) {
           hint += `• 目标数据集PFS存储实例: ${targetStorageId}\n`;
@@ -2208,7 +2195,7 @@ createApp({
         hint += '1. 检查资源池的PFS存储实例绑定配置\n';
         hint += '2. 选择BOS类型的数据集（无需资源池绑定）\n';
         hint += '3. 联系管理员配置资源池PFS绑定';
-        
+
         return hint;
       },
       // 检查是否可以提交导入表单
@@ -2217,12 +2204,12 @@ createApp({
         if (!this.formData.resourcePool || !this.formData.queue || !this.formData.sourceDataset || !this.formData.datasetVersion) {
           return false;
         }
-        
+
         // 检查源数据集和目标数据集是否相同
         if (this.checkSourceTargetSame()) {
           return false;
         }
-        
+
         return true;
       },
       // 获取导入按钮的禁用原因
@@ -2241,99 +2228,99 @@ createApp({
         }
         return '';
       },
-      
+
       // 检查是否为PFS数据集
       isPfsDataset() {
         return this.dataset && this.dataset.storageType && this.dataset.storageType.toLowerCase() === 'pfs';
       },
-      
+
       // 检查是否为BOS数据集
       isBosDataset() {
         return this.dataset && this.dataset.storageType && this.dataset.storageType.toLowerCase() === 'bos';
       },
-      
+
       // 检查是否可以显示工具上传选项
       canShowToolUpload() {
         return this.isBosDataset;
       },
-      
+
       // 生成bcecmd命令
       generatedCommand() {
         if (!this.dataset || !this.isBosDataset) {
           return '请选择BOS类型的数据集';
         }
-        
+
         const bucketName = this.dataset.storageInstance || this.dataset.storageInstanceId || 'your-bucket';
         const prefix = this.dataset.storagePath || '';
-        
+
         // 构建基础命令
         let command = `$ bcecmd bos sync <local_dir> bos:/${bucketName}`;
-        
+
         // 添加前缀（如果存在）
         if (prefix && prefix !== '/') {
           command += `/${prefix.replace(/^\//, '')}`;
         }
-        
+
         // 添加常用参数
         command += ` --exclude "*.tmp" --exclude "*.log" --exclude ".DS_Store" --include "*" --concurrency 10`;
-        
+
         return command;
       },
-      
+
       // 自运维资源池（common类型）
       commonResourcePools() {
         if (!this.resourcePools || this.resourcePools.length === 0) {
           return [];
         }
-        
+
         const targetStorageId = this.dataset?.storageInstance || this.dataset?.storageInstanceId;
         if (!targetStorageId) {
           return [];
         }
-        
+
         return this.resourcePools.filter(pool => {
           // 只显示common类型的资源池
           if (pool.resourcePoolType !== 'common') {
             return false;
           }
-          
+
           // 检查是否绑定了当前数据集的存储实例
           if (!pool.bindingStorages || !Array.isArray(pool.bindingStorages)) {
             return false;
           }
-          
+
           const boundStorageIds = pool.bindingStorages.map(storage => storage.id);
           return boundStorageIds.includes(targetStorageId);
         });
       },
-      
+
       // 全托管资源池（dedicatedV2类型）
       dedicatedV2ResourcePools() {
         if (!this.resourcePools || this.resourcePools.length === 0) {
           return [];
         }
-        
+
         const targetStorageId = this.dataset?.storageInstance || this.dataset?.storageInstanceId;
         if (!targetStorageId) {
           return [];
         }
-        
+
         return this.resourcePools.filter(pool => {
           // 只显示dedicatedV2类型的资源池
           if (pool.resourcePoolType !== 'dedicatedV2') {
             return false;
           }
-          
+
           // 检查是否绑定了当前数据集的存储实例
           if (!pool.bindingStorages || !Array.isArray(pool.bindingStorages)) {
             return false;
           }
-          
+
           const boundStorageIds = pool.bindingStorages.map(storage => storage.id);
           return boundStorageIds.includes(targetStorageId);
         });
       },
-      
+
       // 所有可用资源池（合并自运维和全托管，自运维排在前面）
       availableResourcePools() {
         const allPools = [...this.commonResourcePools, ...this.dedicatedV2ResourcePools];
@@ -2347,9 +2334,9 @@ createApp({
           }
           return 0;
         });
-    }
-  },
-  methods: {
+      }
+    },
+    methods: {
       // 复制命令到剪贴板
       async copyCommand() {
         try {
@@ -2373,34 +2360,34 @@ createApp({
           document.body.removeChild(textArea);
         }
       },
-      
+
       // 检查是否有PFS类型的数据集
       hasPfsDataset() {
         // 检查目标数据集是否为PFS类型
         const targetIsPfs = this.dataset && this.dataset.storageType && this.dataset.storageType.toLowerCase() === 'pfs';
-        
+
         // 检查源数据集是否为PFS类型
         let sourceIsPfs = false;
         if (this.formData.sourceDataset && this.importMethod === 'existing') {
           const sourceDataset = this.availableDatasets.find(d => d.id === this.formData.sourceDataset);
           sourceIsPfs = sourceDataset && sourceDataset.storageType && sourceDataset.storageType.toLowerCase() === 'pfs';
         }
-        
+
         return targetIsPfs || sourceIsPfs;
       },
-      
+
       // 获取每个数据集可选择的资源池信息
       getDatasetResourcePoolInfo() {
         if (!this.dataset || !this.formData.sourceDataset) {
           return null;
         }
-        
+
         const targetStorageType = this.dataset.storageType?.toLowerCase();
         const sourceDataset = this.availableDatasets.find(d => d.id === this.formData.sourceDataset);
         const sourceStorageType = sourceDataset?.storageType?.toLowerCase();
-        
+
         let info = '各数据集可选择的资源池：\n\n';
-        
+
         // 目标数据集信息
         if (targetStorageType === 'pfs') {
           const targetStorageId = this.dataset.storageInstance || this.dataset.storageInstanceId;
@@ -2411,7 +2398,7 @@ createApp({
             const boundStorageIds = pool.bindingStorages.map(storage => storage.id);
             return targetStorageId && boundStorageIds.includes(targetStorageId);
           });
-          
+
           info += `目标数据集 (PFS - ${targetStorageId})：\n`;
           if (targetPools.length > 0) {
             targetPools.forEach(pool => {
@@ -2426,7 +2413,7 @@ createApp({
           info += `• 可以使用所有资源池 (${this.resourcePools.length}个)\n`;
           info += '\n';
         }
-        
+
         // 源数据集信息
         if (sourceStorageType === 'pfs') {
           const sourceStorageId = sourceDataset.storageInstance || sourceDataset.storageInstanceId;
@@ -2437,7 +2424,7 @@ createApp({
             const boundStorageIds = pool.bindingStorages.map(storage => storage.id);
             return sourceStorageId && boundStorageIds.includes(sourceStorageId);
           });
-          
+
           info += `源数据集 (PFS - ${sourceStorageId})：\n`;
           if (sourcePools.length > 0) {
             sourcePools.forEach(pool => {
@@ -2450,15 +2437,15 @@ createApp({
           info += `源数据集 (BOS)：\n`;
           info += `• 可以使用所有资源池 (${this.resourcePools.length}个)\n`;
         }
-        
+
         // 添加说明
         info += '\n说明：\n';
         info += '• BOS类型数据集可以使用所有资源池\n';
         info += '• PFS类型数据集需要特定的资源池绑定\n';
-        
+
         return info;
       },
-      
+
       // 显示资源池详细信息
       showResourcePoolDetails() {
         const details = this.getDatasetResourcePoolInfo();
@@ -2484,11 +2471,11 @@ createApp({
           document.body.appendChild(modal);
         }
       },
-      
+
       // 获取需要过滤的存储实例ID列表
       getRequiredStorageIds() {
         const storageIds = [];
-        
+
         // 获取目标数据集的存储实例ID
         if (this.dataset && this.dataset.storageType && this.dataset.storageType.toLowerCase() === 'pfs') {
           const targetStorageId = this.dataset.storageInstance || this.dataset.storageInstanceId;
@@ -2496,7 +2483,7 @@ createApp({
             storageIds.push(targetStorageId);
           }
         }
-        
+
         // 获取源数据集的存储实例ID
         if (this.formData.sourceDataset && this.importMethod === 'existing') {
           const sourceDataset = this.availableDatasets.find(d => d.id === this.formData.sourceDataset);
@@ -2507,11 +2494,11 @@ createApp({
             }
           }
         }
-        
+
         // 去重并返回
         return [...new Set(storageIds)];
       },
-      
+
       // 获取数据集显示文本
       getDatasetDisplayText(dataset) {
         if (!dataset) return '';
@@ -2563,12 +2550,10 @@ createApp({
       // 获取队列显示文本
       getQueueDisplayText(queue) {
         if (!queue) return '';
-        let displayText = queue.queueName || queue.name || '未命名队列';
+        let displayText = queue.queueName + ' | ' + queue.queueId;
 
         // 添加队列类型信息
-        if (queue.queueType) {
-          displayText += ` (${queue.queueType})`;
-        }
+        displayText += ` (${queue.queueType})`;
 
         // 添加资源信息
         if (queue.capability) {
@@ -2701,25 +2686,25 @@ createApp({
           this.datasetVersions = [];
           this.formData.datasetVersion = '';
         }
-        
+
         // 重新过滤资源池（因为源数据集变化可能影响可用的资源池）
         this.refilterResourcePools();
       },
-      
+
       onDatasetVersionChange() {
         // 当选择数据版本时，检查存储实例和路径是否相同
         if (this.checkSourceTargetSame()) {
           // 如果存储实例和路径相同，清空选择并显示提示
           this.formData.datasetVersion = '';
-          
+
           // 显示用户友好的提示
           this.showConflictMessage('源数据集版本和目标数据集版本的存储实例和路径不能完全相同，请选择其他版本');
-          
+
           console.log('源数据集版本和目标数据集版本的存储实例和路径不能完全相同，已清空版本选择');
         }
       },
-      
-      
+
+
       // 显示冲突提示消息
       showConflictMessage(message = '源数据集版本和目标数据集版本的存储实例和路径不能完全相同，请选择其他版本') {
         // 移除已存在的冲突消息
@@ -2727,7 +2712,7 @@ createApp({
         if (existingMessage) {
           existingMessage.remove();
         }
-        
+
         // 创建提示消息元素
         const messageDiv = document.createElement('div');
         messageDiv.className = 'conflict-message';
@@ -2738,11 +2723,11 @@ createApp({
             <button class="conflict-close" onclick="this.parentElement.parentElement.remove()">×</button>
           </div>
         `;
-        
+
         // 添加到页面顶部
         const container = document.querySelector('.drawer-content') || document.body;
         container.insertBefore(messageDiv, container.firstChild);
-        
+
         // 3秒后自动移除
         setTimeout(() => {
           if (messageDiv.parentNode) {
@@ -2750,18 +2735,18 @@ createApp({
           }
         }, 3000);
       },
-      
+
       // 重新过滤资源池
       refilterResourcePools() {
         const requiredStorageIds = this.getRequiredStorageIds();
         console.log('需要过滤的存储实例ID:', requiredStorageIds);
-        
+
         // 检查当前选择的资源池是否仍然可用
         const filteredPools = this.filteredResourcePools;
         const currentPoolId = this.formData.resourcePool;
-        
+
         console.log(`资源池过滤结果: 原始${this.resourcePools.length}个，过滤后${filteredPools.length}个`);
-        
+
         if (currentPoolId && !filteredPools.find(pool => (pool.resourcePoolId || pool.metadata?.id) === currentPoolId)) {
           // 当前选择的资源池不可用，清空选择
           this.formData.resourcePool = '';
@@ -2770,44 +2755,44 @@ createApp({
           console.log('当前选择的资源池不可用，已清空选择');
         }
       },
-      
+
       // 检查源数据集和目标数据集是否相同
       checkSourceTargetSame() {
         if (!this.formData.sourceDataset || !this.formData.datasetVersion) {
           return false;
         }
-        
+
         // 获取源数据集信息
         const sourceDataset = this.availableDatasets.find(d => d.id === this.formData.sourceDataset);
         const sourceVersion = this.datasetVersions.find(v => v.id === this.formData.datasetVersion);
-        
+
         if (!sourceDataset || !sourceVersion) {
           return false;
         }
-        
+
         // 获取目标数据集信息
         const targetVersion = this.targetDatasetVersion;
-        
+
         if (!targetVersion) {
           return false;
         }
-        
+
         // 比较存储实例和路径
         const sourceStorageInstance = sourceDataset.storageInstance || sourceDataset.storageInstanceId;
         const targetStorageInstance = this.dataset.storageInstance || this.dataset.storageInstanceId;
         const sourceStoragePath = sourceVersion.storagePath;
         const targetStoragePath = targetVersion.storagePath;
-        
-        const isSame = sourceStorageInstance === targetStorageInstance && 
-                      sourceStoragePath === targetStoragePath;
-        
+
+        const isSame = sourceStorageInstance === targetStorageInstance &&
+          sourceStoragePath === targetStoragePath;
+
         if (isSame) {
           console.log('源数据集和目标数据集相同:', {
             source: `${sourceStorageInstance}:${sourceStoragePath}`,
             target: `${targetStorageInstance}:${targetStoragePath}`
           });
         }
-        
+
         return isSame;
       },
       async loadAvailableDatasets() {
@@ -2857,184 +2842,187 @@ createApp({
           this.datasetVersions = [];
         }
       },
-    async loadDataset() {
-      console.log('loadDataset called for ID:', this.datasetId);
-      this.loading = true;
-      this.error = null;
-      
-      try {
-        console.log('Making API request...');
-        const response = await axios.get('/api?action=DescribeDataset&datasetId=' + encodeURIComponent(this.datasetId));
-        console.log('API response received:', response.data);
-        const data = response.data;
-        
-        if (data.error) {
-          this.error = data.error;
-          return;
-        }
-        
-        // 数据集详情直接在data中，而不是在data.dataset或data.Dataset中
-        this.dataset = data;
-        console.log('Dataset loaded:', this.dataset);
+      async loadDataset() {
+        console.log('loadDataset called for ID:', this.datasetId);
+        this.loading = true;
+        this.error = null;
+
+        try {
+          console.log('Making API request...');
+          const response = await axios.get('/api?action=DescribeDataset&datasetId=' + encodeURIComponent(this.datasetId));
+          console.log('API response received:', response.data);
+          const data = response.data;
+
+          if (data.error) {
+            this.error = data.error;
+            return;
+          }
+
+          // 数据集详情直接在data中，而不是在data.dataset或data.Dataset中
+          this.dataset = data;
+          console.log('Dataset loaded:', this.dataset);
           console.log('Dataset name:', this.dataset ? this.dataset.name : 'undefined');
           console.log('Dataset ID:', this.dataset ? this.dataset.id : 'undefined');
 
           // 预加载资源池数据（如果缓存中没有数据）
           this.preloadResourcePools();
 
-      } catch (err) {
-        console.error('Error loading dataset:', err);
-        this.error = '加载数据集详情失败: ' + err.message;
-      } finally {
-        this.loading = false;
-      }
-    },
-    async loadVersions() {
-      console.log('loadVersions called for ID:', this.datasetId);
-      this.versionsLoading = true;
-      this.versionsError = null;
-      
-      try {
-        console.log('Making versions API request...');
-        const response = await axios.get('/api?action=DescribeDatasetVersions&datasetId=' + encodeURIComponent(this.datasetId) + '&pageNumber=' + this.currentPage + '&pageSize=' + this.pageSize);
-        console.log('Versions API response received:', response.data);
-        const data = response.data;
-        
-        if (data.error) {
-          this.versionsError = data.error;
-          return;
+        } catch (err) {
+          console.error('Error loading dataset:', err);
+          this.error = '加载数据集详情失败: ' + err.message;
+        } finally {
+          this.loading = false;
         }
-        
-        // 版本列表在data.versions中，总数在data.totalCount中
-        this.versions = data.versions || data.Versions || [];
-        this.totalVersions = data.totalCount || data.TotalCount || 0;
-        console.log('Versions loaded:', this.versions);
-      } catch (err) {
-        console.error('Error loading versions:', err);
-        this.versionsError = '加载版本列表失败: ' + err.message;
-      } finally {
-        this.versionsLoading = false;
-      }
-    },
-    async loadImports() {
-      console.log('loadImports called for dataset:', this.datasetId);
-      this.importsLoading = true;
-      this.importsError = null;
-      
-      try {
-        // 生成数据集ID的前缀用于搜索任务名称
-        const sanitizedDatasetId = this.datasetId.toLowerCase().replace(/[^a-z0-9.-]/g, '-');
-        const searchPrefix = `${sanitizedDatasetId}-`;
-        
-        // 等待页面资源池列表加载完成
-        console.log('等待页面资源池列表加载完成...');
-        const allResourcePools = await this.waitForResourcePools();
-        
-        if (allResourcePools.length === 0) {
-          throw new Error('无法获取资源池列表，请稍后重试');
+      },
+      async loadVersions() {
+        console.log('loadVersions called for ID:', this.datasetId);
+        this.versionsLoading = true;
+        this.versionsError = null;
+
+        try {
+          console.log('Making versions API request...');
+          const response = await axios.get('/api?action=DescribeDatasetVersions&datasetId=' + encodeURIComponent(this.datasetId) + '&pageNumber=' + this.currentPage + '&pageSize=' + this.pageSize);
+          console.log('Versions API response received:', response.data);
+          const data = response.data;
+
+          if (data.error) {
+            this.versionsError = data.error;
+            return;
+          }
+
+          // 版本列表在data.versions中，总数在data.totalCount中
+          this.versions = data.versions || data.Versions || [];
+          this.totalVersions = data.totalCount || data.TotalCount || 0;
+          console.log('Versions loaded:', this.versions);
+        } catch (err) {
+          console.error('Error loading versions:', err);
+          this.versionsError = '加载版本列表失败: ' + err.message;
+        } finally {
+          this.versionsLoading = false;
         }
-        
-        console.log('使用页面已加载的资源池列表:', allResourcePools.length, '个资源池');
-        console.log('搜索关键字:', searchPrefix);
-        
-        // 循环查询所有资源池的任务
-        const allImports = [];
-        const promises = allResourcePools.map(async (pool) => {
-          try {
-            const poolId = pool.resourcePoolId || pool.id;
-            const poolType = pool.resourcePoolType || pool.type;
-            
-            // 托管资源池类型统一使用 aihc-serverless
-            const actualPoolId = poolType === 'dedicatedV2' ? 'aihc-serverless' : poolId;
-            const requestBody = {
-              keywordType: 'name',
-              keyword: searchPrefix
-            };
-            console.log(`Querying jobs in resource pool: ${poolId} (type: ${poolType}, actual: ${actualPoolId})`);
-            
-            const response = await axios.post(`/api?action=DescribeJobs&resourcePoolId=${actualPoolId}`, requestBody);
-            
-            if (response.data.error) {
-              console.warn(`Failed to query jobs in pool ${poolId}:`, response.data.error);
+      },
+      async loadImports() {
+        console.log('loadImports called for dataset:', this.datasetId);
+        this.importsLoading = true;
+        this.importsError = null;
+
+        try {
+          // 生成数据集ID的前缀用于搜索任务名称
+          const sanitizedDatasetId = this.datasetId.toLowerCase().replace(/[^a-z0-9.-]/g, '-');
+          const searchPrefix = `${sanitizedDatasetId}-`;
+
+          // 等待页面资源池列表加载完成
+          console.log('等待页面资源池列表加载完成...');
+          const allResourcePools = await this.waitForResourcePools();
+
+          if (allResourcePools.length === 0) {
+            throw new Error('无法获取资源池列表，请稍后重试');
+          }
+
+          console.log('使用页面已加载的资源池列表:', allResourcePools.length, '个资源池');
+          console.log('搜索关键字:', searchPrefix);
+
+          // 循环查询所有资源池的任务
+          let allImports = [];
+          const promises = allResourcePools.map(async (pool) => {
+            try {
+              const poolId = pool.resourcePoolId || pool.id;
+              const poolType = pool.resourcePoolType || pool.type;
+
+              // 托管资源池类型统一使用 aihc-serverless
+              const actualPoolId = poolType === 'dedicatedV2' ? 'aihc-serverless' : poolId;
+              const requestBody = {
+                keywordType: 'name',
+                keyword: searchPrefix
+              };
+              console.log(`Querying jobs in resource pool: ${poolId} (type: ${poolType}, actual: ${actualPoolId})`);
+
+              const response = await axios.post(`/api?action=DescribeJobs&resourcePoolId=${actualPoolId}`, requestBody);
+
+              if (response.data.error) {
+                console.warn(`Failed to query jobs in pool ${poolId}:`, response.data.error);
+                return [];
+              }
+
+              const jobs = response.data.jobs || response.data.result?.jobs || [];
+              console.log(`Found ${jobs.length} jobs in pool ${poolId} (${poolType})`);
+              console.log(`Jobs in pool ${poolId}:`, jobs.map(job => ({ name: job.name, jobId: job.jobId })));
+              return jobs;
+            } catch (err) {
+              console.warn(`Error querying pool ${pool.resourcePoolId || pool.id}:`, err);
               return [];
             }
-            
-            const jobs = response.data.jobs || response.data.result?.jobs || [];
-            console.log(`Found ${jobs.length} jobs in pool ${poolId} (${poolType})`);
-            console.log(`Jobs in pool ${poolId}:`, jobs.map(job => ({ name: job.name, jobId: job.jobId })));
-            return jobs;
-          } catch (err) {
-            console.warn(`Error querying pool ${pool.resourcePoolId || pool.id}:`, err);
-            return [];
-          }
-        });
-        
-        // 等待所有查询完成
-        const results = await Promise.all(promises);
-        
-        // 合并所有结果
-        results.forEach(jobs => {
-          allImports.push(...jobs);
-        });
-        
-        console.log('合并前所有任务数量:', allImports.length);
-        console.log('合并前所有任务名称:', allImports.map(job => job.name || job.jobName));
-        
-        // 直接使用API返回的任务列表，因为关键字搜索已经是包含匹配
-        this.imports = allImports;
-        
-        console.log('最终导入任务数量:', this.imports.length);
-        console.log('Loaded imports from all pools:', this.imports);
-        
-      } catch (err) {
-        console.error('Failed to load imports:', err);
-        this.importsError = '加载导入记录失败: ' + err.message;
-      } finally {
-        this.importsLoading = false;
-      }
-    },
-    async waitForResourcePools() {
-      // 如果资源池已经加载完成，直接返回
-      if (this.resourcePoolCacheLoaded && this.resourcePools && this.resourcePools.length > 0) {
-        console.log('资源池已加载完成，直接使用现有数据');
-        return this.resourcePools;
-      }
-      
-      // 如果正在加载中，等待加载完成
-      if (this.resourcePoolLoadingStatus && this.resourcePoolLoadingStatus.includes('正在')) {
-        console.log('资源池正在加载中，等待加载完成...');
-        return new Promise((resolve) => {
-          const checkInterval = setInterval(() => {
-            if (this.resourcePoolCacheLoaded && this.resourcePools && this.resourcePools.length > 0) {
+          });
+
+          // 等待所有查询完成
+          const results = await Promise.all(promises);
+
+          // 合并所有结果及去重
+          results.forEach(jobs => {
+            allImports.push(...jobs);
+            allImports = allImports.filter((job, index, self) =>
+              index === self.findIndex((t) => t.jobId === job.jobId)
+            );
+          });
+
+          console.log('合并前所有任务数量:', allImports.length);
+          console.log('合并前所有任务名称:', allImports.map(job => job.name || job.jobName));
+
+          // 直接使用API返回的任务列表，因为关键字搜索已经是包含匹配
+          this.imports = allImports;
+
+          console.log('最终导入任务数量:', this.imports.length);
+          console.log('Loaded imports from all pools:', this.imports);
+
+        } catch (err) {
+          console.error('Failed to load imports:', err);
+          this.importsError = '加载导入记录失败: ' + err.message;
+        } finally {
+          this.importsLoading = false;
+        }
+      },
+      async waitForResourcePools() {
+        // 如果资源池已经加载完成，直接返回
+        if (this.resourcePoolCacheLoaded && this.resourcePools && this.resourcePools.length > 0) {
+          console.log('资源池已加载完成，直接使用现有数据');
+          return this.resourcePools;
+        }
+
+        // 如果正在加载中，等待加载完成
+        if (this.resourcePoolLoadingStatus && this.resourcePoolLoadingStatus.includes('正在')) {
+          console.log('资源池正在加载中，等待加载完成...');
+          return new Promise((resolve) => {
+            const checkInterval = setInterval(() => {
+              if (this.resourcePoolCacheLoaded && this.resourcePools && this.resourcePools.length > 0) {
+                clearInterval(checkInterval);
+                console.log('资源池加载完成，继续执行导入记录查询');
+                resolve(this.resourcePools);
+              }
+            }, 500);
+
+            // 设置超时，避免无限等待
+            setTimeout(() => {
               clearInterval(checkInterval);
-              console.log('资源池加载完成，继续执行导入记录查询');
-              resolve(this.resourcePools);
-            }
-          }, 500);
-          
-          // 设置超时，避免无限等待
-          setTimeout(() => {
-            clearInterval(checkInterval);
-            console.warn('等待资源池加载超时，使用空列表');
-            resolve([]);
-          }, 30000); // 30秒超时
-        });
-      }
-      
-      // 如果既没有加载完成也没有在加载，返回空列表
-      console.warn('资源池未加载且未在加载中，返回空列表');
-      return [];
-    },
-    switchTab(tabName) {
-      this.activeTab = tabName;
-      // 如果切换到版本列表tab且版本列表为空，则加载版本列表
-      if (tabName === 'versions' && this.versions.length === 0 && !this.versionsError) {
-        this.loadVersions();
-      }
-      // 如果切换到导入记录tab且导入记录为空，则加载导入记录
-      if (tabName === 'imports' && this.imports.length === 0 && !this.importsError) {
-        this.loadImports();
-      }
+              console.warn('等待资源池加载超时，使用空列表');
+              resolve([]);
+            }, 30000); // 30秒超时
+          });
+        }
+
+        // 如果既没有加载完成也没有在加载，返回空列表
+        console.warn('资源池未加载且未在加载中，返回空列表');
+        return [];
+      },
+      switchTab(tabName) {
+        this.activeTab = tabName;
+        // 如果切换到版本列表tab且版本列表为空，则加载版本列表
+        if (tabName === 'versions' && this.versions.length === 0 && !this.versionsError) {
+          this.loadVersions();
+        }
+        // 如果切换到导入记录tab且导入记录为空，则加载导入记录
+        if (tabName === 'imports' && this.imports.length === 0 && !this.importsError) {
+          this.loadImports();
+        }
         // 如果切换到资源池tab，检查并准备可用资源池数据
         if (tabName === 'resourcePools' && this.isPfsDataset) {
           // 如果资源池数据已经加载，直接显示；否则准备数据
@@ -3044,19 +3032,19 @@ createApp({
             this.prepareAvailableResourcePools();
           }
         }
-    },
-    prevPage() {
-      if (this.currentPage > 1) {
-        this.currentPage--;
-        this.loadVersions();
-      }
-    },
-    nextPage() {
-      if (this.currentPage < this.totalPages) {
-        this.currentPage++;
-        this.loadVersions();
-      }
-    },
+      },
+      prevPage() {
+        if (this.currentPage > 1) {
+          this.currentPage--;
+          this.loadVersions();
+        }
+      },
+      nextPage() {
+        if (this.currentPage < this.totalPages) {
+          this.currentPage++;
+          this.loadVersions();
+        }
+      },
       async loadResourcePools(forceRefresh = false) {
         if (!this.formData.resourcePoolType) {
           this.resourcePools = [];
@@ -3071,7 +3059,7 @@ createApp({
           if (!forceRefresh && this.resourcePoolCache[cacheKey] && this.resourcePoolCacheTime[cacheKey]) {
             const now = Date.now();
             const cacheAge = now - this.resourcePoolCacheTime[cacheKey];
-            
+
             if (cacheAge < this.cacheExpiry) {
               console.log(`使用${cacheKey}类型资源池缓存数据，缓存年龄:`, Math.round(cacheAge / 1000), '秒');
               this.resourcePools = [...this.resourcePoolCache[cacheKey]];
@@ -3087,7 +3075,7 @@ createApp({
             resourcePoolType: cacheKey
           });
           const fullUrl = `/api?${urlParams.toString()}`;
-          
+
           // 使用axios发送请求，让HTTP拦截器处理缓存
           const response = await axios.get(fullUrl);
           console.log('资源池API响应:', response.data);
@@ -3127,10 +3115,10 @@ createApp({
 
           // 重新过滤资源池
           this.refilterResourcePools();
-          
+
           // 同步更新可用资源池数据（用于可用资源池tab显示）
           this.updateAvailableResourcePools();
-          
+
           // 如果有可用的资源池，默认选择第一个
           const filteredPools = this.filteredResourcePools;
           if (filteredPools.length > 0) {
@@ -3142,18 +3130,18 @@ createApp({
           console.error('加载资源池API调用失败:', error);
         }
       },
-      
+
       // 更新可用资源池数据（从缓存中合并所有类型的资源池）
       updateAvailableResourcePools() {
         if (!this.isPfsDataset) {
           return;
         }
-        
+
         console.log('更新可用资源池数据...');
-        
+
         // 合并所有类型的资源池数据
         const allResourcePools = [];
-        
+
         // 添加自运维资源池
         if (this.resourcePoolCache.common && this.resourcePoolCache.common.length > 0) {
           allResourcePools.push(...this.resourcePoolCache.common.map(pool => ({
@@ -3161,7 +3149,7 @@ createApp({
             resourcePoolType: 'common'
           })));
         }
-        
+
         // 添加全托管资源池
         if (this.resourcePoolCache.dedicatedV2 && this.resourcePoolCache.dedicatedV2.length > 0) {
           allResourcePools.push(...this.resourcePoolCache.dedicatedV2.map(pool => ({
@@ -3169,32 +3157,32 @@ createApp({
             resourcePoolType: 'dedicatedV2'
           })));
         }
-        
+
         // 更新资源池列表（用于可用资源池tab显示）
         this.resourcePools = allResourcePools;
         console.log('可用资源池数据更新完成:', this.resourcePools.length, '个资源池');
       },
-      
+
       // 准备可用资源池数据（当切换到资源池tab时调用）
       prepareAvailableResourcePools() {
         if (!this.isPfsDataset) {
           console.log('非PFS数据集，跳过准备可用资源池');
           return;
         }
-        
+
         // 检查是否有可用的资源池数据
         const hasCommonPools = this.resourcePoolCache.common && this.resourcePoolCache.common.length > 0;
         const hasDedicatedPools = this.resourcePoolCache.dedicatedV2 && this.resourcePoolCache.dedicatedV2.length > 0;
-        
+
         if (!hasCommonPools && !hasDedicatedPools) {
           console.log('没有可用的资源池缓存数据');
           this.resourcePoolError = '暂无资源池数据，请先在导入数据功能中加载资源池';
           return;
         }
-        
+
         // 清除错误状态
         this.resourcePoolError = null;
-        
+
         // 更新可用资源池数据
         this.updateAvailableResourcePools();
       },
@@ -3213,7 +3201,7 @@ createApp({
             resourcePoolId: resourcePoolId
           });
           const fullUrl = `/api?${urlParams.toString()}`;
-          
+
           // 使用axios发送请求，让HTTP拦截器处理缓存
           const response = await axios.get(fullUrl);
           console.log('队列API响应:', response.data);
@@ -3337,7 +3325,7 @@ createApp({
       getTargetDatasetInfo() {
         // 使用点击导入数据按钮时传入的版本信息
         const currentVersion = this.targetDatasetVersion;
-        
+
         if (!currentVersion) {
           return {
             name: this.dataset?.name || '未知',
@@ -3478,7 +3466,7 @@ createApp({
         // 标记资源池缓存加载完成
         this.resourcePoolCacheLoaded = true;
         this.resourcePoolLoadingStatus = `资源池数据加载完成 (${successCount}/${totalCount})，导入数据功能已可用`;
-        
+
         // 合并所有类型的资源池到 this.resourcePools
         this.resourcePools = [];
         resourcePoolTypes.forEach(poolType => {
@@ -3488,7 +3476,7 @@ createApp({
         });
         console.log('资源池列表合并完成，总计:', this.resourcePools.length, '个资源池');
         console.log('资源池缓存预加载完成，导入数据按钮已启用');
-        
+
         // 触发资源池加载完成事件
         this.$emit('resourcePoolsLoaded');
 
@@ -3556,92 +3544,92 @@ fi
 echo "数据导入任务完成"`;
 
         return command;
-    },
-    // 提交导入表单
+      },
+      // 提交导入表单
       async submitImportForm() {
         console.log('submitImportForm called');
-        
+
         // 工具上传不需要提交表单，直接返回
         if (this.importMethod === 'tool') {
           alert('工具上传方式不需要提交表单，请使用上方生成的命令行在本地执行数据上传');
           return;
         }
-        
+
         // 检查源数据集版本和目标数据集版本的存储实例和路径是否相同
         if (this.checkSourceTargetSame()) {
           alert('源数据集版本和目标数据集版本的存储实例和路径不能完全相同，请重新选择');
           return;
         }
-        
-      // 表单验证
+
+        // 表单验证
         if (this.importMethod === 'existing' && (!this.formData.sourceDataset || !this.formData.datasetVersion)) {
-        alert('请选择源数据集和数据版本');
-        return;
-      }
-      
-      // 对象存储验证
-      if (this.importMethod === 'object') {
-        if (!this.formData.objectStorageEndpoint) {
-          alert('请输入对象存储接入点');
+          alert('请选择源数据集和数据版本');
           return;
         }
-        if (!this.formData.objectStorageAccessKey) {
-          alert('请输入Access Key');
-          return;
+
+        // 对象存储验证
+        if (this.importMethod === 'object') {
+          if (!this.formData.objectStorageEndpoint) {
+            alert('请输入对象存储接入点');
+            return;
+          }
+          if (!this.formData.objectStorageAccessKey) {
+            alert('请输入Access Key');
+            return;
+          }
+          if (!this.formData.objectStorageSecretKey) {
+            alert('请输入Secret Key');
+            return;
+          }
+          if (!this.formData.objectStorageBucket) {
+            alert('请输入存储桶名称');
+            return;
+          }
         }
-        if (!this.formData.objectStorageSecretKey) {
-          alert('请输入Secret Key');
-          return;
+
+        // HuggingFace验证
+        if (this.importMethod === 'huggingface') {
+          if (!this.formData.huggingfaceSourceUrl) {
+            alert('请输入HuggingFace源地址');
+            return;
+          }
+          // Access Token是可选的，不需要验证
         }
-        if (!this.formData.objectStorageBucket) {
-          alert('请输入存储桶名称');
-          return;
+
+        // 自定义下载验证
+        if (this.importMethod === 'custom') {
+          if (!this.formData.customDownloadImageUrl) {
+            alert('请输入镜像地址');
+            return;
+          }
+          if (!this.formData.customDownloadStartCommand) {
+            alert('请输入启动命令');
+            return;
+          }
         }
-      }
-      
-      // HuggingFace验证
-      if (this.importMethod === 'huggingface') {
-        if (!this.formData.huggingfaceSourceUrl) {
-          alert('请输入HuggingFace源地址');
-          return;
-        }
-        // Access Token是可选的，不需要验证
-      }
-      
-      // 自定义下载验证
-      if (this.importMethod === 'custom') {
-        if (!this.formData.customDownloadImageUrl) {
-          alert('请输入镜像地址');
-          return;
-        }
-        if (!this.formData.customDownloadStartCommand) {
-          alert('请输入启动命令');
-          return;
-        }
-      }
-      
+
         if (!this.formData.cleanData && !this.formData.nameStrategy) {
-        alert('请选择同名保留策略');
-        return;
-      }
+          alert('请选择同名保留策略');
+          return;
+        }
 
         if (!this.formData.resourcePoolType) {
           alert('请选择资源池类型');
           return;
         }
-      
-      if (!this.formData.resourcePool || !this.formData.queue) {
-        alert('请选择资源池和队列');
-        return;
-      }
-      
+
+        if (!this.formData.resourcePool || !this.formData.queue) {
+          alert('请选择资源池和队列');
+          return;
+        }
+
         // 构建训练任务请求参数（参考AIHC文档格式）
         // 确保任务名称符合 DNS-1123 子域名规范：只能包含小写字母、数字、连字符和点号
         const sanitizedDatasetId = this.datasetId.toLowerCase().replace(/[^a-z0-9.-]/g, '-');
         const sanitizedVersion = this.formData.datasetVersion.toLowerCase().replace(/[^a-z0-9.-]/g, '-');
         const jobName = `${sanitizedDatasetId}-${sanitizedVersion}-${Date.now()}`;
         const datasource = this.getDatasource();
-      const requestParams = {
+        const requestParams = {
           name: jobName,
           queue: this.formData.resourcePoolType == 'common' ? this.formData.queue : (this.queues.find(q => q.queueName == this.formData.queue)?.queueId),
           jobType: "PyTorchJob",
@@ -3698,7 +3686,13 @@ echo "数据导入任务完成"`;
           }
 
           // 调用创建训练任务API
-          const response = await axios.post(`/api?action=CreateJob&resourcePoolId=${this.formData.resourcePoolType == 'common' ? this.formData.resourcePool : 'aihc-serverless'}`, requestParams);
+          let url = `/api?action=CreateJob&resourcePoolId=${this.formData.resourcePoolType == 'common' ? this.formData.resourcePool : 'aihc-serverless'}`;
+          if (this.formData.resourcePoolType !== 'common') {
+            url += `&queueID=${this.queues.find(q => q.queueName == this.formData.queue)?.queueId}`;
+          }
+          console.log('创建训练任务API请求:', url);
+          console.log('创建训练任务API请求参数:', requestParams);
+          const response = await axios.post(url, requestParams);
           console.log('创建训练任务API响应:', response.data);
 
           if (response.data.error) {
@@ -3707,7 +3701,7 @@ echo "数据导入任务完成"`;
             const jobId = response.data.jobId || response.data.result?.jobId;
             const jobName = response.data.jobName || response.data.result?.jobName;
             alert(`导入任务创建成功！\n任务ID: ${jobId}\n任务名称: ${jobName}`);
-      // 关闭抽屉
+            // 关闭抽屉
             closeDrawer();
           }
         } catch (error) {
@@ -3750,95 +3744,95 @@ echo "数据导入任务完成"`;
             mountPath: '/mnt/source'
           }
         ]
-    },
-    formatDate(dateStr) {
-      if (!dateStr) return 'N/A';
-      try {
-        const date = new Date(dateStr);
-        return date.toLocaleString('zh-CN');
-      } catch (e) {
-        return dateStr;
-      }
-    },
-    statusText(status) {
-      const statusMap = {
-        'Pending': '等待中',
-        'Running': '运行中',
-        'Succeeded': '成功',
-        'Failed': '失败',
-        'Cancelled': '已取消',
-        'Unknown': '未知'
-      };
-      return statusMap[status] || status || '未知';
-    },
-    statusClass(status) {
-      const classMap = {
-        'Pending': 'status-pending',
-        'Running': 'status-running',
-        'Succeeded': 'status-success',
-        'Failed': 'status-error',
-        'Cancelled': 'status-cancelled',
-        'Unknown': 'status-unknown'
-      };
-      return classMap[status] || 'status-unknown';
-    },
-    viewImportJob(importJob) {
-      // 从任务数据中获取资源池ID
-      const resourcePoolId = importJob.resourcePoolId || 'aihc-serverless';
-      
-      // 跳转到任务详情页面，传递资源池ID和来源页面参数
-      window.location.href = `/jobs/${importJob.jobId}?resourcePoolId=${resourcePoolId}&from=imports&datasetId=${this.datasetId}`;
-    },
-    formatVisibility(visibilityScope) {
-      if (!visibilityScope) return 'N/A';
-      const visibilityMap = {
-        'ALL_PEOPLE': '所有人可见',
-        'USER_GROUP': '用户组可见',
-        'ONLY_OWNER': '仅所有者可见'
-      };
-      return visibilityMap[visibilityScope] || visibilityScope;
-    },
-    copyDatasetId(id) {
-      if (!id) return;
-      
-      // 使用现代浏览器的Clipboard API
-      if (navigator.clipboard && window.isSecureContext) {
-        navigator.clipboard.writeText(id).then(() => {
-          this.showCopySuccess();
-        }).catch(err => {
-          console.error('复制失败:', err);
+      },
+      formatDate(dateStr) {
+        if (!dateStr) return 'N/A';
+        try {
+          const date = new Date(dateStr);
+          return date.toLocaleString('zh-CN');
+        } catch (e) {
+          return dateStr;
+        }
+      },
+      statusText(status) {
+        const statusMap = {
+          'Pending': '等待中',
+          'Running': '运行中',
+          'Succeeded': '成功',
+          'Failed': '失败',
+          'Cancelled': '已取消',
+          'Unknown': '未知'
+        };
+        return statusMap[status] || status || '未知';
+      },
+      statusClass(status) {
+        const classMap = {
+          'Pending': 'status-pending',
+          'Running': 'status-running',
+          'Succeeded': 'status-success',
+          'Failed': 'status-error',
+          'Cancelled': 'status-cancelled',
+          'Unknown': 'status-unknown'
+        };
+        return classMap[status] || 'status-unknown';
+      },
+      viewImportJob(importJob) {
+        // 从任务数据中获取资源池ID
+        const resourcePoolId = importJob.resourcePoolId || 'aihc-serverless';
+
+        // 跳转到任务详情页面，传递资源池ID和来源页面参数
+        window.location.href = `/jobs/${importJob.jobId}?resourcePoolId=${resourcePoolId}&from=imports&datasetId=${this.datasetId}`;
+      },
+      formatVisibility(visibilityScope) {
+        if (!visibilityScope) return 'N/A';
+        const visibilityMap = {
+          'ALL_PEOPLE': '所有人可见',
+          'USER_GROUP': '用户组可见',
+          'ONLY_OWNER': '仅所有者可见'
+        };
+        return visibilityMap[visibilityScope] || visibilityScope;
+      },
+      copyDatasetId(id) {
+        if (!id) return;
+
+        // 使用现代浏览器的Clipboard API
+        if (navigator.clipboard && window.isSecureContext) {
+          navigator.clipboard.writeText(id).then(() => {
+            this.showCopySuccess();
+          }).catch(err => {
+            console.error('复制失败:', err);
+            this.fallbackCopy(id);
+          });
+        } else {
+          // 降级方案
           this.fallbackCopy(id);
-        });
-      } else {
-        // 降级方案
-        this.fallbackCopy(id);
-      }
-    },
-    fallbackCopy(text) {
-      // 创建临时文本区域
-      const textArea = document.createElement('textarea');
-      textArea.value = text;
-      textArea.style.position = 'fixed';
-      textArea.style.left = '-999999px';
-      textArea.style.top = '-999999px';
-      document.body.appendChild(textArea);
-      textArea.focus();
-      textArea.select();
-      
-      try {
-        document.execCommand('copy');
-        this.showCopySuccess();
-      } catch (err) {
-        console.error('复制失败:', err);
-      }
-      
-      document.body.removeChild(textArea);
-    },
-    showCopySuccess() {
-      // 显示复制成功提示
-      const toast = document.createElement('div');
-      toast.textContent = '数据集ID已复制到剪贴板';
-      toast.style.cssText = `
+        }
+      },
+      fallbackCopy(text) {
+        // 创建临时文本区域
+        const textArea = document.createElement('textarea');
+        textArea.value = text;
+        textArea.style.position = 'fixed';
+        textArea.style.left = '-999999px';
+        textArea.style.top = '-999999px';
+        document.body.appendChild(textArea);
+        textArea.focus();
+        textArea.select();
+
+        try {
+          document.execCommand('copy');
+          this.showCopySuccess();
+        } catch (err) {
+          console.error('复制失败:', err);
+        }
+
+        document.body.removeChild(textArea);
+      },
+      showCopySuccess() {
+        // 显示复制成功提示
+        const toast = document.createElement('div');
+        toast.textContent = '数据集ID已复制到剪贴板';
+        toast.style.cssText = `
         position: fixed;
         top: 20px;
         right: 20px;
@@ -3851,32 +3845,32 @@ echo "数据导入任务完成"`;
         box-shadow: 0 4px 12px rgba(0,0,0,0.15);
         animation: slideIn 0.3s ease;
       `;
-      
-      // 添加动画样式
-      const style = document.createElement('style');
-      style.textContent = `
+
+        // 添加动画样式
+        const style = document.createElement('style');
+        style.textContent = `
         @keyframes slideIn {
           from { transform: translateX(100%); opacity: 0; }
           to { transform: translateX(0); opacity: 1; }
         }
       `;
-      document.head.appendChild(style);
-      
-      document.body.appendChild(toast);
-      
-      // 3秒后自动移除
-      setTimeout(() => {
-        if (toast.parentNode) {
-          toast.parentNode.removeChild(toast);
-        }
-      }, 3000);
-    }
-  },
-  mounted() {
+        document.head.appendChild(style);
+
+        document.body.appendChild(toast);
+
+        // 3秒后自动移除
+        setTimeout(() => {
+          if (toast.parentNode) {
+            toast.parentNode.removeChild(toast);
+          }
+        }, 3000);
+      }
+    },
+    mounted() {
       // 确保抽屉初始状态是隐藏的
       this.drawerVisible = false;
-    this.loadDataset();
-  }
-}).mount('#app');
+      this.loadDataset();
+    }
+  }).mount('#app');
 </script>
 {% endblock %}
