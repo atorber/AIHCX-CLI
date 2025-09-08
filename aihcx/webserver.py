@@ -65,11 +65,6 @@ app = Flask(__name__, template_folder=os.path.join(os.path.dirname(os.path.dirna
 CORS(app, resources={r"/*": {"origins": "*"}})
 
 
-
-
-
-
-
 @app.route('/config', methods=['GET', 'POST'])
 def config():
     cfg = AIJobConfig()

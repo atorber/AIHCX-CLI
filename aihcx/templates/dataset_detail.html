@@ -2022,7 +2022,7 @@
           从 <span class="source-path">[[ getSourcePath() ]]</span> 转储到 <span class="target-path">[[ getTargetPath()
             ]]</span>
         </span>
-        <span v-else class="empty-hint">
+        <span v-else-if="importMethod === 'existing'" class="empty-hint">
           请选择源数据集和版本
         </span>
         </div>
