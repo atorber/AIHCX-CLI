@@ -1251,6 +1251,121 @@
     color: #6c757d;
     border: 1px solid #dee2e6;
   }
+  
+  /* 命令行容器样式 */
+  .command-container {
+    border: 1px solid #e0e0e0;
+    border-radius: 6px;
+    background-color: #f8f9fa;
+    overflow: hidden;
+  }
+  
+  .command-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 16px;
+    background-color: #e9ecef;
+    border-bottom: 1px solid #e0e0e0;
+  }
+  
+  .command-title {
+    font-weight: 600;
+    color: #495057;
+  }
+  
+  .btn-copy {
+    background-color: #007bff;
+    color: white;
+    border: none;
+    padding: 6px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 12px;
+    transition: background-color 0.2s;
+  }
+  
+  .btn-copy:hover {
+    background-color: #0056b3;
+  }
+  
+  .command-content {
+    padding: 16px;
+    background-color: #2d3748;
+    color: #e2e8f0;
+    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+    font-size: 13px;
+    line-height: 1.5;
+    overflow-x: auto;
+  }
+  
+  .command-text {
+    color: #e2e8f0;
+    background: none;
+    padding: 0;
+    border: none;
+    white-space: pre-wrap;
+    word-break: break-all;
+  }
+  
+  .command-hint {
+    padding: 12px 16px;
+    background-color: #fff3cd;
+    border-top: 1px solid #ffeaa7;
+  }
+  
+  .command-hint p {
+    margin: 0 0 8px 0;
+    font-size: 13px;
+    color: #856404;
+  }
+  
+  .command-hint p:last-child {
+    margin-bottom: 0;
+  }
+  
+  .command-hint code {
+    background-color: #f8f9fa;
+    padding: 2px 4px;
+    border-radius: 3px;
+    font-size: 12px;
+    color: #e83e8c;
+  }
+  
+  /* 信息提示框样式 */
+  .info-box {
+    display: flex;
+    align-items: flex-start;
+    padding: 16px;
+    background-color: #e3f2fd;
+    border: 1px solid #bbdefb;
+    border-radius: 6px;
+    margin-bottom: 16px;
+  }
+  
+  .info-icon {
+    font-size: 20px;
+    margin-right: 12px;
+    margin-top: 2px;
+  }
+  
+  .info-content h4 {
+    margin: 0 0 8px 0;
+    color: #1976d2;
+    font-size: 16px;
+    font-weight: 600;
+  }
+  
+  .info-content p {
+    margin: 0 0 8px 0;
+    color: #424242;
+    font-size: 14px;
+    line-height: 1.5;
+  }
+  
+  .info-content p:last-child {
+    margin-bottom: 0;
+  }
 </style>
 {% endblock %}
 
@@ -1288,7 +1403,7 @@
                                 <div class="info-label">数据集ID</div>
                                 <div class="info-value">
                                     [[ dataset.id ]]
-                                    <button @click="copyDatasetId(dataset.id)" class="btn btn-sm btn-outline-primary copy-btn">复制</button>
+                                    <button @click="copyDatasetId(dataset.id)" class="copy-btn">复制</button>
                                 </div>
                             </div>
                             <div class="info-item">
@@ -1626,12 +1741,129 @@
                     <input type="radio" v-model="importMethod" value="upload" name="importMethod">
                     <span class="radio-label">上传文件</span>
                 </label> -->
-          <label class="radio-item">
+          <label class="radio-item" v-if="canShowToolUpload">
             <input type="radio" v-model="importMethod" value="tool" name="importMethod">
             <span class="radio-label">工具上传</span>
           </label>
                     </div>
                     </div>
+
+      <!-- 对象存储配置 -->
+      <div v-if="importMethod === 'object'" class="form-group">
+        <label class="form-label required">接入点</label>
+        <input 
+          type="text" 
+          v-model="formData.objectStorageEndpoint" 
+          class="form-control" 
+          placeholder="请输入对象存储接入点"
+        >
+      </div>
+      
+      <div v-if="importMethod === 'object'" class="form-group">
+        <label class="form-label required">Access Key</label>
+        <input 
+          type="text" 
+          v-model="formData.objectStorageAccessKey" 
+          class="form-control" 
+          placeholder="请输入Access Key"
+        >
+      </div>
+      
+      <div v-if="importMethod === 'object'" class="form-group">
+        <label class="form-label required">Secret Key</label>
+        <input 
+          type="password" 
+          v-model="formData.objectStorageSecretKey" 
+          class="form-control" 
+          placeholder="请输入Secret Key"
+        >
+      </div>
+      
+      <div v-if="importMethod === 'object'" class="form-group">
+        <label class="form-label required">存储桶</label>
+        <input 
+          type="text" 
+          v-model="formData.objectStorageBucket" 
+          class="form-control" 
+          placeholder="请输入存储桶名称"
+        >
+      </div>
+
+      <!-- HuggingFace配置 -->
+      <div v-if="importMethod === 'huggingface'" class="form-group">
+        <label class="form-label required">源地址</label>
+        <input 
+          type="text" 
+          v-model="formData.huggingfaceSourceUrl" 
+          class="form-control" 
+          placeholder="请输入HuggingFace数据集地址，如：microsoft/DialoGPT-medium"
+        >
+      </div>
+      
+      <div v-if="importMethod === 'huggingface'" class="form-group">
+        <label class="form-label">Access Token</label>
+        <input 
+          type="password" 
+          v-model="formData.huggingfaceAccessToken" 
+          class="form-control" 
+          placeholder="请输入HuggingFace Access Token（可选）"
+        >
+        <p class="form-hint">Access Token用于访问私有数据集，公开数据集可不填写</p>
+      </div>
+
+      <!-- 自定义下载配置 -->
+      <div v-if="importMethod === 'custom'" class="form-group">
+        <label class="form-label required">镜像地址</label>
+        <input 
+          type="text" 
+          v-model="formData.customDownloadImageUrl" 
+          class="form-control" 
+          placeholder="请输入Docker镜像地址，如：registry.baidubce.com/public/pytorch:1.12.0-cuda11.3-cudnn8-devel"
+        >
+      </div>
+      
+      <div v-if="importMethod === 'custom'" class="form-group">
+        <label class="form-label required">启动命令</label>
+        <textarea 
+          v-model="formData.customDownloadStartCommand" 
+          class="form-control" 
+          rows="4"
+          placeholder="请输入启动命令，如：pip install datasets && python download_data.py"
+        ></textarea>
+        <p class="form-hint">支持多行命令，每行一个命令；目标数据集挂载路径为/mnt/target，也可以使用环境变量$TARGET_PATH</p>
+      </div>
+
+      <!-- 工具上传配置 -->
+      <div v-if="importMethod === 'tool'" class="form-group">
+        <label class="form-label">命令行工具</label>
+        <div class="command-container">
+          <div class="command-header">
+            <span class="command-title">bcecmd bos sync 命令</span>
+            <button type="button" @click="copyCommand" class="btn-copy" title="复制命令">
+              📋 复制
+            </button>
+          </div>
+          <div class="command-content">
+            <code class="command-text">[[ generatedCommand ]]</code>
+          </div>
+          <div class="command-hint">
+            <p>请在本地命令行中执行上述命令来上传数据到BOS存储桶。</p>
+            <p>请将 <code>&lt;local_dir&gt;</code> 替换为您的本地数据目录路径。</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- 工具上传时显示提示信息 -->
+      <div v-if="importMethod === 'tool'" class="form-group">
+        <div class="info-box">
+          <div class="info-icon">ℹ️</div>
+          <div class="info-content">
+            <h4>工具上传说明</h4>
+            <p>工具上传方式使用本地命令行工具进行数据上传，无需选择资源池和队列等配置项。</p>
+            <p>请使用下方生成的命令行在本地执行数据上传操作。</p>
+          </div>
+        </div>
+      </div>
 
       <!-- 源数据集配置 -->
       <div v-if="importMethod === 'existing'" class="form-group">
@@ -1680,6 +1912,8 @@
         </div>
                 </div>
                 
+      <!-- 其他配置项（工具上传时隐藏） -->
+      <div v-if="importMethod !== 'tool'">
       <!-- 清空数据选项 -->
                 <div class="form-group">
         <div class="toggle-group">
@@ -1777,6 +2011,7 @@
         </div>
             </div>
         </div>
+      </div> <!-- 结束其他配置项的条件div -->
         
         <div class="form-actions">
       <div class="transfer-summary">
@@ -1867,7 +2102,18 @@ createApp({
           nameStrategy: 'target', // 默认选中保留目的文件
           resourcePoolType: 'common', // 资源池类型，默认选中自运维资源池
           resourcePool: '',
-          queue: ''
+          queue: '',
+          // 对象存储相关字段
+          objectStorageEndpoint: '',
+          objectStorageAccessKey: '',
+          objectStorageSecretKey: '',
+          objectStorageBucket: '',
+          // HuggingFace相关字段
+          huggingfaceSourceUrl: '',
+          huggingfaceAccessToken: '',
+          // 自定义下载相关字段
+          customDownloadImageUrl: '',
+          customDownloadStartCommand: ''
         }
 
     }
@@ -2001,6 +2247,39 @@ createApp({
         return this.dataset && this.dataset.storageType && this.dataset.storageType.toLowerCase() === 'pfs';
       },
       
+      // 检查是否为BOS数据集
+      isBosDataset() {
+        return this.dataset && this.dataset.storageType && this.dataset.storageType.toLowerCase() === 'bos';
+      },
+      
+      // 检查是否可以显示工具上传选项
+      canShowToolUpload() {
+        return this.isBosDataset;
+      },
+      
+      // 生成bcecmd命令
+      generatedCommand() {
+        if (!this.dataset || !this.isBosDataset) {
+          return '请选择BOS类型的数据集';
+        }
+        
+        const bucketName = this.dataset.storageInstance || this.dataset.storageInstanceId || 'your-bucket';
+        const prefix = this.dataset.storagePath || '';
+        
+        // 构建基础命令
+        let command = `$ bcecmd bos sync <local_dir> bos:/${bucketName}`;
+        
+        // 添加前缀（如果存在）
+        if (prefix && prefix !== '/') {
+          command += `/${prefix.replace(/^\//, '')}`;
+        }
+        
+        // 添加常用参数
+        command += ` --exclude "*.tmp" --exclude "*.log" --exclude ".DS_Store" --include "*" --concurrency 10`;
+        
+        return command;
+      },
+      
       // 自运维资源池（common类型）
       commonResourcePools() {
         if (!this.resourcePools || this.resourcePools.length === 0) {
@@ -2071,6 +2350,30 @@ createApp({
     }
   },
   methods: {
+      // 复制命令到剪贴板
+      async copyCommand() {
+        try {
+          await navigator.clipboard.writeText(this.generatedCommand);
+          // 简单的提示，可以后续优化为更好的UI提示
+          alert('命令已复制到剪贴板！');
+        } catch (err) {
+          console.error('复制失败:', err);
+          // 降级处理：创建临时文本区域
+          const textArea = document.createElement('textarea');
+          textArea.value = this.generatedCommand;
+          document.body.appendChild(textArea);
+          textArea.select();
+          try {
+            document.execCommand('copy');
+            alert('命令已复制到剪贴板！');
+          } catch (fallbackErr) {
+            console.error('降级复制也失败:', fallbackErr);
+            alert('复制失败，请手动复制命令');
+          }
+          document.body.removeChild(textArea);
+        }
+      },
+      
       // 检查是否有PFS类型的数据集
       hasPfsDataset() {
         // 检查目标数据集是否为PFS类型
@@ -3258,6 +3561,12 @@ echo "数据导入任务完成"`;
       async submitImportForm() {
         console.log('submitImportForm called');
         
+        // 工具上传不需要提交表单，直接返回
+        if (this.importMethod === 'tool') {
+          alert('工具上传方式不需要提交表单，请使用上方生成的命令行在本地执行数据上传');
+          return;
+        }
+        
         // 检查源数据集版本和目标数据集版本的存储实例和路径是否相同
         if (this.checkSourceTargetSame()) {
           alert('源数据集版本和目标数据集版本的存储实例和路径不能完全相同，请重新选择');
@@ -3268,6 +3577,47 @@ echo "数据导入任务完成"`;
         if (this.importMethod === 'existing' && (!this.formData.sourceDataset || !this.formData.datasetVersion)) {
         alert('请选择源数据集和数据版本');
         return;
+      }
+      
+      // 对象存储验证
+      if (this.importMethod === 'object') {
+        if (!this.formData.objectStorageEndpoint) {
+          alert('请输入对象存储接入点');
+          return;
+        }
+        if (!this.formData.objectStorageAccessKey) {
+          alert('请输入Access Key');
+          return;
+        }
+        if (!this.formData.objectStorageSecretKey) {
+          alert('请输入Secret Key');
+          return;
+        }
+        if (!this.formData.objectStorageBucket) {
+          alert('请输入存储桶名称');
+          return;
+        }
+      }
+      
+      // HuggingFace验证
+      if (this.importMethod === 'huggingface') {
+        if (!this.formData.huggingfaceSourceUrl) {
+          alert('请输入HuggingFace源地址');
+          return;
+        }
+        // Access Token是可选的，不需要验证
+      }
+      
+      // 自定义下载验证
+      if (this.importMethod === 'custom') {
+        if (!this.formData.customDownloadImageUrl) {
+          alert('请输入镜像地址');
+          return;
+        }
+        if (!this.formData.customDownloadStartCommand) {
+          alert('请输入启动命令');
+          return;
+        }
       }
       
         if (!this.formData.cleanData && !this.formData.nameStrategy) {
