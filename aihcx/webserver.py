@@ -182,7 +182,7 @@ def proxy_aihc(subpath=None):
             print('body', body)
             body = json.dumps(body)
         except Exception as e:
-            print('获取JSON body失败:', e)
+            print('没有body参数:', e)
             body = json.dumps({})
 
         print('http_method', http_method)
@@ -201,16 +201,20 @@ def proxy_aihc(subpath=None):
             # 透传请求
 
             if params['action'] in ['DescribeResourcePools', 'DescribeResourcePool', 'DescribeQueues', 'DescribeQueue']:
+                print('获取资源池/队列相关接口请求:', http_method, '/', body, params)
                 aihc_client = AihcClient(aihc_sample_conf)
+                print('开始请求...')
                 response = aihc_client.base_client._aihc_request(
                     http_method=http_method,
                     path='/',
                     body=body,
                     params=params,
                 )
-                print('response', response)         # 返回响应
+                print('请求完成...')
+                # print('获取资源池/队列相关接口响应:', response)         # 返回响应
                 return jsonify(json.loads(response.raw_data)), 200
             else:
+                print('数据集/模型/任务等相关接口请求:', http_method, path, body, params)
                 aihc_client = AIHCClient(aihc_sample_conf)
                 response = aihc_client._send_request(
                     http_method=http_method,
@@ -223,7 +227,7 @@ def proxy_aihc(subpath=None):
                     },
                     body_parser=parse_json
                 )
-                print('response', response)         # 返回响应
+                print('数据集/模型/任务等相关接口响应:', response)         # 返回响应
                 return jsonify(to_dict(response)), 200
 
         elif '/v1/' in url_path:

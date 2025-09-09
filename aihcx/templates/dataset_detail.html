@@ -2135,23 +2135,23 @@
         });
       },
       filteredQueues() {
-        if (this.formData.resourcePoolType !== 'common') {
-          const childQueues = [];
-          const queues = this.queues && this.queues.length > 0 ? this.queues : [];
-          console.log('filteredQueues', queues);
-          if (queues.length > 0) {
-            for (const queue of queues) {
-              console.log('queue', queue);
-              if (queue.children && queue.children.length > 0) {
-                for (const childQueue of queue.children) {
-                  childQueues.push(childQueue);
-                }
+        const childQueues = [];
+        const queues = this.queues && this.queues.length > 0 ? this.queues : [];
+        console.log('filteredQueues', queues);
+        if (queues.length > 0) {
+          for (const queue of queues) {
+            console.log('queue', queue);
+            if (queue.children && queue.children.length > 0) {
+              for (const childQueue of queue.children) {
+                childQueues.push(childQueue);
               }
+            } else {
+              childQueues.push(queue);
             }
-            console.log('childQueues', childQueues); 
           }
-          this.queues = childQueues.length > 0 ? childQueues : this.queues;
+          console.log('childQueues', childQueues);
         }
+        this.queues = childQueues.length > 0 ? childQueues : this.queues;
         return this.queues && this.queues.length > 0 ? this.queues : [];
       },
       // 检查是否有可用的资源池
@@ -3636,7 +3636,7 @@ echo "数据导入任务完成"`;
           command: this.buildImportCommand(),
           jobSpec: {
             replicas: 1,
-            image: "registry.baidubce.com/public/pytorch:1.12.0-cuda11.3-cudnn8-devel",
+            image: "registry.baidubce.com/inference/aibox-ubuntu:v2.0-22.04",
             resources: [],
             envs: [
               {
@@ -3672,7 +3672,7 @@ echo "数据导入任务完成"`;
               "value": `dataset-${this.datasetId}`
             }
           ],
-          "datasource": datasource
+          "dataSources": datasource
         };
 
         console.log('创建训练任务请求参数:', JSON.stringify(requestParams, null, 2));
