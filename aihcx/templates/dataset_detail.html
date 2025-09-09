@@ -3512,32 +3512,146 @@ if [ "$CLEAN_DATA" = "true" ]; then
     rm -rf "$TARGET_PATH"/.[^.]* 2>/dev/null || true  # 删除隐藏文件，忽略错误
 fi
 
+# 定义复制函数
+copy_files() {
+    local source_dir="$1"
+    local target_dir="$2"
+    local strategy="$3"
+    
+    echo "开始复制文件..."
+    echo "源目录: $source_dir"
+    echo "目标目录: $target_dir"
+    echo "策略: $strategy"
+    
+    # 首先创建所有必要的目录结构
+    echo "创建目录结构..."
+    find "$source_dir" -type d | while read -r source_dir_item; do
+        if [ "$source_dir_item" != "$source_dir" ]; then
+            relative_path="\${source_dir_item#$source_dir/}"
+            target_dir_item="$target_dir/$relative_path"
+            if [ ! -d "$target_dir_item" ]; then
+                echo "创建目录: $relative_path"
+                mkdir -p "$target_dir_item"
+            fi
+        fi
+    done
+    
+    # 然后复制所有文件
+    echo "复制文件..."
+    local copied_count=0
+    local skipped_count=0
+    
+    # 使用数组来存储文件列表，避免子shell问题
+    local files_array=()
+    while IFS= read -r -d '' file; do
+        files_array+=("$file")
+    done < <(find "$source_dir" -type f -print0)
+    
+    # 遍历文件数组
+    for source_file in "\${files_array[@]}"; do
+        # 计算相对路径
+        relative_path="\${source_file#$source_dir/}"
+        target_file="$target_dir/$relative_path"
+        target_dir_path=\$(dirname "$target_file")
+        
+        # 确保目标目录存在
+        mkdir -p "$target_dir_path"
+        
+        # 根据策略决定是否复制文件
+        if [ "$strategy" = "target" ]; then
+            # 保留目的文件策略：如果目标文件不存在才复制
+            if [ ! -f "$target_file" ]; then
+                echo "复制: $relative_path"
+                cp "$source_file" "$target_file"
+                copied_count=\$((copied_count + 1))
+            else
+                echo "跳过（目标文件已存在）: $relative_path"
+                skipped_count=\$((skipped_count + 1))
+            fi
+        else
+            # 保留源文件策略：直接覆盖
+            echo "复制: $relative_path"
+            cp "$source_file" "$target_file"
+            copied_count=\$((copied_count + 1))
+        fi
+    done
+    
+    echo "复制完成: $copied_count 个文件已复制, $skipped_count 个文件已跳过"
+}
+
 # 根据同名保留策略处理文件复制
 if [ "$NAME_STRATEGY" = "target" ]; then
     echo "使用保留目的文件策略..."
-    # 使用 rsync 复制，保留目的文件
-    rsync -av --ignore-existing "$SOURCE_PATH"/ "$TARGET_PATH"/
+    copy_files "$SOURCE_PATH" "$TARGET_PATH" "target"
 elif [ "$NAME_STRATEGY" = "source" ]; then
     echo "使用保留源文件策略..."
-    # 使用 rsync 复制，覆盖目的文件
-    rsync -av "$SOURCE_PATH"/ "$TARGET_PATH"/
+    copy_files "$SOURCE_PATH" "$TARGET_PATH" "source"
 else
     echo "使用默认策略（保留源文件）..."
-    # 默认使用保留源文件策略
-    rsync -av "$SOURCE_PATH"/ "$TARGET_PATH"/
+    copy_files "$SOURCE_PATH" "$TARGET_PATH" "source"
 fi
 
 # 验证复制结果
 echo "验证复制结果..."
-source_count=$(find "$SOURCE_PATH" -type f | wc -l)
-target_count=$(find "$TARGET_PATH" -type f | wc -l)
+source_count=\$(find "$SOURCE_PATH" -type f | wc -l)
+target_count=\$(find "$TARGET_PATH" -type f | wc -l)
+source_dirs=\$(find "$SOURCE_PATH" -type d | wc -l)
+target_dirs=\$(find "$TARGET_PATH" -type d | wc -l)
+
 echo "源路径文件数量: $source_count"
 echo "目标路径文件数量: $target_count"
+echo "源路径目录数量: $source_dirs"
+echo "目标路径目录数量: $target_dirs"
 
-if [ "$source_count" -eq "$target_count" ]; then
+# 检查复制是否成功
+# 对于文件数量，目标应该 >= 源（因为目标可能已有其他文件）
+# 对于目录数量，目标应该 >= 源（因为目标可能已有其他目录）
+if [ "$target_count" -ge "$source_count" ] && [ "$target_dirs" -ge "$source_dirs" ]; then
     echo "数据导入成功完成！"
+    echo "源文件数量: $source_count"
+    echo "目标文件数量: $target_count"
+    echo "源目录数量: $source_dirs"
+    echo "目标目录数量: $target_dirs"
+    
+    # 额外验证：检查源目录中的每个文件是否都在目标目录中存在
+    echo "验证文件复制完整性..."
+    missing_files=0
+    missing_list=""
+    
+    # 使用数组来存储文件列表，避免子shell问题
+    source_files_array=()
+    while IFS= read -r -d '' file; do
+        source_files_array+=("$file")
+    done < <(find "$SOURCE_PATH" -type f -print0)
+    
+    # 检查每个源文件是否在目标目录中存在
+    for source_file in "\${source_files_array[@]}"; do
+        relative_path="\${source_file#$SOURCE_PATH/}"
+        target_file="$TARGET_PATH/$relative_path"
+        if [ ! -f "$target_file" ]; then
+            echo "错误: 文件未成功复制: $relative_path"
+            missing_files=\$((missing_files + 1))
+            if [ -z "$missing_list" ]; then
+                missing_list="$relative_path"
+            else
+                missing_list="$missing_list, $relative_path"
+            fi
+        else
+            echo "验证通过: $relative_path"
+        fi
+    done
+    
+    if [ "$missing_files" -eq 0 ]; then
+        echo "所有源文件都已成功复制到目标目录"
+    else
+        echo "错误: 有 $missing_files 个文件未成功复制: $missing_list"
+        exit 1
+    fi
 else
-    echo "警告: 文件数量不匹配，请检查复制结果"
+    echo "错误: 复制验证失败"
+    echo "源: $source_count 文件, $source_dirs 目录"
+    echo "目标: $target_count 文件, $target_dirs 目录"
+    echo "目标文件数量应该 >= 源文件数量"
     exit 1
 fi
 
