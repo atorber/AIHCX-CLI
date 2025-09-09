@@ -3761,6 +3761,8 @@ echo "数据导入任务完成"`;
           'Succeeded': '成功',
           'Failed': '失败',
           'Cancelled': '已取消',
+          'ManualTermination': '手动终止',
+          'Scheduled': '已调度',
           'Unknown': '未知'
         };
         return statusMap[status] || status || '未知';
@@ -3772,6 +3774,8 @@ echo "数据导入任务完成"`;
           'Succeeded': 'status-success',
           'Failed': 'status-error',
           'Cancelled': 'status-cancelled',
+          'ManualTermination': 'status-cancelled',
+          'Scheduled': 'status-pending',
           'Unknown': 'status-unknown'
         };
         return classMap[status] || 'status-unknown';

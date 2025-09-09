@@ -964,14 +964,6 @@ createApp({
         // 新接口直接在根级别返回resourcePools数组
         if (data.resourcePools && Array.isArray(data.resourcePools)) {
           this.resourcePools = data.resourcePools;
-        } else if (data.result?.resourcePools) {
-          this.resourcePools = data.result.resourcePools;
-        } else if (data.ResourcePools) {
-          this.resourcePools = data.ResourcePools;
-        } else if (data.result?.ResourcePools) {
-          this.resourcePools = data.result.ResourcePools;
-        } else if (Array.isArray(data)) {
-          this.resourcePools = data;
         } else {
           console.warn('未识别的资源池API响应格式:', data);
           this.resourcePools = [];

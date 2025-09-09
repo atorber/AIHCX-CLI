@@ -90,6 +90,8 @@
 .status.pending { background: #fff7e6; color: #fa8c16; border: 1px solid #ffd591; }
 .status.failed { background: #fff2f0; color: #dc3545; border: 1px solid #ffccc7; }
 .status.succeeded { background: #e6fffb; color: #13c2c2; border: 1px solid #87e8de; }
+.status.cancelled { background: #f5f5f5; color: #666; border: 1px solid #d9d9d9; }
+.status.unknown { background: #f8f9fa; color: #6c757d; border: 1px solid #dee2e6; }
 .loading {
   text-align: center;
   padding: 60px 20px;
@@ -929,7 +931,11 @@ createApp({
         succeeded:'succeeded', 
         success:'succeeded',
         created:'pending',
-        creating:'pending'
+        creating:'pending',
+        ManualTermination:'cancelled',
+        Scheduled:'pending',
+        Cancelled:'cancelled',
+        Unknown:'unknown'
       };
       return m[s] || 'pending';
     },
@@ -941,7 +947,11 @@ createApp({
         succeeded:'成功', 
         success:'成功',
         created:'已创建',
-        creating:'创建中'
+        creating:'创建中',
+        ManualTermination:'手动终止',
+        Scheduled:'已调度',
+        Cancelled:'已取消',
+        Unknown:'未知'
       };
       return m[s] || s || '未知';
     },
