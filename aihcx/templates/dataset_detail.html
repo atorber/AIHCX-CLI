@@ -1301,80 +1301,102 @@
     overflow-x: auto;
   }
 
-  /* 命令步骤样式 */
-  .command-steps {
-    border: 1px solid #e0e0e0;
+  /* 单命令容器样式 - 极简版 */
+  .single-command-container {
+    background-color: #ffffff;
+    border: 1px solid #e9ecef;
     border-radius: 6px;
-    background-color: #f8f9fa;
     overflow: hidden;
   }
 
-  .command-step {
-    border-bottom: 1px solid #e0e0e0;
-  }
-
-  .command-step:last-child {
-    border-bottom: none;
-  }
-
-  .step-header {
+  .command-header {
     display: flex;
     align-items: center;
-    padding: 12px 16px;
-    background-color: #ffffff;
-    border-bottom: 1px solid #f1f3f4;
+    justify-content: space-between;
+    padding: 8px 12px;
+    background-color: #f8f9fa;
+    border-bottom: 1px solid #e9ecef;
   }
 
-  .step-number {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 24px;
-    height: 24px;
+  .command-label {
+    font-size: 12px;
+    font-weight: 500;
+    color: #6c757d;
+  }
+
+  .btn-copy-simple {
     background-color: #007bff;
     color: white;
-    border-radius: 50%;
-    font-size: 12px;
-    font-weight: 600;
-    margin-right: 12px;
-  }
-
-  .step-title {
-    flex: 1;
-    font-weight: 500;
-    color: #495057;
-    font-size: 14px;
-  }
-
-  .btn-copy-step {
-    background-color: #28a745;
-    color: white;
     border: none;
-    padding: 4px 8px;
-    border-radius: 4px;
+    padding: 4px 12px;
+    border-radius: 3px;
     cursor: pointer;
-    font-size: 12px;
-    transition: background-color 0.2s;
-    min-width: 28px;
-    height: 28px;
+    font-size: 11px;
+    font-weight: 500;
+    transition: background-color 0.2s ease;
   }
 
-  .btn-copy-step:hover {
-    background-color: #218838;
+  .btn-copy-simple:hover {
+    background-color: #0056b3;
   }
 
-  .step-content {
-    padding: 12px 16px;
-    background-color: #2d3748;
+  .command-body {
+    padding: 12px;
   }
 
-  .step-command {
-    color: #e2e8f0;
+  .single-command {
+    color: #495057;
     font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
     font-size: 13px;
     line-height: 1.4;
-    word-break: break-all;
+    background-color: #f8f9fa;
+    padding: 10px 12px;
+    border-radius: 4px;
+    border-left: 3px solid #007bff;
     display: block;
+    overflow-x: auto;
+    word-break: break-all;
+  }
+
+  /* 工具上传指引样式 */
+  .install-guide, .upload-guide {
+    margin-bottom: 16px;
+    padding: 12px;
+    border-radius: 6px;
+    background-color: #f8f9fa;
+  }
+
+  .install-guide {
+    border-left: 4px solid #ffc107;
+  }
+
+  .upload-guide {
+    border-left: 4px solid #28a745;
+  }
+
+  .install-guide h4, .upload-guide h4 {
+    margin: 0 0 8px 0;
+    font-size: 14px;
+    font-weight: 600;
+    color: #495057;
+  }
+
+  .install-guide p, .upload-guide p {
+    margin: 4px 0;
+    font-size: 13px;
+    color: #6c757d;
+    line-height: 1.4;
+  }
+
+  .doc-link {
+    color: #007bff;
+    text-decoration: none;
+    font-weight: 500;
+  }
+
+  .doc-link:hover {
+    color: #0056b3;
+    text-decoration: underline;
   }
 
   .command-text {
@@ -1937,23 +1959,27 @@
       <!-- 工具上传配置 -->
       <div v-if="importMethod === 'tool'" class="form-group">
         <label class="form-label">命令行工具上传</label>
-        <div class="command-steps">
-          <div v-for="(step, index) in commandSteps" :key="index" class="command-step">
-            <div class="step-header">
-              <span class="step-number">[[ index + 1 ]]</span>
-              <span class="step-title">[[ step.title ]]</span>
-              <button type="button" @click="copyStepCommand(step.command)" class="btn-copy-step" :title="'复制步骤' + (index + 1) + '命令'">
-                📋
-              </button>
-            </div>
-            <div class="step-content">
-              <code class="step-command">[[ step.command ]]</code>
-            </div>
+        <div class="single-command-container">
+          <div class="command-header">
+            <span class="command-label">上传命令</span>
+            <button type="button" @click="copyStepCommand(commandSteps[0].command)" class="btn-copy-simple" title="复制命令">
+              复制
+            </button>
+          </div>
+          <div class="command-body">
+            <code class="single-command">[[ commandSteps[0].command ]]</code>
           </div>
         </div>
         <div class="command-hint">
-          <p>请按顺序在本地命令行中执行上述命令来上传数据到BOS存储桶。</p>
-          <p>在最后一步中，请将 <code>&lt;local_dir&gt;</code> 替换为您的本地数据目录路径。</p>
+          <div class="install-guide">
+            <h4>📋 使用前准备</h4>
+            <p>1. 安装和配置bcecmd工具，详见 <a href="https://cloud.baidu.com/doc/BOS/s/qjwvyqegc" target="_blank" class="doc-link">安装BOSCMD工具官方文档</a></p>
+            <p>2. 确保已完成bcecmd的认证配置（运行 <code>bcecmd -c</code> 进行配置）</p>
+          </div>
+          <div class="upload-guide">
+            <h4>🚀 数据上传</h4>
+            <p>请将上方命令中的 <code>&lt;local_dir&gt;</code> 替换为您的本地数据目录路径，然后执行命令进行数据同步。</p>
+          </div>
         </div>
       </div>
 
@@ -2408,30 +2434,6 @@
         syncCommand += ` --exclude "*.tmp" --exclude "*.log" --exclude ".DS_Store" --include "*" --concurrency 10`;
 
         return [
-          {
-            title: '下载bcecmd工具',
-            command: 'wget https://doc.bce.baidu.com/bos-optimization/linux-bcecmd-0.5.9.zip'
-          },
-          {
-            title: '解压工具包',
-            command: 'unzip linux-bcecmd-0.5.9.zip'
-          },
-          {
-            title: '移动工具到系统路径',
-            command: 'mv linux-bcecmd-0.5.9/bcecmd /usr/local/bin/bcecmd'
-          },
-          {
-            title: '清理临时文件',
-            command: 'rm -rf linux-bcecmd-0.5.9.zip linux-bcecmd-0.5.9'
-          },
-          {
-            title: '设置执行权限',
-            command: 'chmod +x /usr/local/bin/bcecmd'
-          },
-          {
-            title: '配置bcecmd（按提示输入配置信息）',
-            command: 'bcecmd -c'
-          },
           {
             title: '同步数据到BOS',
             command: syncCommand
