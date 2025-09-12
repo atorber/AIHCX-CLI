@@ -1,0 +1,372 @@
+<template>
+  <div class="container">
+    <div class="header">
+      <h1>⚙️ 参数配置</h1>
+      <p>配置AIHCX连接参数</p>
+    </div>
+    <div class="main">
+      <aside class="sidebar">
+        <Navigation />
+      </aside>
+      <div class="content">
+        <div class="page-container">
+          <div class="config-container">
+            <form @submit.prevent="saveConfig">
+              <div class="field-row" :class="{ error: errors.host }">
+                <label for="host">Host <span class="required">*</span></label>
+                <div class="control">
+                  <input 
+                    type="text" 
+                    id="host" 
+                    v-model="config.host" 
+                    placeholder="例如: aihc.bj.baidubce.com"
+                    required
+                  >
+                  <div class="help-text">AIHC服务的访问地址</div>
+                  <div v-if="errors.host" class="small-error">{{ errors.host }}</div>
+                </div>
+              </div>
+              
+              <div class="field-row" :class="{ error: errors.access_key }">
+                <label for="access_key">Access Key <span class="required">*</span></label>
+                <div class="control">
+                  <input 
+                    type="text" 
+                    id="access_key" 
+                    v-model="config.access_key" 
+                    placeholder="请输入您的Access Key"
+                    required
+                  >
+                  <div class="help-text">用于身份验证的Access Key</div>
+                  <div v-if="errors.access_key" class="small-error">{{ errors.access_key }}</div>
+                </div>
+              </div>
+              
+              <div class="field-row" :class="{ error: errors.secret_key }">
+                <label for="secret_key">Secret Key <span class="required">*</span></label>
+                <div class="control">
+                  <input 
+                    type="password" 
+                    id="secret_key" 
+                    v-model="config.secret_key" 
+                    placeholder="请输入您的Secret Key"
+                    required
+                  >
+                  <div class="help-text">用于身份验证的Secret Key</div>
+                  <div v-if="errors.secret_key" class="small-error">{{ errors.secret_key }}</div>
+                </div>
+              </div>
+              
+              <div class="field-row">
+                <label for="pool">Pool</label>
+                <div class="control">
+                  <input 
+                    type="text" 
+                    id="pool" 
+                    v-model="config.pool" 
+                    placeholder="默认资源池ID"
+                  >
+                  <div class="help-text">默认使用的资源池ID（可选）</div>
+                </div>
+              </div>
+              
+              <div class="field-row">
+                <label for="queue">Queue</label>
+                <div class="control">
+                  <input 
+                    type="text" 
+                    id="queue" 
+                    v-model="config.queue" 
+                    placeholder="默认队列名称"
+                  >
+                  <div class="help-text">默认使用的队列名称（可选）</div>
+                </div>
+              </div>
+              
+              <div class="field-row">
+                <label for="path">Path</label>
+                <div class="control">
+                  <input 
+                    type="text" 
+                    id="path" 
+                    v-model="config.path" 
+                    placeholder="默认路径"
+                  >
+                  <div class="help-text">默认使用的路径（可选）</div>
+                </div>
+              </div>
+              
+              <div class="btn-row">
+                <button type="submit" :disabled="saving">
+                  <span v-if="saving">💾 保存中...</span>
+                  <span v-else>💾 保存配置</span>
+                </button>
+                <button type="button" @click="resetForm" :disabled="saving">🔄 重置</button>
+              </div>
+            </form>
+            
+            <div v-if="successMessage" class="msg">✅ {{ successMessage }}</div>
+            <div v-if="errorMessage" class="error-msg">❌ {{ errorMessage }}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</template>
+
+<script>
+import Navigation from '../components/Navigation.vue'
+
+export default {
+  name: 'Config',
+  components: {
+    Navigation
+  },
+  data() {
+    return {
+      config: {
+        host: '',
+        access_key: '',
+        secret_key: '',
+        pool: '',
+        queue: '',
+        path: ''
+      },
+      originalConfig: {},
+      errors: {},
+      saving: false,
+      successMessage: '',
+      errorMessage: ''
+    }
+  },
+  mounted() {
+    this.loadConfig()
+  },
+  methods: {
+    async loadConfig() {
+      try {
+        // 创建一个新的API端点来获取配置
+        const response = await fetch('/api/config-json')
+        if (response.ok) {
+          const data = await response.json()
+          this.config = { ...this.config, ...data }
+        }
+        this.originalConfig = { ...this.config }
+      } catch (error) {
+        console.error('加载配置失败:', error)
+        // 如果加载失败，使用默认配置
+        this.originalConfig = { ...this.config }
+      }
+    },
+    validateForm() {
+      this.errors = {};
+      
+      if (!this.config.host.trim()) {
+        this.errors.host = 'Host是必填项';
+      } else if (!this.isValidUrl(this.config.host)) {
+        this.errors.host = '请输入有效的Host地址';
+      }
+      
+      if (!this.config.access_key.trim()) {
+        this.errors.access_key = 'Access Key是必填项';
+      }
+      
+      if (!this.config.secret_key.trim()) {
+        this.errors.secret_key = 'Secret Key是必填项';
+      }
+      
+      return Object.keys(this.errors).length === 0;
+    },
+    isValidUrl(string) {
+      try {
+        new URL(`https://${string}`);
+        return true;
+      } catch (_) {
+        return false;
+      }
+    },
+    async saveConfig() {
+      if (!this.validateForm()) {
+        return;
+      }
+      
+      this.saving = true;
+      this.successMessage = '';
+      this.errorMessage = '';
+      
+      try {
+        const formData = new FormData();
+        Object.keys(this.config).forEach(key => {
+          if (this.config[key]) {
+            formData.append(key, this.config[key]);
+          }
+        });
+        
+        const response = await fetch('/config', {
+          method: 'POST',
+          body: formData
+        });
+        
+        if (response.ok) {
+          this.successMessage = '配置保存成功！';
+          this.originalConfig = { ...this.config };
+          // 清除错误信息
+          this.errors = {};
+          // 3秒后隐藏成功消息
+          setTimeout(() => {
+            this.successMessage = '';
+          }, 3000);
+        } else {
+          this.errorMessage = '保存失败，请重试';
+        }
+      } catch (error) {
+        this.errorMessage = '保存失败: ' + error.message;
+      } finally {
+        this.saving = false;
+      }
+    },
+    resetForm() {
+      this.config = { ...this.originalConfig };
+      this.errors = {};
+      this.successMessage = '';
+      this.errorMessage = '';
+    }
+  }
+}
+</script>
+
+<style scoped>
+.config-container {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 28px 0;
+}
+
+form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* 左右结构 */
+.field-row {
+  display: grid;
+  grid-template-columns: 180px 1fr;
+  align-items: start;
+  column-gap: 16px;
+}
+
+.field-row + .field-row {
+  margin-top: 6px;
+}
+
+.field-row label {
+  color: #374151;
+  font-size: 14px;
+  font-weight: 600;
+  text-align: right;
+  margin: 0;
+  padding-top: 6px;
+}
+
+.field-row .control {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+input[type=text], input[type=password] {
+  padding: 10px 12px;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 10px;
+  font-size: 14px;
+  background: #fff;
+  transition: box-shadow 0.15s ease, border-color 0.15s ease;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+input[type=text]:focus, input[type=password]:focus {
+  border-color: #2b6def;
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(43, 109, 239, 0.12);
+}
+
+/* 校验态 */
+.field-row.error input {
+  border-color: #dc3545;
+  background: #fff5f5;
+}
+
+.field-row.error label {
+  color: #dc3545;
+}
+
+.small-error {
+  color: #dc3545;
+  font-size: 13px;
+}
+
+.help-text {
+  font-size: 13px;
+  color: #6b7280;
+  line-height: 1.5;
+}
+
+.required {
+  color: #dc3545;
+  margin-left: 4px;
+}
+
+.btn-row {
+  display: flex;
+  gap: 12px;
+  margin-top: 8px;
+  margin-left: 180px;
+}
+
+button {
+  background: #2b6def;
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  padding: 10px 16px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  min-height: 40px;
+}
+
+button:hover {
+  background: #1f5bd8;
+  box-shadow: 0 4px 12px rgba(43, 109, 239, 0.25);
+}
+
+button:disabled {
+  background: #9ca3af;
+  cursor: not-allowed;
+}
+
+.msg {
+  text-align: left;
+  color: #16a34a;
+  margin-top: 12px;
+  font-size: 14px;
+  padding: 10px;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: 8px;
+}
+
+.error-msg {
+  text-align: left;
+  color: #dc3545;
+  margin-top: 12px;
+  font-size: 14px;
+  padding: 10px;
+  background: #fff1f2;
+  border: 1px solid #fecdd3;
+  border-radius: 8px;
+}
+</style>

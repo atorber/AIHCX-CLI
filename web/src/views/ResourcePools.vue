@@ -1,0 +1,1146 @@
+<template>
+  <div class="container">
+    <div class="header">
+      <h1>🏊 资源池列表</h1>
+      <p>查看和管理您的资源池</p>
+    </div>
+    <div class="main">
+      <aside class="sidebar">
+        <Navigation />
+      </aside>
+      <div class="content">
+        <div class="page-container">
+          <!-- 统计信息 -->
+          <div class="stats" v-if="!error">
+            <div class="stat-item">
+              <div class="stat-number">{{ totalCount }}</div>
+              <div class="stat-label">总资源池</div>
+            </div>
+            <div class="stat-item">
+              <div class="stat-number">{{ commonCount }}</div>
+              <div class="stat-label">自运维资源池</div>
+            </div>
+            <div class="stat-item">
+              <div class="stat-number">{{ dedicatedCount }}</div>
+              <div class="stat-label">全托管资源池</div>
+            </div>
+          </div>
+          
+          <!-- 统计信息说明 -->
+          <div v-if="!loading && !error && !hasApiStats" class="stats-note">
+            <i class="fas fa-info-circle"></i>
+            <span>统计信息基于当前页数据，可能不完整</span>
+          </div>
+
+          <!-- 资源池类型Tab -->
+          <div class="resource-pool-tabs">
+            <div class="tab-list">
+              <button 
+                class="tab-item" 
+                :class="{ active: activeTab === 'common' }"
+                @click="switchTab('common')"
+              >
+                自运维资源池
+                <span class="tab-count">({{ getTabCount('common') }})</span>
+              </button>
+              <button 
+                class="tab-item" 
+                :class="{ active: activeTab === 'dedicatedV2' }"
+                @click="switchTab('dedicatedV2')"
+              >
+                全托管资源池
+                <span class="tab-count">({{ getTabCount('dedicatedV2') }})</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- 搜索和刷新 -->
+          <div class="search-box">
+            <input 
+              type="text" 
+              class="search-input" 
+              v-model="searchQuery" 
+              @keyup.enter="search"
+              @input="onSearchInput"
+              placeholder="搜索资源池名称..."
+            >
+            <button 
+              class="refresh-btn" 
+              @click="loadResourcePools" 
+              :disabled="loading"
+            >
+              <span v-if="loading">🔄 加载中...</span>
+              <span v-else>🔄 刷新列表</span>
+            </button>
+          </div>
+
+          <!-- 加载状态 -->
+          <div class="loading" v-if="loading">
+            <p>正在加载资源池列表...</p>
+          </div>
+
+          <!-- 错误状态 -->
+          <div class="error" v-if="error">
+            <p>{{ error }}</p>
+          </div>
+
+          <!-- 资源池表格 -->
+          <div v-if="!loading && !error && filteredResourcePools.length > 0">
+            <table class="resourcepools-table">
+              <thead>
+                <tr>
+                  <th @click="sortBy('name')">
+                    资源池名称/ID 
+                    <span v-if="sortKey === 'name'">{{ sortOrder === 'asc' ? '↑' : '↓' }}</span>
+                  </th>
+                  <th class="creator-column" @click="sortBy('createdBy')">
+                    创建者
+                    <span v-if="sortKey === 'createdBy'">{{ sortOrder === 'asc' ? '↑' : '↓' }}</span>
+                  </th>
+                  <th class="status-column" @click="sortBy('status')">
+                    状态
+                    <span v-if="sortKey === 'status'">{{ sortOrder === 'asc' ? '↑' : '↓' }}</span>
+                  </th>
+                  <th class="type-column" @click="sortBy('type')">
+                    类型
+                    <span v-if="sortKey === 'type'">{{ sortOrder === 'asc' ? '↑' : '↓' }}</span>
+                  </th>
+                  <th @click="sortBy('description')">
+                    描述
+                    <span v-if="sortKey === 'description'">{{ sortOrder === 'asc' ? '↑' : '↓' }}</span>
+                  </th>
+                  <th @click="sortBy('createdAt')">
+                    创建时间
+                    <span v-if="sortKey === 'createdAt'">{{ sortOrder === 'asc' ? '↑' : '↓' }}</span>
+                  </th>
+                  <th @click="sortBy('updatedAt')">
+                    更新时间
+                    <span v-if="sortKey === 'updatedAt'">{{ sortOrder === 'asc' ? '↑' : '↓' }}</span>
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="pool in paginatedResourcePools" :key="pool.resourcePoolId || pool.metadata?.id">
+                  <td>
+                    <span class="pool-name" @click="showPoolDetail(pool)">{{ pool.name || pool.metadata?.name || 'N/A' }}</span>
+                    <br>
+                    <span class="pool-id">{{ pool.resourcePoolId || pool.metadata?.id || 'N/A' }}</span> 
+                    <i class="fa-solid fa-copy copy-icon" @click="copyPoolId(pool.resourcePoolId || pool.metadata?.id)" title="复制资源池ID"></i>
+                  </td>
+                  <td class="creator-column" :title="pool.createdBy || pool.spec?.createdBy || 'N/A'">{{ pool.createdBy || pool.spec?.createdBy || 'N/A' }}</td>
+                  <td class="status-column">
+                    <span :class="['status', getStatusClass(pool.phase)]">
+                      {{ formatStatus(pool.phase) }}
+                    </span>
+                  </td>
+                  <td class="type-column" :title="pool.k8sVersion || pool.spec?.k8sVersion || 'N/A'">{{ pool.k8sVersion || pool.spec?.k8sVersion || 'N/A' }}</td>
+                  <td class="description-cell">{{ pool.description || pool.spec?.description || '暂无描述' }}</td>
+                  <td>{{ formatDate(pool.createdAt) }}</td>
+                  <td>{{ formatDate(pool.updatedAt) }}</td>
+                </tr>
+              </tbody>
+            </table>
+
+            <!-- 分页 -->
+            <div class="pagination">
+              <button 
+                @click="prevPage" 
+                :disabled="currentPage === 1"
+              >
+                ← 上一页
+              </button>
+              <span>第 {{ currentPage }} 页，共 {{ totalPages }} 页</span>
+              <button 
+                @click="nextPage" 
+                :disabled="currentPage === totalPages"
+              >
+                下一页 →
+              </button>
+            </div>
+          </div>
+
+          <!-- 空状态 -->
+          <div class="empty-state" v-if="!loading && !error && resourcePools.length === 0">
+            <h3>暂无资源池</h3>
+            <p v-if="searchQuery">没有找到匹配"{{ searchQuery }}"的资源池</p>
+            <p v-else>您还没有创建任何资源池</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 资源池详情抽屉 -->
+  <div class="drawer-overlay" :class="{ show: showDrawer }" @click="closeDrawer"></div>
+  <div class="drawer" :class="{ show: showDrawer }">
+    <div class="drawer-header">
+      <h2 class="drawer-title">{{ selectedPool?.metadata?.name || '资源池详情' }}</h2>
+      <p class="drawer-subtitle">{{ selectedPool?.metadata?.id || '' }}</p>
+      <button class="drawer-close" @click="closeDrawer">×</button>
+    </div>
+    <div class="drawer-content" v-if="selectedPool">
+      <!-- 基本信息 -->
+      <div class="drawer-section">
+        <h3 class="drawer-section-title">基本信息</h3>
+        <div class="drawer-field">
+          <div class="drawer-field-label">资源池名称</div>
+          <div class="drawer-field-value">{{ selectedPool?.name || selectedPool?.metadata?.name || 'N/A' }}</div>
+        </div>
+        <div class="drawer-field">
+          <div class="drawer-field-label">资源池ID</div>
+          <div class="drawer-field-value">{{ selectedPool?.resourcePoolId || selectedPool?.metadata?.id || 'N/A' }}</div>
+        </div>
+        <div class="drawer-field">
+          <div class="drawer-field-label">描述</div>
+          <div class="drawer-field-value">{{ selectedPool?.description || selectedPool?.spec?.description || '暂无描述' }}</div>
+        </div>
+        <div class="drawer-field">
+          <div class="drawer-field-label">创建者</div>
+          <div class="drawer-field-value">{{ selectedPool?.createdBy || selectedPool?.spec?.createdBy || 'N/A' }}</div>
+        </div>
+      </div>
+
+      <!-- 资源池信息 -->
+      <div class="drawer-section">
+        <h3 class="drawer-section-title">资源池信息</h3>
+        <div class="drawer-field">
+          <div class="drawer-field-label">K8s版本</div>
+          <div class="drawer-field-value">{{ selectedPool?.k8sVersion || selectedPool?.spec?.k8sVersion || 'N/A' }}</div>
+        </div>
+        <div class="drawer-field">
+          <div class="drawer-field-label">状态</div>
+          <div class="drawer-field-value status" :class="getStatusClass(selectedPool?.phase)">
+            {{ formatStatus(selectedPool?.phase) }}
+          </div>
+        </div>
+        <div class="drawer-field" v-if="selectedPool?.spec?.associatedPfsId">
+          <div class="drawer-field-label">关联PFS ID</div>
+          <div class="drawer-field-value">{{ selectedPool?.spec?.associatedPfsId || 'N/A' }}</div>
+        </div>
+      </div>
+
+      <!-- 时间信息 -->
+      <div class="drawer-section">
+        <h3 class="drawer-section-title">时间信息</h3>
+        <div class="drawer-field">
+          <div class="drawer-field-label">创建时间</div>
+          <div class="drawer-field-value">{{ formatDate(selectedPool?.createdAt) }}</div>
+        </div>
+        <div class="drawer-field">
+          <div class="drawer-field-label">更新时间</div>
+          <div class="drawer-field-value">{{ formatDate(selectedPool?.updatedAt) }}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</template>
+
+<script>
+import Navigation from '../components/Navigation.vue'
+
+export default {
+  name: 'ResourcePools',
+  components: {
+    Navigation
+  },
+  data() {
+    return {
+      resourcePools: [],
+      loading: false,
+      error: null,
+      searchQuery: '',
+      sortKey: 'createdAt',
+      sortOrder: 'desc',
+      currentPage: 1,
+      pageSize: 100,
+      showDrawer: false,
+      selectedPool: null,
+      apiTotalCount: 0,
+      apiCommonCount: 0, // API返回的自运维资源池数量
+      apiDedicatedCount: 0, // API返回的全托管资源池数量
+      searchTimeout: null,
+      activeTab: 'common', // 当前激活的tab
+      tabCounts: {
+        common: 0,
+        dedicatedV2: 0
+      }
+    }
+  },
+  computed: {
+    filteredResourcePools() {
+      if (!this.searchQuery) {
+        return this.resourcePools;
+      }
+      const query = this.searchQuery.toLowerCase();
+      return this.resourcePools.filter(pool => 
+        ((pool.name || pool.metadata?.name) && (pool.name || pool.metadata?.name).toLowerCase().includes(query)) ||
+        (pool.spec?.description && pool.spec.description.toLowerCase().includes(query)) ||
+        (pool.createdBy || pool.spec?.createdBy && (pool.createdBy || pool.spec.createdBy).toLowerCase().includes(query))
+      );
+    },
+    sortedResourcePools() {
+      return [...this.filteredResourcePools].sort((a, b) => {
+        let aVal, bVal;
+        
+        if (this.sortKey === 'name') {
+          aVal = a.name || a.metadata?.name || '';
+          bVal = b.name || b.metadata?.name || '';
+        } else if (this.sortKey === 'createdBy') {
+          aVal = a.createdBy || a.spec?.createdBy || '';
+          bVal = b.createdBy || b.spec?.createdBy || '';
+        } else if (this.sortKey === 'status') {
+          aVal = a.phase || a.status?.phase || '';
+          bVal = b.phase || b.status?.phase || '';
+        } else if (this.sortKey === 'type') {
+          aVal = a.k8sVersion || a.spec?.k8sVersion || '';
+          bVal = b.k8sVersion || b.spec?.k8sVersion || '';
+        } else if (this.sortKey === 'description') {
+          aVal = a.description || a.spec?.description || '';
+          bVal = b.description || b.spec?.description || '';
+        } else if (this.sortKey === 'createdAt') {
+          aVal = new Date(a.createdAt || a.metadata?.createdAt);
+          bVal = new Date(b.createdAt || b.metadata?.createdAt);
+        } else if (this.sortKey === 'updatedAt') {
+          aVal = new Date(a.updatedAt || a.metadata?.updatedAt);
+          bVal = new Date(b.updatedAt || b.metadata?.updatedAt);
+        } else {
+          aVal = '';
+          bVal = '';
+        }
+        
+        if (this.sortKey === 'createdAt' || this.sortKey === 'updatedAt') {
+          // 日期排序
+          if (this.sortOrder === 'asc') {
+            return aVal > bVal ? 1 : -1;
+          } else {
+            return aVal < bVal ? 1 : -1;
+          }
+        } else {
+          // 字符串排序
+          aVal = aVal.toString().toLowerCase();
+          bVal = bVal.toString().toLowerCase();
+          if (this.sortOrder === 'asc') {
+            return aVal > bVal ? 1 : -1;
+          } else {
+            return aVal < bVal ? 1 : -1;
+          }
+        }
+      });
+    },
+    paginatedResourcePools() {
+      // 使用服务端分页，直接返回当前页的数据
+      return this.resourcePools;
+    },
+    totalPages() {
+      // 使用API总数量计算总页数
+      return Math.ceil(this.apiTotalCount / this.pageSize);
+    },
+    totalCount() {
+      // 总资源池数量是自运维和全托管资源池的数量之和
+      return this.commonCount + this.dedicatedCount;
+    },
+    commonCount() {
+      // 直接使用API返回的统计信息
+      return this.apiCommonCount;
+    },
+    dedicatedCount() {
+      // 直接使用API返回的统计信息
+      return this.apiDedicatedCount;
+    },
+    hasApiStats() {
+      // 检查是否有API返回的统计信息
+      return this.apiCommonCount > 0 || this.apiDedicatedCount > 0;
+    }
+  },
+  methods: {
+    // 获取API排序字段
+    getOrderByField() {
+      const fieldMap = {
+        'name': 'resourcePoolName',
+        'createdBy': 'resourcePoolName', // API不支持按创建者排序，使用名称
+        'status': 'resourcePoolName',    // API不支持按状态排序，使用名称
+        'type': 'resourcePoolName',      // API不支持按类型排序，使用名称
+        'description': 'resourcePoolName', // API不支持按描述排序，使用名称
+        'createdAt': 'createdAt',
+        'updatedAt': 'createdAt'         // API不支持按更新时间排序，使用创建时间
+      };
+      return fieldMap[this.sortKey] || 'resourcePoolName';
+    },
+    
+    // 切换tab
+    async switchTab(tabType) {
+      if (this.activeTab === tabType) return;
+      
+      this.activeTab = tabType;
+      this.currentPage = 1; // 重置到第一页
+      this.searchQuery = ''; // 清空搜索
+      
+      await this.loadResourcePools();
+    },
+    
+    // 获取tab计数
+    getTabCount(tabType) {
+      return this.tabCounts[tabType] || 0;
+    },
+    
+    // 预加载所有tab的计数
+    async preloadTabCounts() {
+      const tabTypes = ['common', 'dedicatedV2'];
+      
+      for (const tabType of tabTypes) {
+        try {
+          const params = new URLSearchParams({
+            action: 'DescribeResourcePools',
+            resourcePoolType: tabType,
+            pageNumber: '1',
+            pageSize: '1' // 只需要获取总数，不需要具体数据
+          });
+          
+          const response = await fetch(`/api?${params.toString()}`);
+          const data = await response.json();
+          
+          if (data && !data.error) {
+            this.tabCounts[tabType] = data.totalCount || 0;
+            
+            // 每个tab计数加载完成后立即更新对应的统计信息
+            if (tabType === 'common') {
+              this.apiCommonCount = this.tabCounts[tabType];
+              console.log('自运维资源池统计已更新:', this.apiCommonCount);
+            } else if (tabType === 'dedicatedV2') {
+              this.apiDedicatedCount = this.tabCounts[tabType];
+              console.log('全托管资源池统计已更新:', this.apiDedicatedCount);
+            }
+          }
+        } catch (error) {
+          console.warn(`Failed to load count for ${tabType}:`, error);
+          this.tabCounts[tabType] = 0;
+          
+          // 即使请求失败，也要更新统计信息为0
+          if (tabType === 'common') {
+            this.apiCommonCount = 0;
+          } else if (tabType === 'dedicatedV2') {
+            this.apiDedicatedCount = 0;
+          }
+        }
+      }
+      
+      console.log('资源池统计信息全部更新完成 - 自运维:', this.apiCommonCount, '全托管:', this.apiDedicatedCount);
+    },
+    
+    async loadResourcePools() {
+      console.log('loadResourcePools called');
+      this.loading = true;
+      this.error = null;
+      
+      try {
+        // 构建API请求参数
+        const params = new URLSearchParams({
+          action: 'DescribeResourcePools',
+          resourcePoolType: this.activeTab, // 根据当前tab使用不同的资源池类型
+          keywordType: 'resourcePoolName',
+          keyword: this.searchQuery || '',
+          orderBy: this.getOrderByField(),
+          order: this.sortOrder.toUpperCase(),
+          pageNumber: this.currentPage.toString(),
+          pageSize: this.pageSize.toString()
+        });
+        
+        console.log('Making API request with params:', params.toString());
+        
+        // 使用fetch发送请求
+        const response = await fetch(`/api?${params.toString()}`);
+        console.log('API response received:', response);
+        const data = await response.json();
+        
+        if (data.error) {
+          this.error = data.error;
+          this.loading = false;
+          return;
+        }
+        
+        // 处理新的API响应格式
+        // 新接口直接在根级别返回resourcePools数组
+        if (data.resourcePools && Array.isArray(data.resourcePools)) {
+          this.resourcePools = data.resourcePools;
+        } else {
+          console.warn('未识别的资源池API响应格式:', data);
+          this.resourcePools = [];
+        }
+        // 保存API返回的总数量
+        this.apiTotalCount = data.totalCount || 0;
+        
+        // 更新当前tab的计数
+        this.tabCounts[this.activeTab] = this.apiTotalCount;
+        
+        console.log('Resource pools loaded:', this.resourcePools.length);
+        console.log('API total count:', this.apiTotalCount);
+        this.currentPage = 1; // 重置到第一页
+      } catch (err) {
+        console.error('Error loading resource pools:', err);
+        this.error = '加载资源池列表失败: ' + err.message;
+      } finally {
+        this.loading = false;
+      }
+    },
+    sortBy(key) {
+      if (this.sortKey === key) {
+        this.sortOrder = this.sortOrder === 'asc' ? 'desc' : 'asc';
+      } else {
+        this.sortKey = key;
+        this.sortOrder = 'asc';
+      }
+      this.currentPage = 1; // 重置到第一页
+      this.loadResourcePools(); // 重新加载数据
+    },
+    
+    // 搜索方法
+    search() {
+      this.currentPage = 1; // 重置到第一页
+      this.loadResourcePools(); // 重新加载数据
+    },
+    
+    // 搜索输入处理（防抖）
+    onSearchInput() {
+      // 清除之前的定时器
+      if (this.searchTimeout) {
+        clearTimeout(this.searchTimeout);
+      }
+      
+      // 设置新的定时器，500ms后执行搜索
+      this.searchTimeout = setTimeout(() => {
+        this.search();
+      }, 500);
+    },
+    prevPage() {
+      if (this.currentPage > 1) {
+        this.currentPage--;
+        this.loadResourcePools(); // 重新加载数据
+      }
+    },
+    nextPage() {
+      if (this.currentPage < this.totalPages) {
+        this.currentPage++;
+        this.loadResourcePools(); // 重新加载数据
+      }
+    },
+    formatDate(dateStr) {
+      if (!dateStr) return 'N/A';
+      try {
+        const date = new Date(dateStr);
+        return date.toLocaleString('zh-CN');
+      } catch (e) {
+        return dateStr;
+      }
+    },
+    formatStatus(phase) {
+      if (!phase) return 'N/A';
+      const statusMap = {
+        'active': '活跃',
+        'running': '运行中',
+        'pending': '等待中',
+        'creating': '创建中',
+        'inactive': '非活跃',
+        'stopped': '已停止',
+        'failed': '失败',
+        'delete_failed': '删除失败',
+        'ready': '就绪',
+        'error': '错误'
+      };
+      return statusMap[phase] || phase;
+    },
+    getStatusClass(phase) {
+      if (!phase) return 'inactive';
+      if (phase === 'active' || phase === 'running' || phase === 'ready') return 'active';
+      if (phase === 'pending' || phase === 'creating') return 'pending';
+      if (phase === 'failed' || phase === 'delete_failed' || phase === 'error') return 'inactive';
+      return 'inactive';
+    },
+    showPoolDetail(pool) {
+      this.selectedPool = pool;
+      this.showDrawer = true;
+      document.body.style.overflow = 'hidden';
+    },
+    closeDrawer() {
+      this.showDrawer = false;
+      this.selectedPool = null;
+      document.body.style.overflow = '';
+    },
+    copyPoolId(id) {
+      if (!id) return;
+      
+      if (navigator.clipboard && window.isSecureContext) {
+        navigator.clipboard.writeText(id).then(() => {
+          this.showCopySuccess();
+        }).catch(err => {
+          console.error('复制失败:', err);
+          this.fallbackCopy(id);
+        });
+      } else {
+        this.fallbackCopy(id);
+      }
+    },
+    fallbackCopy(text) {
+      const textArea = document.createElement('textarea');
+      textArea.value = text;
+      textArea.style.position = 'fixed';
+      textArea.style.left = '-999999px';
+      textArea.style.top = '-999999px';
+      document.body.appendChild(textArea);
+      textArea.focus();
+      textArea.select();
+      
+      try {
+        document.execCommand('copy');
+        this.showCopySuccess();
+      } catch (err) {
+        console.error('复制失败:', err);
+      }
+      
+      document.body.removeChild(textArea);
+    },
+    showCopySuccess() {
+      const toast = document.createElement('div');
+      toast.textContent = '资源池ID已复制到剪贴板';
+      toast.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background: #52c41a;
+        color: white;
+        padding: 12px 20px;
+        border-radius: 6px;
+        z-index: 10000;
+        font-size: 14px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        animation: slideIn 0.3s ease;
+      `;
+      
+      const style = document.createElement('style');
+      style.textContent = `
+        @keyframes slideIn {
+          from { transform: translateX(100%); opacity: 0; }
+          to { transform: translateX(0); opacity: 1; }
+        }
+      `;
+      document.head.appendChild(style);
+      
+      document.body.appendChild(toast);
+      
+      setTimeout(() => {
+        if (toast.parentNode) {
+          toast.parentNode.removeChild(toast);
+        }
+      }, 3000);
+    }
+  },
+  async mounted() {
+    console.log('Vue app mounted, preloading tab counts and loading resource pools...');
+    // 预加载tab计数
+    await this.preloadTabCounts();
+    // 加载当前tab的资源池数据
+    await this.loadResourcePools();
+  }
+}
+</script>
+
+<style scoped>
+.loading {
+  text-align: center;
+  padding: 60px 20px;
+  color: #666;
+  font-size: 16px;
+}
+
+.error {
+  background: #fff2f0;
+  color: #dc3545;
+  padding: 16px;
+  border-radius: 8px;
+  margin: 20px 0;
+  border: 1px solid #ffccc7;
+  font-size: 14px;
+}
+
+.resourcepools-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 20px;
+  background: white;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+  border: 1px solid #e9ecef;
+}
+
+.resourcepools-table th {
+  background: #f8f9fa;
+  padding: 16px 20px;
+  text-align: left;
+  font-weight: 600;
+  color: #333;
+  border-bottom: 2px solid #dee2e6;
+  cursor: pointer;
+  user-select: none;
+  transition: background 0.2s ease;
+  font-size: 14px;
+}
+
+.resourcepools-table th.creator-column {
+  width: 120px;
+  min-width: 120px;
+  max-width: 120px;
+}
+
+.resourcepools-table th.status-column {
+  width: 100px;
+  min-width: 100px;
+  max-width: 100px;
+}
+
+.resourcepools-table th.type-column {
+  width: 120px;
+  min-width: 120px;
+  max-width: 120px;
+}
+
+.resourcepools-table th:hover {
+  background: #e9ecef;
+}
+
+.resourcepools-table td {
+  padding: 16px 20px;
+  border-bottom: 1px solid #f1f3f4;
+  vertical-align: top;
+  font-size: 14px;
+}
+
+.resourcepools-table td.creator-column {
+  width: 120px;
+  min-width: 120px;
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.resourcepools-table td.status-column {
+  width: 100px;
+  min-width: 100px;
+  max-width: 100px;
+  text-align: center;
+}
+
+.resourcepools-table td.type-column {
+  width: 120px;
+  min-width: 120px;
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.resourcepools-table tr:hover {
+  background: #f8f9fa;
+  transition: background 0.2s ease;
+}
+
+.status {
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  display: inline-block;
+  width: 80px;
+  text-align: center;
+}
+
+.status.active {
+  background: #f6ffed;
+  color: #52c41a;
+  border: 1px solid #b7eb8f;
+}
+
+.status.inactive {
+  background: #fff2f0;
+  color: #dc3545;
+  border: 1px solid #ffccc7;
+}
+
+.status.pending {
+  background: #fff7e6;
+  color: #fa8c16;
+  border: 1px solid #ffd591;
+}
+
+.refresh-btn {
+  background: #28a745;
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
+}
+
+.refresh-btn:hover {
+  background: #218838;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(40, 167, 69, 0.3);
+}
+
+.refresh-btn:disabled {
+  background: #6c757d;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 80px 20px;
+  color: #666;
+}
+
+.empty-state h3 {
+  margin-bottom: 15px;
+  color: #333;
+  font-size: 20px;
+}
+
+/* 资源池类型Tab样式 */
+.resource-pool-tabs {
+  margin-bottom: 24px;
+  border-bottom: 2px solid #e9ecef;
+}
+
+.tab-list {
+  display: flex;
+  gap: 0;
+}
+
+.tab-item {
+  padding: 12px 24px;
+  border: none;
+  background: none;
+  border-bottom: 3px solid transparent;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  color: #666;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.tab-item:hover {
+  color: #409eff;
+  background: #f8f9fa;
+}
+
+.tab-item.active {
+  color: #409eff;
+  border-bottom-color: #409eff;
+  background: #f8f9fa;
+}
+
+.tab-count {
+  background: #e9ecef;
+  color: #666;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 400;
+}
+
+.tab-item.active .tab-count {
+  background: #409eff;
+  color: white;
+}
+
+.search-box {
+  margin-bottom: 24px;
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.search-input {
+  flex: 1;
+  padding: 12px 16px;
+  border: 2px solid #e9ecef;
+  border-radius: 8px;
+  font-size: 14px;
+  transition: all 0.3s ease;
+  background: #fafbfc;
+}
+
+.search-input:focus {
+  border-color: #409eff;
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(64, 158, 255, 0.1);
+  background: #fff;
+}
+
+.stats {
+  display: flex;
+  gap: 24px;
+  margin-bottom: 24px;
+  padding: 20px;
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  border-radius: 12px;
+  border: 1px solid #dee2e6;
+}
+
+.stat-item {
+  text-align: center;
+  flex: 1;
+}
+
+.stat-number {
+  font-size: 28px;
+  font-weight: bold;
+  color: #409eff;
+  margin-bottom: 4px;
+}
+
+.stat-label {
+  font-size: 13px;
+  color: #666;
+  font-weight: 500;
+}
+
+.stats-note {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  background: #f8f9fa;
+  border: 1px solid #e9ecef;
+  border-radius: 8px;
+  margin: 16px 0;
+  font-size: 14px;
+  color: #666;
+}
+
+.stats-note i {
+  color: #007bff;
+  font-size: 16px;
+}
+
+.pagination {
+  margin-top: 24px;
+  text-align: center;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 16px;
+}
+
+.pagination button {
+  background: #409eff;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.3s ease;
+  min-width: 80px;
+}
+
+.pagination button:hover:not(:disabled) {
+  background: #3076c9;
+  transform: translateY(-1px);
+}
+
+.pagination button:disabled {
+  background: #6c757d;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.pagination span {
+  font-size: 14px;
+  color: #666;
+  font-weight: 500;
+}
+
+.pool-name {
+  color: #409eff;
+  cursor: pointer;
+  text-decoration: underline;
+  font-weight: 500;
+  transition: color 0.2s ease;
+}
+
+.pool-name:hover {
+  color: #3076c9;
+}
+
+.pool-id {
+  color: #666;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.copy-icon {
+  color: #409eff;
+  cursor: pointer;
+  margin-left: 8px;
+  font-size: 12px;
+  transition: all 0.2s ease;
+  opacity: 0.7;
+}
+
+.copy-icon:hover {
+  color: #3076c9;
+  opacity: 1;
+  transform: scale(1.1);
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+.drawer-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 9999;
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.3s ease;
+}
+
+.drawer-overlay.show {
+  opacity: 1;
+  visibility: visible;
+}
+
+.drawer {
+  position: fixed;
+  top: 0;
+  right: 0;
+  width: 50vw;
+  max-width: 800px;
+  min-width: 400px;
+  height: 100vh;
+  background: white;
+  box-shadow: -2px 0 20px rgba(0, 0, 0, 0.15);
+  z-index: 10000;
+  display: none;
+  flex-direction: column;
+  overflow: hidden;
+  animation: slideIn 0.3s ease-out;
+}
+
+.drawer.show {
+  display: flex;
+}
+
+.drawer-header {
+  padding: 20px 24px;
+  border-bottom: 1px solid #e9ecef;
+  background: #f8f9fa;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.drawer-title {
+  font-size: 20px;
+  font-weight: 600;
+  color: #333;
+  margin: 0 0 8px 0;
+}
+
+.drawer-subtitle {
+  font-size: 14px;
+  color: #666;
+  margin: 0;
+}
+
+.drawer-close {
+  position: absolute;
+  top: 20px;
+  right: 24px;
+  background: none;
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+  color: #666;
+  padding: 0;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+}
+
+.drawer-close:hover {
+  background: #e9ecef;
+  color: #333;
+}
+
+.drawer-content {
+  padding: 24px;
+  overflow-y: auto;
+}
+
+.drawer-section {
+  margin-bottom: 24px;
+}
+
+.drawer-section-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #333;
+  margin: 0 0 12px 0;
+  padding-bottom: 8px;
+  border-bottom: 2px solid #409eff;
+}
+
+.drawer-field {
+  margin-bottom: 16px;
+}
+
+.drawer-field-label {
+  font-size: 13px;
+  color: #666;
+  margin-bottom: 4px;
+  font-weight: 500;
+}
+
+.drawer-field-value {
+  font-size: 14px;
+  color: #333;
+  line-height: 1.5;
+  word-break: break-word;
+}
+
+.drawer-field-value.status {
+  display: inline-block;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 500;
+}
+</style>

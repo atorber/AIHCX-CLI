@@ -1,0 +1,1091 @@
+<template>
+  <div class="container">
+    <div class="header">
+      <h1>📊 数据集列表</h1>
+      <p>查看和管理您的数据集</p>
+    </div>
+    <div class="main">
+      <aside class="sidebar">
+        <Navigation />
+      </aside>
+      <div class="content">
+        <div class="page-container">
+          <!-- 统计信息 -->
+          <div class="stats" v-if="!loading && !error">
+            <div class="stat-item">
+              <div class="stat-number">{{ totalCount }}</div>
+              <div class="stat-label">总数据集</div>
+            </div>
+            <div class="stat-item">
+              <div class="stat-number">{{ pfsCount }}</div>
+              <div class="stat-label">PFS存储</div>
+            </div>
+            <div class="stat-item">
+              <div class="stat-number">{{ bosCount }}</div>
+              <div class="stat-label">BOS存储</div>
+            </div>
+          </div>
+          
+          <!-- 统计信息说明 -->
+          <div v-if="!loading && !error && !hasApiStats" class="stats-note">
+            <i class="fas fa-info-circle"></i>
+            <span>统计信息基于当前页数据，可能不完整</span>
+          </div>
+
+          <!-- 搜索和筛选 -->
+          <div class="search-filters">
+            <div class="search-box">
+              <input 
+                type="text" 
+                class="search-input" 
+                v-model="searchQuery" 
+                @keyup.enter="search"
+                @input="onSearchInput"
+                placeholder="搜索数据集名称、描述或所有者..."
+              >
+              <button 
+                class="refresh-btn" 
+                @click="loadDatasets" 
+                :disabled="loading"
+              >
+                <span v-if="loading">🔄 加载中...</span>
+                <span v-else>🔄 刷新列表</span>
+              </button>
+            </div>
+            
+            <!-- 筛选条件 -->
+            <div class="filters-row">
+              <div class="filter-group">
+                <label class="filter-label">存储类型</label>
+                <select v-model="filters.storageType" @change="search" class="filter-select">
+                  <option value="">全部类型</option>
+                  <option value="PFS">并行存储 PFS</option>
+                  <option value="BOS">对象存储 BOS</option>
+                </select>
+              </div>
+              
+              <div class="filter-group">
+                <label class="filter-label">导入格式</label>
+                <select v-model="filters.importFormat" @change="search" class="filter-select">
+                  <option value="">全部格式</option>
+                  <option value="FILE">文件</option>
+                  <option value="FOLDER">文件夹</option>
+                </select>
+              </div>
+              
+              <div class="filter-group">
+                <label class="filter-label">存储实例</label>
+                <input 
+                  type="text" 
+                  v-model="filters.storageInstances" 
+                  @keyup.enter="search"
+                  @input="onSearchInput"
+                  class="filter-input" 
+                  placeholder="输入存储实例ID，多个用逗号分隔"
+                >
+              </div>
+              
+              <div class="filter-group">
+                <label class="filter-label">每页显示</label>
+                <select v-model="pageSize" @change="onPageSizeChange" class="filter-select">
+                  <option value="10">10条</option>
+                  <option value="20">20条</option>
+                  <option value="50">50条</option>
+                  <option value="100">100条</option>
+                </select>
+              </div>
+              
+              <button class="clear-filters-btn" @click="clearFilters" :disabled="loading">
+                清空筛选
+              </button>
+            </div>
+          </div>
+
+          <!-- 加载状态 -->
+          <div class="loading" v-if="loading">
+            <p>正在加载数据集列表...</p>
+          </div>
+
+          <!-- 错误状态 -->
+          <div class="error" v-if="error">
+            <p>{{ error }}</p>
+          </div>
+
+          <!-- 数据集表格 -->
+          <div v-if="!loading && !error && datasets.length > 0">
+            <table class="datasets-table">
+              <thead>
+                <tr>
+                  <th @click="sortBy('name')">
+                    数据集名称/ID 
+                    <span v-if="sortKey === 'name'">{{ sortOrder === 'asc' ? '↑' : '↓' }}</span>
+                  </th>
+                  <th class="owner-column" @click="sortBy('ownerName')">
+                    所有者
+                    <span v-if="sortKey === 'ownerName'">{{ sortOrder === 'asc' ? '↑' : '↓' }}</span>
+                  </th>
+                  <th class="permission-column">权限</th>
+                  <th class="visibility-column">可见性</th>
+                  <th class="storage-column" @click="sortBy('storageType')">
+                    存储类型
+                    <span v-if="sortKey === 'storageType'">{{ sortOrder === 'asc' ? '↑' : '↓' }}</span>
+                  </th>
+                  <th class="storage-instance-column">
+                    存储实例
+                  </th>
+                  <th @click="sortBy('description')">
+                    描述
+                    <span v-if="sortKey === 'description'">{{ sortOrder === 'asc' ? '↑' : '↓' }}</span>
+                  </th>
+                  <th @click="sortBy('createdAt')">
+                    创建时间
+                    <span v-if="sortKey === 'createdAt'">{{ sortOrder === 'asc' ? '↑' : '↓' }}</span>
+                  </th>
+                  <th @click="sortBy('updatedAt')">
+                    更新时间
+                    <span v-if="sortKey === 'updatedAt'">{{ sortOrder === 'asc' ? '↑' : '↓' }}</span>
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="dataset in sortedDatasets" :key="dataset.id">
+                  <td>
+                    <span class="dataset-name" @click="goToDatasetDetail(dataset.id)">{{ dataset.name || 'N/A' }}</span>
+                    <br>
+                    <span class="dataset-id" @click="goToDatasetDetail(dataset.id)">{{ dataset.id || 'N/A' }}</span> 
+                    <i class="fa-solid fa-copy copy-icon" @click="copyDatasetId(dataset.id)" title="复制数据集ID"></i>
+                  </td>
+                  <td class="owner-column" :title="dataset.ownerName || 'N/A'">{{ dataset.ownerName || 'N/A' }}</td>
+                  <td class="permission-column">
+                    <span :class="['status', dataset.permission === 'rw' ? 'active' : 'inactive']">
+                      {{ dataset.permission || 'N/A' }}
+                    </span>
+                  </td>
+                  <td class="visibility-column" :title="formatVisibility(dataset.visibilityScope)">{{ formatVisibility(dataset.visibilityScope) }}</td>
+                  <td class="storage-column">
+                    <span :class="['storage-type-badge', dataset.storageType?.toLowerCase()]">
+                      {{ dataset.storageType || 'N/A' }}
+                    </span>
+                  </td>
+                  <td class="storage-instance-column" :title="getStorageInstanceInfo(dataset)">
+                    <div class="owner-column">{{ dataset.storageInstance}}</div>
+                  </td>
+                  <td class="description-cell" :data-tooltip="dataset.description || '暂无描述'">{{ dataset.description || '暂无描述' }}</td>
+                  <td>{{ formatDate(dataset.createdAt) }}</td>
+                  <td>{{ formatDate(dataset.updatedAt) }}</td>
+                </tr>
+              </tbody>
+            </table>
+
+            <!-- 分页 -->
+            <div class="pagination">
+              <button 
+                @click="prevPage" 
+                :disabled="currentPage === 1"
+              >
+                ← 上一页
+              </button>
+              <span>第 {{ currentPage }} 页，共 {{ totalPages }} 页</span>
+              <button 
+                @click="nextPage" 
+                :disabled="currentPage === totalPages"
+              >
+                下一页 →
+              </button>
+            </div>
+          </div>
+
+          <!-- 空状态 -->
+          <div class="empty-state" v-if="!loading && !error && datasets.length === 0">
+            <h3>暂无数据集</h3>
+            <p v-if="hasActiveFilters">没有找到匹配筛选条件的数据集</p>
+            <p v-else>您还没有创建任何数据集</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</template>
+
+<script>
+import Navigation from '../components/Navigation.vue'
+import datasetService from '../services/datasetService'
+
+export default {
+  name: 'Datasets',
+  components: {
+    Navigation
+  },
+  data() {
+    return {
+      datasets: [],
+      loading: false,
+      error: null,
+      searchQuery: '',
+      sortKey: 'createdAt',
+      sortOrder: 'desc',
+      currentPage: 1,
+      pageSize: 20,
+      apiTotalCount: 0, // API返回的总数据量
+      apiPfsCount: 0, // API返回的PFS存储数据集数量
+      apiBosCount: 0, // API返回的BOS存储数据集数量
+      // 筛选条件
+      filters: {
+        storageType: '',        // 存储类型
+        storageInstances: '',   // 存储实例
+        importFormat: ''        // 导入格式
+      },
+      searchTimeout: null
+    }
+  },
+  computed: {
+    filteredDatasets() {
+      if (!this.searchQuery) {
+        return this.datasets
+      }
+      const query = this.searchQuery.toLowerCase()
+      return this.datasets.filter(dataset => 
+        (dataset.name && dataset.name.toLowerCase().includes(query)) ||
+        (dataset.description && dataset.description.toLowerCase().includes(query)) ||
+        (dataset.ownerName && dataset.ownerName.toLowerCase().includes(query))
+      )
+    },
+    sortedDatasets() {
+      return [...this.filteredDatasets].sort((a, b) => {
+        let aVal = a[this.sortKey] || ''
+        let bVal = b[this.sortKey] || ''
+        
+        if (this.sortKey === 'createdAt' || this.sortKey === 'updatedAt') {
+          aVal = new Date(aVal)
+          bVal = new Date(bVal)
+        } else {
+          aVal = aVal.toString().toLowerCase()
+          bVal = bVal.toString().toLowerCase()
+        }
+        
+        if (this.sortOrder === 'asc') {
+          return aVal > bVal ? 1 : -1
+        } else {
+          return aVal < bVal ? 1 : -1
+        }
+      })
+    },
+    totalPages() {
+      return Math.ceil(this.apiTotalCount / this.pageSize)
+    },
+    totalCount() {
+      return this.apiTotalCount
+    },
+    pfsCount() {
+      // 优先使用API返回的统计信息
+      if (this.apiPfsCount > 0) {
+        return this.apiPfsCount
+      }
+      // 如果没有API统计信息，基于当前页数据计算（可能不准确）
+      return this.datasets.filter(d => d.storageType === 'PFS').length
+    },
+    bosCount() {
+      // 优先使用API返回的统计信息
+      if (this.apiBosCount > 0) {
+        return this.apiBosCount
+      }
+      // 如果没有API统计信息，基于当前页数据计算（可能不准确）
+      return this.datasets.filter(d => d.storageType === 'BOS').length
+    },
+    hasActiveFilters() {
+      return this.searchQuery || 
+             this.filters.storageType || 
+             this.filters.storageInstances || 
+             this.filters.importFormat
+    },
+    hasApiStats() {
+      // 检查是否有API返回的统计信息
+      return this.apiPfsCount > 0 || this.apiBosCount > 0
+    }
+  },
+  methods: {
+    async loadDatasets() {
+      console.log('loadDatasets called')
+      this.loading = true
+      this.error = null
+      
+      try {
+        // 构建API请求参数
+        const params = {
+          pageNumber: this.currentPage,
+          pageSize: this.pageSize
+        }
+        
+        // 添加可选参数
+        if (this.searchQuery) {
+          params.keyword = this.searchQuery
+        }
+        if (this.filters.storageType) {
+          params.storageType = this.filters.storageType
+        }
+        if (this.filters.storageInstances) {
+          params.storageInstances = this.filters.storageInstances
+        }
+        if (this.filters.importFormat) {
+          params.importFormat = this.filters.importFormat
+        }
+        
+        console.log('Making API request with params:', params)
+        
+        // 使用服务层发送请求
+        const data = await datasetService.getDatasets(params)
+        console.log('API response received:', data)
+        
+        if (data.error) {
+          this.error = data.error
+          return
+        }
+        
+        this.datasets = data.datasets || data.Datasets || []
+        this.apiTotalCount = data.totalCount || data.TotalCount || this.datasets.length
+        
+        // 尝试获取统计信息（如果API提供的话）
+        this.apiPfsCount = data.pfsCount || data.PfsCount || 0
+        this.apiBosCount = data.bosCount || data.BosCount || 0
+        
+        console.log('Datasets loaded:', this.datasets.length, 'Total count:', this.apiTotalCount)
+        
+        // 如果API没有提供统计信息，则并行请求PFS和BOS的数量
+        if (this.apiPfsCount === 0 && this.apiBosCount === 0) {
+          this.loadStorageTypeStats()
+        }
+      } catch (err) {
+        console.error('Error loading datasets:', err)
+        this.error = '加载数据集列表失败: ' + err.message
+      } finally {
+        this.loading = false
+      }
+    },
+    
+    // 并行请求PFS和BOS存储类型的数量统计
+    async loadStorageTypeStats() {
+      try {
+        console.log('开始加载存储类型统计信息...')
+        
+        // 并行请求PFS和BOS的数量
+        const [pfsResponse, bosResponse] = await Promise.all([
+          datasetService.getDatasets({ storageType: 'PFS', pageNumber: 1, pageSize: 1 }),
+          datasetService.getDatasets({ storageType: 'BOS', pageNumber: 1, pageSize: 1 })
+        ])
+        
+        // 获取PFS数量
+        if (pfsResponse && !pfsResponse.error) {
+          this.apiPfsCount = pfsResponse.totalCount || pfsResponse.TotalCount || 0
+        }
+        
+        // 获取BOS数量
+        if (bosResponse && !bosResponse.error) {
+          this.apiBosCount = bosResponse.totalCount || bosResponse.TotalCount || 0
+        }
+        
+        console.log('存储类型统计加载完成 - PFS:', this.apiPfsCount, 'BOS:', this.apiBosCount)
+        
+      } catch (error) {
+        console.error('加载存储类型统计失败:', error)
+        // 如果请求失败，基于当前页数据计算（降级处理）
+        this.apiPfsCount = this.datasets.filter(d => d.storageType === 'PFS').length
+        this.apiBosCount = this.datasets.filter(d => d.storageType === 'BOS').length
+      }
+    },
+    sortBy(key) {
+      if (this.sortKey === key) {
+        this.sortOrder = this.sortOrder === 'asc' ? 'desc' : 'asc'
+      } else {
+        this.sortKey = key
+        this.sortOrder = 'asc'
+      }
+      this.currentPage = 1 // 重置到第一页
+      this.loadDatasets() // 重新加载数据
+    },
+    
+    // 搜索方法
+    search() {
+      this.currentPage = 1 // 重置到第一页
+      this.loadDatasets() // 重新加载数据
+    },
+    
+    // 搜索输入处理（防抖）
+    onSearchInput() {
+      // 清除之前的定时器
+      if (this.searchTimeout) {
+        clearTimeout(this.searchTimeout)
+      }
+      
+      // 设置新的定时器，500ms后执行搜索
+      this.searchTimeout = setTimeout(() => {
+        this.search()
+      }, 500)
+    },
+    
+    // 分页大小变化
+    onPageSizeChange() {
+      this.currentPage = 1 // 重置到第一页
+      this.loadDatasets() // 重新加载数据
+    },
+    
+    // 清空筛选条件
+    clearFilters() {
+      this.searchQuery = ''
+      this.filters = {
+        storageType: '',
+        storageInstances: '',
+        importFormat: ''
+      }
+      this.currentPage = 1
+      this.loadDatasets()
+    },
+    prevPage() {
+      if (this.currentPage > 1) {
+        this.currentPage--
+        this.loadDatasets() // 重新加载数据
+      }
+    },
+    nextPage() {
+      if (this.currentPage < this.totalPages) {
+        this.currentPage++
+        this.loadDatasets() // 重新加载数据
+      }
+    },
+    formatDate(dateStr) {
+      if (!dateStr) return 'N/A'
+      try {
+        const date = new Date(dateStr)
+        return date.toLocaleString('zh-CN')
+      } catch (e) {
+        return dateStr
+      }
+    },
+    formatVisibility(visibilityScope) {
+      if (!visibilityScope) return 'N/A'
+      const visibilityMap = {
+        'ALL_PEOPLE': '所有人可见',
+        'USER_GROUP': '用户组可见',
+        'ONLY_OWNER': '仅所有者可见'
+      }
+      return visibilityMap[visibilityScope] || visibilityScope
+    },
+    getStorageInstanceInfo(dataset) {
+      if (!dataset) return 'N/A'
+      
+      const storageInstance = dataset.storageInstance || dataset.storageInstanceId
+      const storagePath = dataset.storagePath
+      const storageType = dataset.storageType
+      
+      let info = `存储类型: ${storageType || 'N/A'}`
+      if (storageInstance) {
+        info += `\n存储实例: ${storageInstance}`
+      }
+      if (storagePath) {
+        info += `\n存储路径: ${storagePath}`
+      }
+      
+      return info
+    },
+    goToDatasetDetail(datasetId) {
+      if (datasetId) {
+        this.$router.push(`/datasets/${encodeURIComponent(datasetId)}`)
+      }
+    },
+    copyDatasetId(id) {
+      if (!id) return
+      
+      // 使用现代浏览器的Clipboard API
+      if (navigator.clipboard && window.isSecureContext) {
+        navigator.clipboard.writeText(id).then(() => {
+          this.showCopySuccess()
+        }).catch(err => {
+          console.error('复制失败:', err)
+          this.fallbackCopy(id)
+        })
+      } else {
+        // 降级方案
+        this.fallbackCopy(id)
+      }
+    },
+    fallbackCopy(text) {
+      // 创建临时文本区域
+      const textArea = document.createElement('textarea')
+      textArea.value = text
+      textArea.style.position = 'fixed'
+      textArea.style.left = '-999999px'
+      textArea.style.top = '-999999px'
+      document.body.appendChild(textArea)
+      textArea.focus()
+      textArea.select()
+      
+      try {
+        document.execCommand('copy')
+        this.showCopySuccess()
+      } catch (err) {
+        console.error('复制失败:', err)
+      }
+      
+      document.body.removeChild(textArea)
+    },
+    showCopySuccess() {
+      // 显示复制成功提示
+      const toast = document.createElement('div')
+      toast.textContent = '数据集ID已复制到剪贴板'
+      toast.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background: #52c41a;
+        color: white;
+        padding: 12px 20px;
+        border-radius: 6px;
+        z-index: 10000;
+        font-size: 14px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        animation: slideIn 0.3s ease;
+      `
+      
+      // 添加动画样式
+      const style = document.createElement('style')
+      style.textContent = `
+        @keyframes slideIn {
+          from { transform: translateX(100%); opacity: 0; }
+          to { transform: translateX(0); opacity: 1; }
+        }
+      `
+      document.head.appendChild(style)
+      
+      document.body.appendChild(toast)
+      
+      // 3秒后自动移除
+      setTimeout(() => {
+        if (toast.parentNode) {
+          toast.parentNode.removeChild(toast)
+        }
+      }, 3000)
+    }
+  },
+  mounted() {
+    console.log('Vue app mounted, loading datasets...')
+    this.loadDatasets()
+  }
+}
+</script>
+
+<style scoped>
+.loading {
+  text-align: center;
+  padding: 60px 20px;
+  color: #666;
+  font-size: 16px;
+}
+
+.error {
+  background: #fff2f0;
+  color: #dc3545;
+  padding: 16px;
+  border-radius: 8px;
+  margin: 20px 0;
+  border: 1px solid #ffccc7;
+  font-size: 14px;
+}
+
+.datasets-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 20px;
+  background: white;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+  border: 1px solid #e9ecef;
+}
+
+.datasets-table th {
+  background: #f8f9fa;
+  padding: 16px 20px;
+  text-align: left;
+  font-weight: 600;
+  color: #333;
+  border-bottom: 2px solid #dee2e6;
+  cursor: pointer;
+  user-select: none;
+  transition: background 0.2s ease;
+  font-size: 14px;
+}
+
+.datasets-table th.owner-column {
+  width: 120px;
+  min-width: 120px;
+  max-width: 120px;
+}
+
+.datasets-table th.permission-column {
+  width: 80px;
+  min-width: 80px;
+  max-width: 80px;
+}
+
+.datasets-table th.visibility-column {
+  width: 100px;
+  min-width: 100px;
+  max-width: 100px;
+}
+
+.datasets-table th.storage-column {
+  width: 100px;
+  min-width: 100px;
+  max-width: 100px;
+}
+
+.datasets-table th:hover {
+  background: #e9ecef;
+}
+
+.datasets-table td {
+  padding: 16px 20px;
+  border-bottom: 1px solid #f1f3f4;
+  vertical-align: top;
+  font-size: 14px;
+}
+
+.datasets-table td.owner-column {
+  width: 120px;
+  min-width: 120px;
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.datasets-table td.permission-column {
+  width: 80px;
+  min-width: 80px;
+  max-width: 80px;
+  text-align: center;
+}
+
+.datasets-table td.visibility-column {
+  width: 100px;
+  min-width: 100px;
+  max-width: 100px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.datasets-table td.storage-column {
+  width: 100px;
+  min-width: 100px;
+  max-width: 100px;
+  text-align: center;
+}
+
+.datasets-table th.storage-instance-column {
+  width: 200px;
+  min-width: 200px;
+  max-width: 250px;
+}
+
+.datasets-table td.storage-instance-column {
+  width: 200px;
+  min-width: 200px;
+  max-width: 250px;
+  padding: 12px 16px;
+}
+
+/* 存储类型徽章样式 */
+.storage-type-badge {
+  display: inline-block;
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.storage-type-badge.pfs {
+  background: #e3f2fd;
+  color: #1976d2;
+  border: 1px solid #bbdefb;
+}
+
+.storage-type-badge.bos {
+  background: #f3e5f5;
+  color: #7b1fa2;
+  border: 1px solid #ce93d8;
+}
+
+/* 存储实例信息样式 */
+.storage-instance-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.storage-instance-id {
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  font-size: 12px;
+  font-weight: 600;
+  color: #333;
+  background: #f8f9fa;
+  padding: 2px 6px;
+  border-radius: 4px;
+  word-break: break-all;
+}
+
+.storage-path {
+  font-size: 11px;
+  color: #666;
+  background: #f8f9fa;
+  padding: 2px 6px;
+  border-radius: 4px;
+  border: 1px solid #e9ecef;
+  word-break: break-all;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.datasets-table td.description-cell {
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  position: relative;
+  cursor: help;
+}
+
+.datasets-table td.description-cell::before {
+  content: attr(data-tooltip);
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #2c3e50;
+  color: white;
+  padding: 10px 14px;
+  border-radius: 8px;
+  font-size: 13px;
+  white-space: normal;
+  word-wrap: break-word;
+  max-width: 350px;
+  min-width: 200px;
+  z-index: 1000;
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.3s ease;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.25);
+  line-height: 1.5;
+  text-align: left;
+  margin-bottom: 8px;
+  font-weight: 400;
+  border: 1px solid rgba(255,255,255,0.1);
+}
+
+.datasets-table td.description-cell::after {
+  content: '';
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 6px solid transparent;
+  border-top-color: #2c3e50;
+  margin-bottom: 2px;
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.3s ease;
+}
+
+.datasets-table td.description-cell:hover::before,
+.datasets-table td.description-cell:hover::after {
+  opacity: 1;
+  visibility: visible;
+}
+
+.datasets-table tr:hover {
+  background: #f8f9fa;
+  transition: background 0.2s ease;
+}
+
+.status {
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  display: inline-block;
+  min-width: 60px;
+  text-align: center;
+}
+
+.status.active {
+  background: #f6ffed;
+  color: #52c41a;
+  border: 1px solid #b7eb8f;
+}
+
+.status.inactive {
+  background: #fff2f0;
+  color: #dc3545;
+  border: 1px solid #ffccc7;
+}
+
+.refresh-btn {
+  background: #28a745;
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
+}
+
+.refresh-btn:hover {
+  background: #218838;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(40, 167, 69, 0.3);
+}
+
+.refresh-btn:disabled {
+  background: #6c757d;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 80px 20px;
+  color: #666;
+}
+
+.empty-state h3 {
+  margin-bottom: 15px;
+  color: #333;
+  font-size: 20px;
+}
+
+/* 搜索和筛选样式 */
+.search-filters {
+  margin-bottom: 24px;
+}
+
+.search-box {
+  margin-bottom: 16px;
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.filters-row {
+  display: flex;
+  gap: 16px;
+  align-items: end;
+  flex-wrap: wrap;
+  padding: 16px;
+  background: #f8f9fa;
+  border-radius: 8px;
+  border: 1px solid #e9ecef;
+}
+
+.filter-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 120px;
+}
+
+.filter-label {
+  font-size: 12px;
+  font-weight: 500;
+  color: #666;
+  margin: 0;
+}
+
+.filter-select,
+.filter-input {
+  padding: 8px 12px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font-size: 14px;
+  background: white;
+  transition: border-color 0.2s ease;
+}
+
+.filter-select:focus,
+.filter-input:focus {
+  outline: none;
+  border-color: #409eff;
+  box-shadow: 0 0 0 2px rgba(64, 158, 255, 0.1);
+}
+
+.filter-input {
+  min-width: 200px;
+}
+
+.clear-filters-btn {
+  padding: 8px 16px;
+  background: #f8f9fa;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  color: #666;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  height: fit-content;
+}
+
+.clear-filters-btn:hover:not(:disabled) {
+  background: #e9ecef;
+  border-color: #ccc;
+}
+
+.clear-filters-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.search-input {
+  flex: 1;
+  padding: 12px 16px;
+  border: 2px solid #e9ecef;
+  border-radius: 8px;
+  font-size: 14px;
+  transition: all 0.3s ease;
+  background: #fafbfc;
+}
+
+.search-input:focus {
+  border-color: #409eff;
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(64, 158, 255, 0.1);
+  background: #fff;
+}
+
+.stats {
+  display: flex;
+  gap: 24px;
+  margin-bottom: 24px;
+  padding: 20px;
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  border-radius: 12px;
+  border: 1px solid #dee2e6;
+}
+
+.stat-item {
+  text-align: center;
+  flex: 1;
+}
+
+.stat-number {
+  font-size: 28px;
+  font-weight: bold;
+  color: #409eff;
+  margin-bottom: 4px;
+}
+
+.stat-label {
+  font-size: 13px;
+  color: #666;
+  font-weight: 500;
+}
+
+.stats-note {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  background: #f8f9fa;
+  border: 1px solid #e9ecef;
+  border-radius: 8px;
+  margin: 16px 0;
+  font-size: 14px;
+  color: #666;
+}
+
+.stats-note i {
+  color: #007bff;
+  font-size: 16px;
+}
+
+.pagination {
+  margin-top: 24px;
+  text-align: center;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 16px;
+}
+
+.pagination button {
+  background: #409eff;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.3s ease;
+  min-width: 80px;
+}
+
+.pagination button:hover:not(:disabled) {
+  background: #3076c9;
+  transform: translateY(-1px);
+}
+
+.pagination button:disabled {
+  background: #6c757d;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.pagination span {
+  font-size: 14px;
+  color: #666;
+  font-weight: 500;
+}
+
+.dataset-name {
+  color: #409eff;
+  cursor: pointer;
+  text-decoration: underline;
+  font-weight: 500;
+  transition: color 0.2s ease;
+}
+
+.dataset-name:hover {
+  color: #3076c9;
+}
+
+.dataset-id {
+  color: #666;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.copy-icon {
+  color: #409eff;
+  cursor: pointer;
+  margin-left: 8px;
+  font-size: 12px;
+  transition: all 0.2s ease;
+  opacity: 0.7;
+}
+
+.copy-icon:hover {
+  color: #3076c9;
+  opacity: 1;
+  transform: scale(1.1);
+}
+</style>

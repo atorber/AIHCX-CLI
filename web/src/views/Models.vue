@@ -1,0 +1,882 @@
+<template>
+  <div class="container">
+    <div class="header">
+      <h1>🤖 模型列表</h1>
+      <p>查看和管理您的模型</p>
+    </div>
+    <div class="main">
+      <aside class="sidebar">
+        <Navigation />
+      </aside>
+      <div class="content">
+        <div class="page-container">
+          <!-- 搜索和刷新 -->
+          <div class="search-box">
+            <input 
+              type="text" 
+              class="search-input" 
+              v-model="searchQuery" 
+              @input="onSearchInput"
+              @keyup.enter="search"
+              placeholder="搜索模型名称或所有者..."
+            >
+            <button 
+              class="refresh-btn" 
+              @click="loadModels" 
+              :disabled="loading"
+            >
+              <span v-if="loading">🔄 加载中...</span>
+              <span v-else>🔄 刷新列表</span>
+            </button>
+          </div>
+
+          <!-- 加载状态 -->
+          <div class="loading" v-if="loading">
+            <p>正在加载模型列表...</p>
+          </div>
+
+          <!-- 错误状态 -->
+          <div class="error" v-if="error">
+            <p>{{ error }}</p>
+          </div>
+
+          <!-- 模型表格 -->
+          <div v-if="!loading && !error && sortedModels.length > 0">
+            <table class="models-table">
+              <thead>
+                <tr>
+                  <th @click="sortBy('name')">
+                    模型名称/ID 
+                    <span v-if="sortKey === 'name'">{{ sortOrder === 'asc' ? '↑' : '↓' }}</span>
+                  </th>
+                  <th class="owner-column" @click="sortBy('ownerName')">
+                    所有者
+                    <span v-if="sortKey === 'ownerName'">{{ sortOrder === 'asc' ? '↑' : '↓' }}</span>
+                  </th>
+                  <th class="status-column">
+                    状态
+                  </th>
+                  <th class="type-column" @click="sortBy('modelFormat')">
+                    模型格式
+                    <span v-if="sortKey === 'modelFormat'">{{ sortOrder === 'asc' ? '↑' : '↓' }}</span>
+                  </th>
+                  <th class="version-column" @click="sortBy('latestVersion')">
+                    版本
+                    <span v-if="sortKey === 'latestVersion'">{{ sortOrder === 'asc' ? '↑' : '↓' }}</span>
+                  </th>
+                  <th>
+                    描述
+                  </th>
+                  <th @click="sortBy('createdAt')">
+                    创建时间
+                    <span v-if="sortKey === 'createdAt'">{{ sortOrder === 'asc' ? '↑' : '↓' }}</span>
+                  </th>
+                  <th @click="sortBy('updatedAt')">
+                    更新时间
+                    <span v-if="sortKey === 'updatedAt'">{{ sortOrder === 'asc' ? '↑' : '↓' }}</span>
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="model in sortedModels" :key="model.id">
+                  <td>
+                    <span class="model-name" @click="showModelDetail(model)">{{ model.name || 'N/A' }}</span>
+                    <br>
+                    <span class="model-id">{{ model.id || 'N/A' }}</span> 
+                    <i class="fa-solid fa-copy copy-icon" @click="copyModelId(model.id)" title="复制模型ID"></i>
+                  </td>
+                  <td class="owner-column" :title="model.ownerName || 'N/A'">{{ model.ownerName || 'N/A' }}</td>
+                  <td class="status-column">
+                    <span :class="['status', getStatusClass(model.initSource)]">
+                      {{ formatStatus(model.initSource) }}
+                    </span>
+                  </td>
+                  <td class="type-column" :title="model.modelFormat || 'N/A'">{{ model.modelFormat || 'N/A' }}</td>
+                  <td class="version-column">{{ model.latestVersion || 'N/A' }}</td>
+                  <td class="description-cell">暂无描述</td>
+                  <td>{{ formatDate(model.createdAt) }}</td>
+                  <td>{{ formatDate(model.updatedAt) }}</td>
+                </tr>
+              </tbody>
+            </table>
+
+            <!-- 分页 -->
+            <div class="pagination">
+              <button 
+                @click="prevPage" 
+                :disabled="currentPage === 1"
+              >
+                ← 上一页
+              </button>
+              <span>第 {{ currentPage }} 页，共 {{ totalPages }} 页</span>
+              <button 
+                @click="nextPage" 
+                :disabled="currentPage === totalPages"
+              >
+                下一页 →
+              </button>
+            </div>
+          </div>
+
+          <!-- 空状态 -->
+          <div class="empty-state" v-if="!loading && !error && sortedModels.length === 0">
+            <h3>暂无模型</h3>
+            <p v-if="searchQuery">没有找到匹配"{{ searchQuery }}"的模型</p>
+            <p v-else>您还没有创建任何模型</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 模型详情抽屉 -->
+  <div class="drawer-overlay" :class="{ show: showDrawer }" @click="closeDrawer"></div>
+  <div class="drawer" :class="{ show: showDrawer }">
+    <div class="drawer-header">
+      <h2 class="drawer-title">{{ selectedModel?.name || '模型详情' }}</h2>
+      <p class="drawer-subtitle">{{ selectedModel?.id || '' }}</p>
+      <button class="drawer-close" @click="closeDrawer">×</button>
+    </div>
+    <div class="drawer-content" v-if="selectedModel">
+      <!-- 基本信息 -->
+      <div class="drawer-section">
+        <h3 class="drawer-section-title">基本信息</h3>
+        <div class="drawer-field">
+          <div class="drawer-field-label">模型名称</div>
+          <div class="drawer-field-value">{{ selectedModel?.name || 'N/A' }}</div>
+        </div>
+        <div class="drawer-field">
+          <div class="drawer-field-label">模型ID</div>
+          <div class="drawer-field-value">{{ selectedModel?.id || 'N/A' }}</div>
+        </div>
+        <div class="drawer-field">
+          <div class="drawer-field-label">描述</div>
+          <div class="drawer-field-value">暂无描述</div>
+        </div>
+        <div class="drawer-field">
+          <div class="drawer-field-label">所有者</div>
+          <div class="drawer-field-value">{{ selectedModel?.ownerName || 'N/A' }}</div>
+        </div>
+      </div>
+
+      <!-- 模型信息 -->
+      <div class="drawer-section">
+        <h3 class="drawer-section-title">模型信息</h3>
+        <div class="drawer-field">
+          <div class="drawer-field-label">模型格式</div>
+          <div class="drawer-field-value">{{ selectedModel?.modelFormat || 'N/A' }}</div>
+        </div>
+        <div class="drawer-field">
+          <div class="drawer-field-label">版本</div>
+          <div class="drawer-field-value">{{ selectedModel?.latestVersion || 'N/A' }}</div>
+        </div>
+        <div class="drawer-field">
+          <div class="drawer-field-label">来源</div>
+          <div class="drawer-field-value status" :class="getStatusClass(selectedModel?.initSource)">
+            {{ formatStatus(selectedModel?.initSource) }}
+          </div>
+        </div>
+        <div class="drawer-field">
+          <div class="drawer-field-label">可见性</div>
+          <div class="drawer-field-value">{{ formatVisibility(selectedModel?.visibilityScope) }}</div>
+        </div>
+      </div>
+
+      <!-- 时间信息 -->
+      <div class="drawer-section">
+        <h3 class="drawer-section-title">时间信息</h3>
+        <div class="drawer-field">
+          <div class="drawer-field-label">创建时间</div>
+          <div class="drawer-field-value">{{ formatDate(selectedModel?.createdAt) }}</div>
+        </div>
+        <div class="drawer-field">
+          <div class="drawer-field-label">更新时间</div>
+          <div class="drawer-field-value">{{ formatDate(selectedModel?.updatedAt) }}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</template>
+
+<script>
+import Navigation from '../components/Navigation.vue'
+
+export default {
+  name: 'Models',
+  components: {
+    Navigation
+  },
+  data() {
+    return {
+      models: [],
+      loading: false,
+      error: null,
+      searchQuery: '',
+      searchTimeout: null,
+      sortKey: 'createdAt',
+      sortOrder: 'desc',
+      currentPage: 1,
+      pageSize: 20,
+      apiTotalCount: 0, // API返回的总数据量
+      showDrawer: false,
+      selectedModel: null
+    }
+  },
+  computed: {
+    sortedModels() {
+      return [...this.models].sort((a, b) => {
+        let aVal = a[this.sortKey] || '';
+        let bVal = b[this.sortKey] || '';
+        
+        if (this.sortKey === 'createdAt' || this.sortKey === 'updatedAt') {
+          aVal = new Date(aVal);
+          bVal = new Date(bVal);
+        } else {
+          aVal = aVal.toString().toLowerCase();
+          bVal = bVal.toString().toLowerCase();
+        }
+        
+        if (this.sortOrder === 'asc') {
+          return aVal > bVal ? 1 : -1;
+        } else {
+          return aVal < bVal ? 1 : -1;
+        }
+      });
+    },
+    totalPages() {
+      return Math.ceil(this.apiTotalCount / this.pageSize);
+    },
+  },
+  methods: {
+    async loadModels() {
+      console.log('loadModels called');
+      this.loading = true;
+      this.error = null;
+      
+      try {
+        console.log('Making API request...');
+        
+        // 构建请求参数
+        const params = new URLSearchParams({
+          action: 'DescribeModels',
+          pageNumber: this.currentPage.toString(),
+          pageSize: this.pageSize.toString()
+        });
+        
+        // 添加搜索关键词参数
+        if (this.searchQuery.trim()) {
+          params.append('keyword', this.searchQuery.trim());
+        }
+        
+        // 使用fetch发送请求
+        const response = await fetch(`/api?${params.toString()}`);
+        console.log('API response received:', response);
+        const data = await response.json();
+        
+        if (data.error) {
+          this.error = data.error;
+          return;
+        }
+        
+        this.models = data.models || data.Models || [];
+        this.apiTotalCount = data.totalCount || data.TotalCount || this.models.length;
+        console.log('Models loaded:', this.models.length, 'Total count:', this.apiTotalCount);
+      } catch (err) {
+        console.error('Error loading models:', err);
+        this.error = '加载模型列表失败: ' + err.message;
+      } finally {
+        this.loading = false;
+      }
+    },
+    
+    // 搜索输入处理（防抖）
+    onSearchInput() {
+      // 清除之前的定时器
+      if (this.searchTimeout) {
+        clearTimeout(this.searchTimeout);
+      }
+      
+      // 设置新的定时器，500ms后执行搜索
+      this.searchTimeout = setTimeout(() => {
+        this.search();
+      }, 500);
+    },
+    
+    // 搜索方法
+    search() {
+      this.currentPage = 1; // 重置到第一页
+      this.loadModels();
+    },
+    sortBy(key) {
+      if (this.sortKey === key) {
+        this.sortOrder = this.sortOrder === 'asc' ? 'desc' : 'asc';
+      } else {
+        this.sortKey = key;
+        this.sortOrder = 'asc';
+      }
+      this.currentPage = 1; // 重置到第一页
+      this.loadModels(); // 重新加载数据
+    },
+    prevPage() {
+      if (this.currentPage > 1) {
+        this.currentPage--;
+        this.loadModels();
+      }
+    },
+    nextPage() {
+      if (this.currentPage < this.totalPages) {
+        this.currentPage++;
+        this.loadModels();
+      }
+    },
+    formatDate(dateStr) {
+      if (!dateStr) return 'N/A';
+      try {
+        const date = new Date(dateStr);
+        return date.toLocaleString('zh-CN');
+      } catch (e) {
+        return dateStr;
+      }
+    },
+    formatStatus(source) {
+      if (!source) return 'N/A';
+      const sourceMap = {
+        'UserUpload': '用户上传',
+        'ModelHub': '模型中心',
+        'Training': '训练生成',
+        'Import': '导入'
+      };
+      return sourceMap[source] || source;
+    },
+    getStatusClass(source) {
+      if (!source) return 'inactive';
+      if (source === 'UserUpload') return 'active';
+      if (source === 'ModelHub') return 'active';
+      if (source === 'Training') return 'pending';
+      if (source === 'Import') return 'active';
+      return 'inactive';
+    },
+    formatVisibility(scope) {
+      if (!scope) return 'N/A';
+      const scopeMap = {
+        'ALL_PEOPLE': '所有人可见',
+        'SELF': '仅自己可见',
+        'TEAM': '团队可见'
+      };
+      return scopeMap[scope] || scope;
+    },
+    showModelDetail(model) {
+      this.selectedModel = model;
+      this.showDrawer = true;
+      // 防止body滚动
+      document.body.style.overflow = 'hidden';
+    },
+    closeDrawer() {
+      this.showDrawer = false;
+      this.selectedModel = null;
+      // 恢复body滚动
+      document.body.style.overflow = '';
+    },
+    copyModelId(id) {
+      if (!id) return;
+      
+      // 使用现代浏览器的Clipboard API
+      if (navigator.clipboard && window.isSecureContext) {
+        navigator.clipboard.writeText(id).then(() => {
+          this.showCopySuccess();
+        }).catch(err => {
+          console.error('复制失败:', err);
+          this.fallbackCopy(id);
+        });
+      } else {
+        // 降级方案
+        this.fallbackCopy(id);
+      }
+    },
+    fallbackCopy(text) {
+      // 创建临时文本区域
+      const textArea = document.createElement('textarea');
+      textArea.value = text;
+      textArea.style.position = 'fixed';
+      textArea.style.left = '-999999px';
+      textArea.style.top = '-999999px';
+      document.body.appendChild(textArea);
+      textArea.focus();
+      textArea.select();
+      
+      try {
+        document.execCommand('copy');
+        this.showCopySuccess();
+      } catch (err) {
+        console.error('复制失败:', err);
+      }
+      
+      document.body.removeChild(textArea);
+    },
+    showCopySuccess() {
+      // 显示复制成功提示
+      const toast = document.createElement('div');
+      toast.textContent = '模型ID已复制到剪贴板';
+      toast.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background: #52c41a;
+        color: white;
+        padding: 12px 20px;
+        border-radius: 6px;
+        z-index: 10000;
+        font-size: 14px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        animation: slideIn 0.3s ease;
+      `;
+      
+      // 添加动画样式
+      const style = document.createElement('style');
+      style.textContent = `
+        @keyframes slideIn {
+          from { transform: translateX(100%); opacity: 0; }
+          to { transform: translateX(0); opacity: 1; }
+        }
+      `;
+      document.head.appendChild(style);
+      
+      document.body.appendChild(toast);
+      
+      // 3秒后自动移除
+      setTimeout(() => {
+        if (toast.parentNode) {
+          toast.parentNode.removeChild(toast);
+        }
+      }, 3000);
+    }
+  },
+  mounted() {
+    console.log('Vue app mounted, loading models...');
+    this.loadModels();
+  }
+}
+</script>
+
+<style scoped>
+.loading {
+  text-align: center;
+  padding: 60px 20px;
+  color: #666;
+  font-size: 16px;
+}
+
+.error {
+  background: #fff2f0;
+  color: #dc3545;
+  padding: 16px;
+  border-radius: 8px;
+  margin: 20px 0;
+  border: 1px solid #ffccc7;
+  font-size: 14px;
+}
+
+.models-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 20px;
+  background: white;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+  border: 1px solid #e9ecef;
+}
+
+.models-table th {
+  background: #f8f9fa;
+  padding: 16px 20px;
+  text-align: left;
+  font-weight: 600;
+  color: #333;
+  border-bottom: 2px solid #dee2e6;
+  cursor: pointer;
+  user-select: none;
+  transition: background 0.2s ease;
+  font-size: 14px;
+}
+
+.models-table th.owner-column {
+  width: 120px;
+  min-width: 120px;
+  max-width: 120px;
+}
+
+.models-table th.status-column {
+  width: 100px;
+  min-width: 100px;
+}
+
+.models-table th.type-column {
+  width: 120px;
+  min-width: 120px;
+  max-width: 120px;
+}
+
+.models-table th.version-column {
+  width: 80px;
+  min-width: 80px;
+  max-width: 80px;
+}
+
+.models-table th:hover {
+  background: #e9ecef;
+}
+
+.models-table td {
+  padding: 16px 20px;
+  border-bottom: 1px solid #f1f3f4;
+  vertical-align: top;
+  font-size: 14px;
+}
+
+.models-table td.owner-column {
+  width: 120px;
+  min-width: 120px;
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.models-table td.status-column {
+  width: 100px;
+  min-width: 100px;
+  text-align: center;
+}
+
+.models-table td.type-column {
+  width: 120px;
+  min-width: 120px;
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.models-table td.version-column {
+  width: 80px;
+  min-width: 80px;
+  max-width: 80px;
+  text-align: center;
+}
+
+.models-table tr:hover {
+  background: #f8f9fa;
+  transition: background 0.2s ease;
+}
+
+.status {
+  padding: 6px 12px;
+  width: 80px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  display: inline-block;
+  min-width: 60px;
+  text-align: center;
+}
+
+.status.active {
+  background: #f6ffed;
+  color: #52c41a;
+  border: 1px solid #b7eb8f;
+}
+
+.status.inactive {
+  background: #fff2f0;
+  color: #dc3545;
+  border: 1px solid #ffccc7;
+}
+
+.status.pending {
+  background: #fff7e6;
+  color: #fa8c16;
+  border: 1px solid #ffd591;
+}
+
+.status.failed {
+  background: #fff1f0;
+  color: #f5222d;
+  border: 1px solid #ffa39e;
+}
+
+.refresh-btn {
+  background: #28a745;
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
+}
+
+.refresh-btn:hover {
+  background: #218838;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(40, 167, 69, 0.3);
+}
+
+.refresh-btn:disabled {
+  background: #6c757d;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 80px 20px;
+  color: #666;
+}
+
+.empty-state h3 {
+  margin-bottom: 15px;
+  color: #333;
+  font-size: 20px;
+}
+
+.search-box {
+  margin-bottom: 24px;
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.search-input {
+  flex: 1;
+  padding: 12px 16px;
+  border: 2px solid #e9ecef;
+  border-radius: 8px;
+  font-size: 14px;
+  transition: all 0.3s ease;
+  background: #fafbfc;
+}
+
+.search-input:focus {
+  border-color: #409eff;
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(64, 158, 255, 0.1);
+  background: #fff;
+}
+
+.pagination {
+  margin-top: 24px;
+  text-align: center;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 16px;
+}
+
+.pagination button {
+  background: #409eff;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.3s ease;
+  min-width: 80px;
+}
+
+.pagination button:hover:not(:disabled) {
+  background: #3076c9;
+  transform: translateY(-1px);
+}
+
+.pagination button:disabled {
+  background: #6c757d;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.pagination span {
+  font-size: 14px;
+  color: #666;
+  font-weight: 500;
+}
+
+.model-name {
+  color: #409eff;
+  cursor: pointer;
+  text-decoration: underline;
+  font-weight: 500;
+  transition: color 0.2s ease;
+}
+
+.model-name:hover {
+  color: #3076c9;
+}
+
+.model-id {
+  color: #666;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.copy-icon {
+  color: #409eff;
+  cursor: pointer;
+  margin-left: 8px;
+  font-size: 12px;
+  transition: all 0.2s ease;
+  opacity: 0.7;
+}
+
+.copy-icon:hover {
+  color: #3076c9;
+  opacity: 1;
+  transform: scale(1.1);
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+.drawer-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 9999;
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.3s ease;
+}
+
+.drawer-overlay.show {
+  opacity: 1;
+  visibility: visible;
+}
+
+.drawer {
+  position: fixed;
+  top: 0;
+  right: 0;
+  width: 50vw;
+  max-width: 800px;
+  min-width: 400px;
+  height: 100vh;
+  background: white;
+  box-shadow: -2px 0 20px rgba(0, 0, 0, 0.15);
+  z-index: 10000;
+  display: none;
+  flex-direction: column;
+  overflow: hidden;
+  animation: slideIn 0.3s ease-out;
+}
+
+.drawer.show {
+  display: flex;
+}
+
+.drawer-header {
+  padding: 20px 24px;
+  border-bottom: 1px solid #e9ecef;
+  background: #f8f9fa;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.drawer-title {
+  font-size: 20px;
+  font-weight: 600;
+  color: #333;
+  margin: 0 0 8px 0;
+}
+
+.drawer-subtitle {
+  font-size: 14px;
+  color: #666;
+  margin: 0;
+}
+
+.drawer-close {
+  position: absolute;
+  top: 20px;
+  right: 24px;
+  background: none;
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+  color: #666;
+  padding: 0;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+}
+
+.drawer-close:hover {
+  background: #e9ecef;
+  color: #333;
+}
+
+.drawer-content {
+  padding: 24px;
+  overflow-y: auto;
+}
+
+.drawer-section {
+  margin-bottom: 24px;
+}
+
+.drawer-section-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #333;
+  margin: 0 0 12px 0;
+  padding-bottom: 8px;
+  border-bottom: 2px solid #409eff;
+}
+
+.drawer-field {
+  margin-bottom: 16px;
+}
+
+.drawer-field-label {
+  font-size: 13px;
+  color: #666;
+  margin-bottom: 4px;
+  font-weight: 500;
+}
+
+.drawer-field-value {
+  font-size: 14px;
+  color: #333;
+  line-height: 1.5;
+  word-break: break-word;
+}
+
+.drawer-field-value.status {
+  display: inline-block;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 500;
+}
+</style>
