@@ -539,6 +539,10 @@
                 <span>🔄</span>
               </button>
             </div>
+            <!-- 数据集列表错误信息 -->
+            <div v-if="availableDatasetsError" class="error">
+              <i class="fas fa-exclamation-circle"></i> {{ availableDatasetsError }}
+            </div>
           </div>
         </div>
 
@@ -603,7 +607,7 @@
             </label>
             <div class="resource-pool-selection-row">
               <div class="resource-pool-type-group">
-                <select v-model="formData.resourcePoolType" @change="onResourcePoolTypeChange" class="form-control">
+                <select v-model="formData.resourcePoolType" @change="onResourcePoolTypeChange" class="form-control filter-select">
                   <option value="">请选择类型</option>
                   <option value="common">自运维</option>
                   <option value="dedicatedV2">全托管</option>
@@ -714,6 +718,7 @@ export default {
       importMethod: 'existing',
       showImportDrawerFlag: false,
       availableDatasets: [],
+      availableDatasetsError: null, // 数据集列表加载错误
       datasetVersions: [],
       resourcePools: [],
       queues: [],
@@ -1086,10 +1091,16 @@ export default {
     
     async loadAvailableDatasets() {
       try {
+        this.availableDatasetsError = null
+        console.log('开始加载数据集列表...')
         const data = await datasetService.getDatasets()
+        console.log('数据集列表API响应:', data)
         this.availableDatasets = data.datasets || data.Datasets || []
+        console.log('解析后的数据集列表:', this.availableDatasets)
       } catch (err) {
         console.error('获取数据集列表失败:', err)
+        this.availableDatasetsError = '获取数据集列表失败: ' + err.message
+        this.availableDatasets = []
       }
     },
     
@@ -1200,15 +1211,78 @@ export default {
     
     // 显示文本方法
     getDatasetDisplayText(dataset) {
-      return `${dataset.name || 'N/A'} (${dataset.id || 'N/A'})`
+      if (!dataset) return '';
+
+      let displayText = `${dataset.name}`;
+
+      // 添加存储类型信息
+      const storageTypeText = dataset.storageType;
+      displayText += ` [ ${dataset.id} / ${storageTypeText}:`;
+
+      // 添加存储实例ID信息
+      const storageInstanceId = dataset.storageInstanceId || dataset.storage_instance_id || dataset.storageInstance;
+      if (storageInstanceId) {
+        displayText += `${storageInstanceId}]`;
+      }
+
+      return displayText;
     },
     
     getVersionDisplayText(version) {
-      return `${version.name || 'N/A'} (${version.id || 'N/A'})`
+      if (!version) return '';
+
+      let displayText = '';
+
+      // 添加版本号
+      if (version.version) {
+        displayText += `v${version.version} [${version.id} | `;
+      }
+
+      // 添加存储路径信息
+      // 如果路径太长，只显示最后一部分
+      const path = version.storagePath;
+      const shortPath = path && path.length > 25 ? '...' + path.slice(-22) : path;
+      displayText += `${shortPath} -> `;
+
+      const mountPath = version.mountPath;
+      const shortMountPath = mountPath && mountPath.length > 25 ? '...' + mountPath.slice(-22) : mountPath;
+      displayText += ` ${shortMountPath}]`;
+
+      // 添加描述信息
+      if (version.description) {
+        displayText += ` - ${version.description}`;
+      }
+
+      return displayText;
     },
     
     getQueueDisplayText(queue) {
-      return `${queue.queueName || 'N/A'} (${queue.queueId || 'N/A'})`
+      if (!queue) return '';
+      let displayText = queue.queueName + ' | ' + queue.queueId;
+
+      // 添加队列类型信息
+      displayText += ` (${queue.queueType})`;
+
+      // 添加资源信息
+      if (queue.capability) {
+        const memoryGi = queue.capability.memoryGi;
+        const cpuCores = queue.capability.milliCPUcores;
+        if (memoryGi && cpuCores) {
+          const memoryGB = Math.round(parseInt(memoryGi) / (1024 * 1024 * 1024));
+          const cpuCoresNum = Math.round(parseInt(cpuCores) / 1000);
+          displayText += ` - ${cpuCoresNum}核/${memoryGB}GB`;
+        }
+      }
+
+      // 添加加速卡信息
+      if (queue.capability?.acceleratorCardList?.length > 0) {
+        const accelerator = queue.capability.acceleratorCardList[0];
+        if (accelerator.acceleratorType && accelerator.acceleratorCount) {
+          displayText += ` - ${accelerator.acceleratorCount}x${accelerator.acceleratorType}`;
+        }
+      }
+
+      return displayText;
     },
     
     // 状态相关方法
