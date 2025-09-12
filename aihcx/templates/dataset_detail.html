@@ -1301,6 +1301,82 @@
     overflow-x: auto;
   }
 
+  /* 命令步骤样式 */
+  .command-steps {
+    border: 1px solid #e0e0e0;
+    border-radius: 6px;
+    background-color: #f8f9fa;
+    overflow: hidden;
+  }
+
+  .command-step {
+    border-bottom: 1px solid #e0e0e0;
+  }
+
+  .command-step:last-child {
+    border-bottom: none;
+  }
+
+  .step-header {
+    display: flex;
+    align-items: center;
+    padding: 12px 16px;
+    background-color: #ffffff;
+    border-bottom: 1px solid #f1f3f4;
+  }
+
+  .step-number {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    background-color: #007bff;
+    color: white;
+    border-radius: 50%;
+    font-size: 12px;
+    font-weight: 600;
+    margin-right: 12px;
+  }
+
+  .step-title {
+    flex: 1;
+    font-weight: 500;
+    color: #495057;
+    font-size: 14px;
+  }
+
+  .btn-copy-step {
+    background-color: #28a745;
+    color: white;
+    border: none;
+    padding: 4px 8px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 12px;
+    transition: background-color 0.2s;
+    min-width: 28px;
+    height: 28px;
+  }
+
+  .btn-copy-step:hover {
+    background-color: #218838;
+  }
+
+  .step-content {
+    padding: 12px 16px;
+    background-color: #2d3748;
+  }
+
+  .step-command {
+    color: #e2e8f0;
+    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+    font-size: 13px;
+    line-height: 1.4;
+    word-break: break-all;
+    display: block;
+  }
+
   .command-text {
     color: #e2e8f0;
     background: none;
@@ -1860,21 +1936,24 @@
 
       <!-- 工具上传配置 -->
       <div v-if="importMethod === 'tool'" class="form-group">
-        <label class="form-label">命令行工具</label>
-        <div class="command-container">
-          <div class="command-header">
-            <span class="command-title">bcecmd bos sync 命令</span>
-            <button type="button" @click="copyCommand" class="btn-copy" title="复制命令">
-              📋 复制
-            </button>
+        <label class="form-label">命令行工具上传</label>
+        <div class="command-steps">
+          <div v-for="(step, index) in commandSteps" :key="index" class="command-step">
+            <div class="step-header">
+              <span class="step-number">[[ index + 1 ]]</span>
+              <span class="step-title">[[ step.title ]]</span>
+              <button type="button" @click="copyStepCommand(step.command)" class="btn-copy-step" :title="'复制步骤' + (index + 1) + '命令'">
+                📋
+              </button>
+            </div>
+            <div class="step-content">
+              <code class="step-command">[[ step.command ]]</code>
+            </div>
           </div>
-          <div class="command-content">
-            <code class="command-text">[[ generatedCommand ]]</code>
-          </div>
-          <div class="command-hint">
-            <p>请在本地命令行中执行上述命令来上传数据到BOS存储桶。</p>
-            <p>请将 <code>&lt;local_dir&gt;</code> 替换为您的本地数据目录路径。</p>
-          </div>
+        </div>
+        <div class="command-hint">
+          <p>请按顺序在本地命令行中执行上述命令来上传数据到BOS存储桶。</p>
+          <p>在最后一步中，请将 <code>&lt;local_dir&gt;</code> 替换为您的本地数据目录路径。</p>
         </div>
       </div>
 
@@ -1939,8 +2018,8 @@
 
       <!-- 其他配置项（工具上传时隐藏） -->
       <div v-if="importMethod !== 'tool'">
-        <!-- 清空数据选项 -->
-        <div class="form-group">
+        <!-- 清空数据选项（自定义下载时隐藏） -->
+        <div v-if="importMethod !== 'custom'" class="form-group">
           <div class="toggle-group">
             <label class="toggle-label">
               <input type="checkbox" v-model="formData.cleanData" @change="onCleanDataChange" class="toggle-input">
@@ -1951,8 +2030,8 @@
           </div>
         </div>
 
-        <!-- 同名保留策略 -->
-        <div class="form-group" :class="{ 'disabled-group': formData.cleanData }">
+        <!-- 同名保留策略（自定义下载时隐藏） -->
+        <div v-if="importMethod !== 'custom'" class="form-group" :class="{ 'disabled-group': formData.cleanData }">
           <label class="form-label" :class="{ 'required': !formData.cleanData }">同名保留策略</label>
           <div class="radio-group" :class="{ 'disabled': formData.cleanData }">
             <label class="radio-item">
@@ -2305,27 +2384,66 @@
         return this.isBosDataset;
       },
 
-      // 生成bcecmd命令
-      generatedCommand() {
+      // 生成bcecmd命令步骤
+      commandSteps() {
         if (!this.dataset || !this.isBosDataset) {
-          return '请选择BOS类型的数据集';
+          return [{
+            title: '错误',
+            command: '请选择BOS类型的数据集'
+          }];
         }
 
         const bucketName = this.dataset.storageInstance || this.dataset.storageInstanceId || 'your-bucket';
         const prefix = this.dataset.storagePath || '';
 
-        // 构建基础命令
-        let command = `$ bcecmd bos sync <local_dir> bos:/${bucketName}`;
-
+        // 构建同步命令
+        let syncCommand = `bcecmd bos sync <local_dir> bos:/${bucketName}`;
+        
         // 添加前缀（如果存在）
         if (prefix && prefix !== '/') {
-          command += `/${prefix.replace(/^\//, '')}`;
+          syncCommand += `/${prefix.replace(/^\//, '')}`;
         }
 
         // 添加常用参数
-        command += ` --exclude "*.tmp" --exclude "*.log" --exclude ".DS_Store" --include "*" --concurrency 10`;
+        syncCommand += ` --exclude "*.tmp" --exclude "*.log" --exclude ".DS_Store" --include "*" --concurrency 10`;
 
-        return command;
+        return [
+          {
+            title: '下载bcecmd工具',
+            command: 'wget https://doc.bce.baidu.com/bos-optimization/linux-bcecmd-0.5.9.zip'
+          },
+          {
+            title: '解压工具包',
+            command: 'unzip linux-bcecmd-0.5.9.zip'
+          },
+          {
+            title: '移动工具到系统路径',
+            command: 'mv linux-bcecmd-0.5.9/bcecmd /usr/local/bin/bcecmd'
+          },
+          {
+            title: '清理临时文件',
+            command: 'rm -rf linux-bcecmd-0.5.9.zip linux-bcecmd-0.5.9'
+          },
+          {
+            title: '设置执行权限',
+            command: 'chmod +x /usr/local/bin/bcecmd'
+          },
+          {
+            title: '配置bcecmd（按提示输入配置信息）',
+            command: 'bcecmd -c'
+          },
+          {
+            title: '同步数据到BOS',
+            command: syncCommand
+          }
+        ];
+      },
+
+      // 生成bcecmd命令（保留兼容性）
+      generatedCommand() {
+        return this.commandSteps.map((step, index) => 
+          `# ${step.title}\n$ ${step.command}`
+        ).join('\n');
       },
 
       // 自运维资源池（common类型）
@@ -2403,12 +2521,36 @@
         try {
           await navigator.clipboard.writeText(this.generatedCommand);
           // 简单的提示，可以后续优化为更好的UI提示
-          alert('命令已复制到剪贴板！');
+          alert('所有命令已复制到剪贴板！');
         } catch (err) {
           console.error('复制失败:', err);
           // 降级处理：创建临时文本区域
           const textArea = document.createElement('textarea');
           textArea.value = this.generatedCommand;
+          document.body.appendChild(textArea);
+          textArea.select();
+          try {
+            document.execCommand('copy');
+            alert('所有命令已复制到剪贴板！');
+          } catch (fallbackErr) {
+            console.error('降级复制也失败:', fallbackErr);
+            alert('复制失败，请手动复制命令');
+          }
+          document.body.removeChild(textArea);
+        }
+      },
+
+      // 复制单个步骤命令到剪贴板
+      async copyStepCommand(command) {
+        try {
+          await navigator.clipboard.writeText(command);
+          // 简单的提示，可以后续优化为更好的UI提示
+          alert('命令已复制到剪贴板！');
+        } catch (err) {
+          console.error('复制失败:', err);
+          // 降级处理：创建临时文本区域
+          const textArea = document.createElement('textarea');
+          textArea.value = command;
           document.body.appendChild(textArea);
           textArea.select();
           try {
@@ -4115,7 +4257,8 @@ echo "数据导入任务完成"`;
           }
         }
 
-        if (!this.formData.cleanData && !this.formData.nameStrategy) {
+        // 自定义下载方式不需要验证同名保留策略
+        if (this.importMethod !== 'custom' && !this.formData.cleanData && !this.formData.nameStrategy) {
           alert('请选择同名保留策略');
           return;
         }
