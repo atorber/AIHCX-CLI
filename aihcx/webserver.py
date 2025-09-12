@@ -79,6 +79,13 @@ def config():
     config_data = {k: cfg.get(k) or '' for k in ['host', 'access_key', 'secret_key', 'pool', 'queue', 'path']}
     return render_template('config.html', saved=saved, **config_data)
 
+@app.route('/api/config-json', methods=['GET'])
+def config_json():
+    """为Vue应用提供JSON格式的配置API"""
+    cfg = AIJobConfig()
+    config_data = {k: cfg.get(k) or '' for k in ['host', 'access_key', 'secret_key', 'pool', 'queue', 'path']}
+    return jsonify(config_data)
+
 @app.route('/datasets', methods=['GET'])
 def datasets():
     return render_template('datasets.html')
