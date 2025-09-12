@@ -1739,6 +1739,10 @@
             <span class="radio-label">HuggingFace</span>
           </label>
           <label class="radio-item">
+            <input type="radio" v-model="importMethod" value="modelscope" name="importMethod">
+            <span class="radio-label">ModelScope</span>
+          </label>
+          <label class="radio-item">
             <input type="radio" v-model="importMethod" value="custom" name="importMethod">
             <span class="radio-label">自定义下载</span>
           </label>
@@ -1775,11 +1779,33 @@
         <input type="text" v-model="formData.objectStorageBucket" class="form-control" placeholder="请输入存储桶名称">
       </div>
 
+      <div v-if="importMethod === 'object'" class="form-group">
+        <label class="form-label">路径</label>
+        <input type="text" v-model="formData.objectStoragePath" class="form-control" 
+          placeholder="请输入存储路径（可选），如：data/datasets/">
+        <p class="form-hint">指定要下载的存储桶内路径，留空则下载整个存储桶</p>
+      </div>
+
       <!-- HuggingFace配置 -->
       <div v-if="importMethod === 'huggingface'" class="form-group">
-        <label class="form-label required">源地址</label>
-        <input type="text" v-model="formData.huggingfaceSourceUrl" class="form-control"
-          placeholder="请输入HuggingFace数据集地址，如：microsoft/DialoGPT-medium">
+        <label class="form-label required">数据类型</label>
+        <div class="radio-group">
+          <label class="radio-item">
+            <input type="radio" v-model="formData.huggingfaceDataType" value="dataset" name="huggingfaceDataType">
+            <span class="radio-label">数据集</span>
+          </label>
+          <label class="radio-item">
+            <input type="radio" v-model="formData.huggingfaceDataType" value="model" name="huggingfaceDataType">
+            <span class="radio-label">模型</span>
+          </label>
+        </div>
+      </div>
+
+      <div v-if="importMethod === 'huggingface'" class="form-group">
+        <label class="form-label required">名称</label>
+        <input type="text" v-model="formData.huggingfaceName" class="form-control"
+          placeholder="请输入HuggingFace数据集/模型名称，如：microsoft/DialoGPT-medium">
+        <p class="form-hint">请输入完整的HuggingFace数据集或模型名称，格式通常为：组织名/模型名</p>
       </div>
 
       <div v-if="importMethod === 'huggingface'" class="form-group">
@@ -1787,6 +1813,35 @@
         <input type="password" v-model="formData.huggingfaceAccessToken" class="form-control"
           placeholder="请输入HuggingFace Access Token（可选）">
         <p class="form-hint">Access Token用于访问私有数据集，公开数据集可不填写</p>
+      </div>
+
+      <!-- ModelScope配置 -->
+      <div v-if="importMethod === 'modelscope'" class="form-group">
+        <label class="form-label required">数据类型</label>
+        <div class="radio-group">
+          <label class="radio-item">
+            <input type="radio" v-model="formData.modelscopeDataType" value="dataset" name="modelscopeDataType">
+            <span class="radio-label">数据集</span>
+          </label>
+          <label class="radio-item">
+            <input type="radio" v-model="formData.modelscopeDataType" value="model" name="modelscopeDataType">
+            <span class="radio-label">模型</span>
+          </label>
+        </div>
+      </div>
+
+      <div v-if="importMethod === 'modelscope'" class="form-group">
+        <label class="form-label required">名称</label>
+        <input type="text" v-model="formData.modelscopeName" class="form-control"
+          placeholder="请输入ModelScope数据集/模型名称，如：damo/nlp_structbert_sentiment-classification_chinese-base">
+        <p class="form-hint">请输入完整的ModelScope数据集或模型名称，格式通常为：组织名/模型名</p>
+      </div>
+
+      <div v-if="importMethod === 'modelscope'" class="form-group">
+        <label class="form-label">Access Token</label>
+        <input type="password" v-model="formData.modelscopeAccessToken" class="form-control"
+          placeholder="请输入ModelScope Access Token（可选）">
+        <p class="form-hint">Access Token用于访问私有数据集或模型，公开资源可不填写</p>
       </div>
 
       <!-- 自定义下载配置 -->
@@ -2078,9 +2133,15 @@
           objectStorageAccessKey: '',
           objectStorageSecretKey: '',
           objectStorageBucket: '',
+          objectStoragePath: '',
           // HuggingFace相关字段
-          huggingfaceSourceUrl: '',
+          huggingfaceDataType: 'dataset', // 默认选择数据集
+          huggingfaceName: '',
           huggingfaceAccessToken: '',
+          // ModelScope相关字段
+          modelscopeDataType: 'dataset', // 默认选择数据集
+          modelscopeName: '',
+          modelscopeAccessToken: '',
           // 自定义下载相关字段
           customDownloadImageUrl: '',
           customDownloadStartCommand: ''
@@ -3485,8 +3546,324 @@
           this.resourcePoolLoadingStatus = '';
         }, 2000);
       },
+      buildModelscopeCommand() {
+        // 构建ModelScope数据下载的命令脚本
+        let command = `#!/bin/bash
+set -e  # 遇到错误立即退出
+
+echo "开始ModelScope数据下载任务..."
+echo "目标路径: $TARGET_PATH"
+echo "数据类型: $MODELSCOPE_DATA_TYPE"
+echo "资源名称: $MODELSCOPE_NAME"
+
+# 创建目标路径（如果不存在）
+mkdir -p "$TARGET_PATH"
+
+# 如果启用清空数据，先清空目标路径
+if [ "$CLEAN_DATA" = "true" ]; then
+    echo "清空目标路径: $TARGET_PATH"
+    rm -rf "$TARGET_PATH"/*
+    rm -rf "$TARGET_PATH"/.[^.]* 2>/dev/null || true  # 删除隐藏文件，忽略错误
+fi
+
+# 安装ModelScope工具
+echo "安装ModelScope下载工具..."
+pip install modelscope
+
+# 设置ModelScope缓存目录
+export MODELSCOPE_CACHE="$TARGET_PATH"
+echo "设置MODELSCOPE_CACHE=$TARGET_PATH"
+
+# 根据数据类型执行下载
+if [ "$MODELSCOPE_DATA_TYPE" = "dataset" ]; then
+    echo "下载ModelScope数据集: $MODELSCOPE_NAME"
+    if [ -n "$MODELSCOPE_ACCESS_TOKEN" ]; then
+        echo "使用Access Token进行认证下载"
+        # 设置Access Token环境变量
+        export MODELSCOPE_ACCESS_TOKEN="$MODELSCOPE_ACCESS_TOKEN"
+    fi
+    modelscope download --dataset "$MODELSCOPE_NAME"
+elif [ "$MODELSCOPE_DATA_TYPE" = "model" ]; then
+    echo "下载ModelScope模型: $MODELSCOPE_NAME"
+    if [ -n "$MODELSCOPE_ACCESS_TOKEN" ]; then
+        echo "使用Access Token进行认证下载"
+        # 设置Access Token环境变量
+        export MODELSCOPE_ACCESS_TOKEN="$MODELSCOPE_ACCESS_TOKEN"
+    fi
+    modelscope download --model "$MODELSCOPE_NAME"
+else
+    echo "错误: 未知的数据类型: $MODELSCOPE_DATA_TYPE"
+    exit 1
+fi
+
+# 验证下载结果
+echo "验证下载结果..."
+downloaded_files=\$(find "$TARGET_PATH" -type f | wc -l)
+downloaded_dirs=\$(find "$TARGET_PATH" -type d | wc -l)
+
+echo "下载完成！"
+echo "下载文件数量: $downloaded_files"
+echo "下载目录数量: $downloaded_dirs"
+
+if [ "$downloaded_files" -gt 0 ]; then
+    echo "ModelScope数据下载成功完成！"
+else
+    echo "警告: 未发现下载的文件，请检查资源名称是否正确"
+    exit 1
+fi
+
+echo "ModelScope数据下载任务完成"`;
+
+        return command;
+      },
+      buildHuggingfaceCommand() {
+        // 构建HuggingFace数据下载的命令脚本
+        let command = `#!/bin/bash
+set -e  # 遇到错误立即退出
+
+echo "开始HuggingFace数据下载任务..."
+echo "目标路径: $TARGET_PATH"
+echo "数据类型: $HUGGINGFACE_DATA_TYPE"
+echo "资源名称: $HUGGINGFACE_NAME"
+
+# 创建目标路径（如果不存在）
+mkdir -p "$TARGET_PATH"
+
+# 如果启用清空数据，先清空目标路径
+if [ "$CLEAN_DATA" = "true" ]; then
+    echo "清空目标路径: $TARGET_PATH"
+    rm -rf "$TARGET_PATH"/*
+    rm -rf "$TARGET_PATH"/.[^.]* 2>/dev/null || true  # 删除隐藏文件，忽略错误
+fi
+
+# 安装HuggingFace工具
+echo "安装HuggingFace下载工具..."
+pip install huggingface_hub datasets
+
+# 设置HuggingFace缓存目录
+export HF_HOME="$TARGET_PATH/.cache"
+export HUGGINGFACE_HUB_CACHE="$TARGET_PATH/.cache"
+echo "设置HF_HOME=$TARGET_PATH/.cache"
+
+# 如果提供了Access Token，设置认证
+if [ -n "$HUGGINGFACE_ACCESS_TOKEN" ]; then
+    echo "使用Access Token进行认证"
+    export HUGGING_FACE_HUB_TOKEN="$HUGGINGFACE_ACCESS_TOKEN"
+    # 使用huggingface-cli登录
+    echo "$HUGGINGFACE_ACCESS_TOKEN" | huggingface-cli login --token "$HUGGINGFACE_ACCESS_TOKEN" --add-to-git-credential
+fi
+
+# 根据数据类型执行下载
+if [ "$HUGGINGFACE_DATA_TYPE" = "dataset" ]; then
+    echo "下载HuggingFace数据集: $HUGGINGFACE_NAME"
+    # 使用Python脚本下载数据集
+    python3 -c "
+import os
+from datasets import load_dataset
+from huggingface_hub import snapshot_download
+
+try:
+    # 尝试使用datasets库下载数据集
+    print('使用datasets库下载数据集...')
+    dataset = load_dataset('$HUGGINGFACE_NAME', cache_dir='$TARGET_PATH')
+    print('数据集下载完成')
+except Exception as e:
+    print(f'datasets库下载失败: {e}')
+    print('尝试使用huggingface_hub下载...')
+    # 如果失败，尝试使用snapshot_download
+    snapshot_download(
+        repo_id='$HUGGINGFACE_NAME',
+        repo_type='dataset',
+        local_dir='$TARGET_PATH/$HUGGINGFACE_NAME',
+        local_dir_use_symlinks=False
+    )
+    print('数据集下载完成')
+"
+elif [ "$HUGGINGFACE_DATA_TYPE" = "model" ]; then
+    echo "下载HuggingFace模型: $HUGGINGFACE_NAME"
+    # 使用Python脚本下载模型
+    python3 -c "
+import os
+from huggingface_hub import snapshot_download
+
+try:
+    print('下载模型文件...')
+    snapshot_download(
+        repo_id='$HUGGINGFACE_NAME',
+        local_dir='$TARGET_PATH/$HUGGINGFACE_NAME',
+        local_dir_use_symlinks=False
+    )
+    print('模型下载完成')
+except Exception as e:
+    print(f'模型下载失败: {e}')
+    exit(1)
+"
+else
+    echo "错误: 未知的数据类型: $HUGGINGFACE_DATA_TYPE"
+    exit 1
+fi
+
+# 验证下载结果
+echo "验证下载结果..."
+downloaded_files=\$(find "$TARGET_PATH" -type f | wc -l)
+downloaded_dirs=\$(find "$TARGET_PATH" -type d | wc -l)
+
+echo "下载完成！"
+echo "下载文件数量: $downloaded_files"
+echo "下载目录数量: $downloaded_dirs"
+
+if [ "$downloaded_files" -gt 0 ]; then
+    echo "HuggingFace数据下载成功完成！"
+else
+    echo "警告: 未发现下载的文件，请检查资源名称是否正确"
+    exit 1
+fi
+
+echo "HuggingFace数据下载任务完成"`;
+
+        return command;
+      },
+      buildObjectStorageCommand() {
+        // 构建对象存储数据下载的命令脚本
+        let command = `#!/bin/bash
+set -e  # 遇到错误立即退出
+
+echo "开始对象存储数据下载任务..."
+echo "目标路径: $TARGET_PATH"
+echo "对象存储接入点: $OBJECT_STORAGE_ENDPOINT"
+echo "存储桶: $OBJECT_STORAGE_BUCKET"
+echo "Access Key: $OBJECT_STORAGE_ACCESS_KEY"
+
+# 创建目标路径（如果不存在）
+mkdir -p "$TARGET_PATH"
+
+# 如果启用清空数据，先清空目标路径
+if [ "$CLEAN_DATA" = "true" ]; then
+    echo "清空目标路径: $TARGET_PATH"
+    rm -rf "$TARGET_PATH"/*
+    rm -rf "$TARGET_PATH"/.[^.]* 2>/dev/null || true  # 删除隐藏文件，忽略错误
+fi
+
+# 安装AWS CLI工具
+echo "安装AWS CLI工具..."
+if ! command -v aws &> /dev/null; then
+    # 尝试使用pip安装
+    pip install awscli
+    # 如果pip安装失败，尝试其他方法
+    if ! command -v aws &> /dev/null; then
+        echo "尝试使用curl安装AWS CLI..."
+        curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+        unzip awscliv2.zip
+        ./aws/install --bin-dir /usr/local/bin --install-dir /usr/local/aws-cli
+        rm -rf awscliv2.zip aws/
+    fi
+else
+    echo "AWS CLI已安装"
+fi
+
+# 配置AWS CLI凭证
+echo "配置AWS CLI凭证..."
+mkdir -p ~/.aws
+
+# 创建credentials文件
+cat > ~/.aws/credentials << EOF
+[default]
+aws_access_key_id = $OBJECT_STORAGE_ACCESS_KEY
+aws_secret_access_key = $OBJECT_STORAGE_SECRET_KEY
+EOF
+
+# 创建config文件
+cat > ~/.aws/config << EOF
+[default]
+region = us-east-1
+output = json
+EOF
+
+# 解析endpoint URL
+ENDPOINT_URL="$OBJECT_STORAGE_ENDPOINT"
+if [[ ! "$ENDPOINT_URL" =~ ^https?:// ]]; then
+    ENDPOINT_URL="https://$ENDPOINT_URL"
+fi
+
+echo "使用Endpoint: $ENDPOINT_URL"
+
+# 测试连接
+echo "测试对象存储连接..."
+if aws s3 ls s3://$OBJECT_STORAGE_BUCKET --endpoint-url="$ENDPOINT_URL" --no-verify-ssl > /dev/null 2>&1; then
+    echo "连接测试成功"
+else
+    echo "连接测试失败，尝试不使用SSL验证..."
+    if aws s3 ls s3://$OBJECT_STORAGE_BUCKET --endpoint-url="$ENDPOINT_URL" --no-verify-ssl > /dev/null 2>&1; then
+        echo "连接测试成功（无SSL验证）"
+        SSL_FLAG="--no-verify-ssl"
+    else
+        echo "错误: 无法连接到对象存储，请检查配置"
+        exit 1
+    fi
+fi
+
+# 列出存储桶内容
+echo "列出存储桶内容..."
+aws s3 ls s3://$OBJECT_STORAGE_BUCKET --endpoint-url="$ENDPOINT_URL" $SSL_FLAG
+
+# 同步下载数据
+echo "开始下载数据..."
+if [ -n "$OBJECT_STORAGE_PATH" ] && [ "$OBJECT_STORAGE_PATH" != "/" ]; then
+    # 如果指定了路径，下载特定路径
+    SOURCE_PATH="s3://$OBJECT_STORAGE_BUCKET/$OBJECT_STORAGE_PATH"
+    echo "下载路径: $SOURCE_PATH"
+else
+    # 下载整个存储桶
+    SOURCE_PATH="s3://$OBJECT_STORAGE_BUCKET"
+    echo "下载整个存储桶: $SOURCE_PATH"
+fi
+
+# 执行同步下载
+aws s3 sync "$SOURCE_PATH" "$TARGET_PATH" \
+    --endpoint-url="$ENDPOINT_URL" \
+    $SSL_FLAG \
+    --delete \
+    --progress
+
+# 验证下载结果
+echo "验证下载结果..."
+downloaded_files=\$(find "$TARGET_PATH" -type f | wc -l)
+downloaded_dirs=\$(find "$TARGET_PATH" -type d | wc -l)
+
+echo "下载完成！"
+echo "下载文件数量: $downloaded_files"
+echo "下载目录数量: $downloaded_dirs"
+
+if [ "$downloaded_files" -gt 0 ]; then
+    echo "对象存储数据下载成功完成！"
+    
+    # 显示下载的文件结构
+    echo "下载的文件结构："
+    ls -la "$TARGET_PATH"
+else
+    echo "警告: 未发现下载的文件，请检查存储桶和路径配置"
+    exit 1
+fi
+
+# 清理AWS凭证（安全考虑）
+echo "清理临时凭证..."
+rm -f ~/.aws/credentials ~/.aws/config
+
+echo "对象存储数据下载任务完成"`;
+
+        return command;
+      },
       buildImportCommand() {
-        // 构建数据导入的命令脚本
+        // 根据不同的导入方式构建不同的命令脚本
+        if (this.importMethod === 'modelscope') {
+          return this.buildModelscopeCommand();
+        } else if (this.importMethod === 'huggingface') {
+          return this.buildHuggingfaceCommand();
+        } else if (this.importMethod === 'object') {
+          return this.buildObjectStorageCommand();
+        }
+        
+        // 构建数据导入的命令脚本（已有数据集等其他方式）
         let command = `#!/bin/bash
 set -e  # 遇到错误立即退出
 
@@ -3703,11 +4080,27 @@ echo "数据导入任务完成"`;
 
         // HuggingFace验证
         if (this.importMethod === 'huggingface') {
-          if (!this.formData.huggingfaceSourceUrl) {
-            alert('请输入HuggingFace源地址');
+          if (!this.formData.huggingfaceDataType) {
+            alert('请选择数据类型');
+            return;
+          }
+          if (!this.formData.huggingfaceName) {
+            alert('请输入HuggingFace名称');
             return;
           }
           // Access Token是可选的，不需要验证
+        }
+
+        // ModelScope验证
+        if (this.importMethod === 'modelscope') {
+          if (!this.formData.modelscopeDataType) {
+            alert('请选择数据类型');
+            return;
+          }
+          if (!this.formData.modelscopeName) {
+            alert('请输入ModelScope名称');
+            return;
+          }
         }
 
         // 自定义下载验证
@@ -3755,7 +4148,7 @@ echo "数据导入任务完成"`;
             envs: [
               {
                 name: "SOURCE_PATH",
-                value: datasource[1].mountPath
+                value: datasource[1] ? datasource[1].mountPath : ""
               },
               {
                 name: "TARGET_PATH",
@@ -3772,7 +4165,60 @@ echo "数据导入任务完成"`;
               {
                 name: "IMPORT_METHOD",
                 value: this.importMethod
-              }
+              },
+              // ModelScope特有环境变量
+              ...(this.importMethod === 'modelscope' ? [
+                {
+                  name: "MODELSCOPE_DATA_TYPE",
+                  value: this.formData.modelscopeDataType
+                },
+                {
+                  name: "MODELSCOPE_NAME",
+                  value: this.formData.modelscopeName
+                },
+                {
+                  name: "MODELSCOPE_ACCESS_TOKEN",
+                  value: this.formData.modelscopeAccessToken || ""
+                }
+              ] : []),
+              // HuggingFace特有环境变量
+              ...(this.importMethod === 'huggingface' ? [
+                {
+                  name: "HUGGINGFACE_DATA_TYPE",
+                  value: this.formData.huggingfaceDataType
+                },
+                {
+                  name: "HUGGINGFACE_NAME",
+                  value: this.formData.huggingfaceName
+                },
+                {
+                  name: "HUGGINGFACE_ACCESS_TOKEN",
+                  value: this.formData.huggingfaceAccessToken || ""
+                }
+              ] : []),
+              // 对象存储特有环境变量
+              ...(this.importMethod === 'object' ? [
+                {
+                  name: "OBJECT_STORAGE_ENDPOINT",
+                  value: this.formData.objectStorageEndpoint
+                },
+                {
+                  name: "OBJECT_STORAGE_ACCESS_KEY",
+                  value: this.formData.objectStorageAccessKey
+                },
+                {
+                  name: "OBJECT_STORAGE_SECRET_KEY",
+                  value: this.formData.objectStorageSecretKey
+                },
+                {
+                  name: "OBJECT_STORAGE_BUCKET",
+                  value: this.formData.objectStorageBucket
+                },
+                {
+                  name: "OBJECT_STORAGE_PATH",
+                  value: this.formData.objectStoragePath || ""
+                }
+              ] : [])
             ],
             enableRDMA: false
           },
@@ -3832,24 +4278,35 @@ echo "数据导入任务完成"`;
       },
       getDatasource() {
         const targetDatasetInfo = this.getTargetDatasetInfo();
-        const sourceDatasetInfo = this.getSourceDatasetInfo();
         console.log('targetDatasetInfo', targetDatasetInfo);
-        console.log('sourceDatasetInfo', sourceDatasetInfo);
 
         const targetDatasetType = targetDatasetInfo.storageType.toLowerCase();
-        const sourceDatasetType = sourceDatasetInfo.storageType.toLowerCase();
         const targetDatasetName = targetDatasetType === 'pfs' ? targetDatasetInfo.storageInstance : '';
-        const sourceDatasetName = sourceDatasetType === 'pfs' ? sourceDatasetInfo.storageInstance : '';
         const targetDatasetPath = targetDatasetType === 'pfs' ? targetDatasetInfo.storagePath : `${targetDatasetInfo.storageInstance}${targetDatasetInfo.storagePath}`;
+        
+        // 目标数据集 DataSource
+        const targetDataSource = {
+          type: targetDatasetType,
+          name: targetDatasetName,
+          sourcePath: targetDatasetPath,
+          mountPath: '/mnt/target'
+        };
+
+        // 对于ModelScope、HuggingFace等外部下载方式，只需要目标数据集
+        if (this.importMethod === 'modelscope' || this.importMethod === 'huggingface' || this.importMethod === 'custom') {
+          return [targetDataSource];
+        }
+
+        // 对于已有数据集等需要源数据集的方式
+        const sourceDatasetInfo = this.getSourceDatasetInfo();
+        console.log('sourceDatasetInfo', sourceDatasetInfo);
+
+        const sourceDatasetType = sourceDatasetInfo.storageType.toLowerCase();
+        const sourceDatasetName = sourceDatasetType === 'pfs' ? sourceDatasetInfo.storageInstance : '';
         const sourceDatasetPath = sourceDatasetType === 'pfs' ? sourceDatasetInfo.storagePath : `${sourceDatasetInfo.storageInstance}${sourceDatasetInfo.storagePath}`;
+        
         return [
-          // 目标数据集 DataSource
-          {
-            type: targetDatasetType,
-            name: targetDatasetName,
-            sourcePath: targetDatasetPath,
-            mountPath: '/mnt/target'
-          },
+          targetDataSource,
           // 源数据集 DataSource
           {
             type: sourceDatasetType,
@@ -3857,7 +4314,7 @@ echo "数据导入任务完成"`;
             sourcePath: sourceDatasetPath,
             mountPath: '/mnt/source'
           }
-        ]
+        ];
       },
       formatDate(dateStr) {
         if (!dateStr) return 'N/A';

@@ -1,6 +1,6 @@
 # 机器学习平台命令行工具
 
-一个用于管理AI训练平台的命令行工具。
+一个用于管理AI训练平台的命令行工具，支持命令行和Web界面两种使用方式。
 
 ## 项目结构
 
@@ -12,11 +12,21 @@ cli/
 ├── aihcx.spec          # PyInstaller 打包配置
 ├── build.bat           # Windows 打包脚本
 ├── build.sh            # Linux/macOS 打包脚本
+├── docs/               # 文档目录
+├── userdata/           # 用户数据目录
+├── build/              # 构建输出目录
+├── aihcx.egg-info/     # 包信息目录
 └── aihcx/              # 源代码
     ├── __init__.py     # 包初始化
     ├── cli.py          # CLI 入口
     ├── commands.py     # 命令实现
-    └── client.py       # API 客户端
+    ├── client.py       # API 客户端
+    ├── webserver.py    # Web服务器
+    ├── static/         # 静态文件
+    │   └── js/         # JavaScript文件
+    └── templates/      # HTML模板
+        ├── components/ # 组件模板
+        └── *.html      # 页面模板
 ```
 
 ## 使用源码安装
@@ -25,6 +35,18 @@ cli/
 pip install -r requirements.txt
 pip install -e .
 ```
+
+### 主要依赖包
+
+- **Click** - 命令行界面框架
+- **requests** - HTTP请求库
+- **tabulate** - 表格格式化输出
+- **click-completion** - 命令自动补全
+- **pyyaml** - YAML文件处理
+- **bce-python-sdk-next** - 百度云SDK
+- **questionary** - 交互式命令行界面
+- **Flask** - Web服务框架（用于Web界面）
+- **flask-cors** - 跨域资源共享支持
 
 ## 打包发布
 
@@ -54,12 +76,12 @@ pip install -e .
 ### 发布新版本
 
 1. 更新版本号
-   编辑 setup.py 中的 version 字段
+   编辑 setup.py 和 aihcx/__init__.py 中的 version 字段
 
 2. 创建新的 tag
    ```bash
-   git tag v0.1.0
-   git push origin v0.1.0
+   git tag v0.4.0
+   git push origin v0.4.0
    ```
 
 3. 构建分发包
@@ -131,7 +153,7 @@ chmod +x build.sh
 
 ```
 dist/
-  └── 0.1.0/           # 版本号（以 setup.py 中 version 字段为准）
+  └── 0.4.0/           # 版本号（以 setup.py 中 version 字段为准）
       ├── mac-arm/aihcx
       ├── mac-x86/aihcx
       ├── linux-x86/aihcx
@@ -154,7 +176,7 @@ build.bat
 打包完成后，目录结构如下：
 
 ```
-dist\0.1.0\win\aihcx.exe
+dist\0.4.0\win\aihcx.exe
 ```
 
 同样，用户无需安装 Python，直接运行 `aihcx.exe` 即可。
@@ -238,8 +260,9 @@ aihcx.exe
 
 ### 基本配置
 
-首次使用前需要配置认证信息:
+首次使用前需要配置认证信息，支持命令行和Web界面两种方式:
 
+#### 命令行配置
 ```bash
 # 设置配置信息
 aihcx config \
@@ -250,6 +273,29 @@ aihcx config \
 
 # 查看当前配置
 aihcx config --show
+```
+
+#### Web界面配置
+```bash
+# 启动Web服务
+aihcx web
+
+# 或指定监听地址和端口
+aihcx web --host 0.0.0.0 --port 8080
+```
+
+启动后在浏览器中访问 `http://127.0.0.1:38765/config` 进行可视化配置。
+
+### 交互式资源池配置
+
+支持交互式选择资源池和队列：
+
+```bash
+# 交互式设置默认资源池和队列
+aihcx pool set
+
+# 直接设置指定资源池
+aihcx pool set <pool-id>
 ```
 
 ### 命令补全
@@ -276,6 +322,31 @@ aihcx completion fish > ~/.config/fish/completions/aihcx.fish
 - 资源名补全（部分支持）
 
 ## 使用方法
+
+本工具支持两种使用方式：**命令行模式**和**Web界面模式**。
+
+### Web界面模式
+
+启动Web服务后，可通过浏览器进行可视化操作：
+
+```bash
+# 启动Web服务（默认端口38765）
+aihcx web
+
+# 自定义监听地址和端口
+aihcx web --host 0.0.0.0 --port 8080
+```
+
+Web界面功能：
+- **配置管理** - `/config` 可视化配置AK/SK等认证信息
+- **任务管理** - `/jobs` 查看和管理训练任务
+- **任务详情** - `/jobs/<job-id>` 查看任务详细信息
+- **资源池管理** - `/resourcepools` 查看资源池信息
+- **数据集管理** - `/datasets` 管理数据集
+- **模型管理** - `/models` 管理模型
+- **欢迎页面** - `/` 显示项目文档
+
+### 命令行模式
 
 所有命令都支持 `--help` 选项查看详细帮助信息。
 
@@ -316,6 +387,12 @@ aihcx pool list  # 显示所有资源池
 
 # 获取资源池详情
 aihcx pool get [pool-id]  # 不指定ID时使用默认资源池
+
+# 设置默认资源池（交互式）
+aihcx pool set  # 交互式选择资源池和队列
+
+# 设置指定资源池为默认
+aihcx pool set <pool-id>  # 直接设置指定资源池
 ```
 
 ### 队列管理
@@ -382,3 +459,23 @@ export AIHC_DEFAULT_POOL=your-default-pool
 4. 大型任务配置建议使用配置文件
 5. 导出任务配置后可用于快速复制任务
 6. 使用 --help 查看每个命令的详细用法
+7. Web界面默认监听127.0.0.1:38765，如需外部访问请修改监听地址
+8. Web服务启动后会在控制台显示访问地址
+9. 支持交互式资源池选择，提升配置体验
+10. 配置信息统一存储，命令行和Web界面共享配置
+
+## 功能特性
+
+### 命令行特性
+- 支持命令自动补全（bash/zsh/fish）
+- 交互式资源池和队列选择
+- 任务配置导入导出
+- 实时日志查看
+- 任务事件追踪
+
+### Web界面特性
+- 可视化配置管理
+- 任务状态实时监控
+- 资源池信息展示
+- 数据集和模型管理
+- 响应式设计，支持移动端访问
