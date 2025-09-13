@@ -5,7 +5,9 @@ import Datasets from '../views/Datasets.vue'
 import DatasetDetail from '../views/DatasetDetail.vue'
 import Models from '../views/Models.vue'
 import ResourcePools from '../views/ResourcePools.vue'
+import ResourcePoolsTest from '../views/ResourcePoolsTest.vue'
 import Jobs from '../views/Jobs.vue'
+import JobDetail from '../views/JobDetail.vue'
 
 const routes = [
   {
@@ -40,9 +42,20 @@ const routes = [
     component: ResourcePools
   },
   {
+    path: '/resourcepools-test',
+    name: 'ResourcePoolsTest',
+    component: ResourcePoolsTest
+  },
+  {
     path: '/jobs',
     name: 'Jobs',
     component: Jobs
+  },
+  {
+    path: '/jobs/:id',
+    name: 'JobDetail',
+    component: JobDetail,
+    props: true
   }
 ]
 

@@ -212,13 +212,13 @@
                 <!-- 导入记录列表 -->
                 <div v-if="resourcePoolCacheLoaded && !importsLoading && !importsError && imports.length > 0">
                   <div class="table-container">
-                    <table class="table">
+                    <table class="jobs-table">
                       <thead>
                         <tr>
                           <th>任务名称</th>
-                          <th>状态</th>
-                          <th>创建时间</th>
-                          <th>完成时间</th>
+                          <th class="status-column">状态</th>
+                          <th class="time-column">创建时间</th>
+                          <th class="time-column">完成时间</th>
                           <th>操作</th>
                         </tr>
                       </thead>
@@ -229,13 +229,13 @@
                             <br>
                             <span class="job-id">{{ importJob.jobId }}</span>
                           </td>
-                          <td>
+                          <td class="status-column">
                             <span class="status" :class="statusClass(importJob.status)">
                               {{ statusText(importJob.status) }}
                             </span>
                           </td>
-                          <td>{{ formatDate(importJob.createdAt) }}</td>
-                          <td>{{ formatDate(importJob.finishedAt) }}</td>
+                          <td class="time-column">{{ formatDate(importJob.createdAt) }}</td>
+                          <td class="time-column">{{ formatDate(importJob.finishedAt) }}</td>
                           <td>
                             <button class="btn-primary" @click="viewImportJob(importJob)">
                               查看详情
@@ -942,43 +942,203 @@ export default {
     
     // 导入记录相关方法
     async loadImports() {
+      console.log('loadImports called for dataset:', this.id)
       this.importsLoading = true
       this.importsError = null
-      
+
       try {
-        const data = await datasetService.getDatasetImports(this.id)
-        
-        if (data.error) {
-          this.importsError = data.error
-          return
+        // 生成数据集ID的前缀用于搜索任务名称
+        const sanitizedDatasetId = this.id.toLowerCase().replace(/[^a-z0-9.-]/g, '-')
+        const searchPrefix = `${sanitizedDatasetId}-`
+
+        // 等待页面资源池列表加载完成
+        console.log('等待页面资源池列表加载完成...')
+        const allResourcePools = await this.waitForResourcePools()
+
+        if (allResourcePools.length === 0) {
+          throw new Error('无法获取资源池列表，请稍后重试')
         }
-        
-        this.imports = data.imports || data.Imports || []
+
+        console.log('使用页面已加载的资源池列表:', allResourcePools.length, '个资源池')
+        console.log('搜索关键字:', searchPrefix)
+
+        // 循环查询所有资源池的任务
+        let allImports = []
+        const promises = allResourcePools.map(async (pool) => {
+          try {
+            const poolId = pool.resourcePoolId || pool.id
+            const poolType = pool.resourcePoolType || pool.type
+
+            // 托管资源池类型统一使用 aihc-serverless
+            const actualPoolId = poolType === 'dedicatedV2' ? 'aihc-serverless' : poolId
+            const requestBody = {
+              keywordType: 'name',
+              keyword: searchPrefix
+            }
+            console.log(`Querying jobs in resource pool: ${poolId} (type: ${poolType}, actual: ${actualPoolId})`)
+
+            const response = await fetch(`/api?action=DescribeJobs&resourcePoolId=${actualPoolId}`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify(requestBody)
+            })
+            const data = await response.json()
+
+            if (data.error) {
+              console.warn(`Failed to query jobs in pool ${poolId}:`, data.error)
+              return []
+            }
+
+            const jobs = data.jobs || data.result?.jobs || []
+            console.log(`Found ${jobs.length} jobs in pool ${poolId} (${poolType})`)
+            console.log(`Jobs in pool ${poolId}:`, jobs.map(job => ({ name: job.name, jobId: job.jobId })))
+            return jobs
+          } catch (err) {
+            console.warn(`Error querying pool ${pool.resourcePoolId || pool.id}:`, err)
+            return []
+          }
+        })
+
+        // 等待所有查询完成
+        const results = await Promise.all(promises)
+
+        // 合并所有结果及去重
+        results.forEach(jobs => {
+          allImports.push(...jobs)
+          allImports = allImports.filter((job, index, self) =>
+            index === self.findIndex((t) => t.jobId === job.jobId)
+          )
+        })
+
+        console.log('合并前所有任务数量:', allImports.length)
+        console.log('合并前所有任务名称:', allImports.map(job => job.name || job.jobName))
+
+        // 直接使用API返回的任务列表，因为关键字搜索已经是包含匹配
+        this.imports = allImports
+
+        console.log('最终导入任务数量:', this.imports.length)
+        console.log('Loaded imports from all pools:', this.imports)
+
       } catch (err) {
-        console.error('获取导入记录失败:', err)
-        this.importsError = '获取导入记录失败: ' + err.message
+        console.error('Failed to load imports:', err)
+        this.importsError = '加载导入记录失败: ' + err.message
       } finally {
         this.importsLoading = false
       }
     },
     
+    async waitForResourcePools() {
+      // 如果资源池已经加载完成，直接返回
+      if (this.resourcePoolCacheLoaded && this.resourcePools && this.resourcePools.length > 0) {
+        console.log('资源池已加载完成，直接使用现有数据')
+        return this.resourcePools
+      }
+
+      // 如果正在加载中，等待加载完成
+      if (this.resourcePoolLoadingStatus && this.resourcePoolLoadingStatus.includes('正在')) {
+        console.log('资源池正在加载中，等待加载完成...')
+        return new Promise((resolve) => {
+          const checkInterval = setInterval(() => {
+            if (this.resourcePoolCacheLoaded && this.resourcePools && this.resourcePools.length > 0) {
+              clearInterval(checkInterval)
+              console.log('资源池加载完成，继续执行导入记录查询')
+              resolve(this.resourcePools)
+            }
+          }, 500)
+
+          // 设置超时，避免无限等待
+          setTimeout(() => {
+            clearInterval(checkInterval)
+            console.warn('等待资源池加载超时，使用空列表')
+            resolve([])
+          }, 30000) // 30秒超时
+        })
+      }
+
+      // 如果既没有加载完成也没有在加载，返回空列表
+      console.warn('资源池未加载且未在加载中，返回空列表')
+      return []
+    },
+    
     // 资源池相关方法
     async loadResourcePools() {
+      console.log('loadResourcePools called')
       this.resourcePoolsLoading = true
       this.resourcePoolsError = null
       
       try {
-        const data = await datasetService.getDatasetResourcePools(this.id)
+        // 并行加载两种类型的资源池
+        const [commonRes, dedicatedRes] = await Promise.all([
+          // 加载自运维资源池
+          fetch('/api?action=DescribeResourcePools&resourcePoolType=common&keywordType=resourcePoolName&keyword=&orderBy=createdAt&order=DESC&pageNumber=1&pageSize=100').then(r => r.json()),
+          // 加载全托管资源池
+          fetch('/api?action=DescribeResourcePools&resourcePoolType=dedicatedV2&keywordType=resourcePoolName&keyword=&orderBy=createdAt&order=DESC&pageNumber=1&pageSize=100').then(r => r.json())
+        ])
         
-        if (data.error) {
-          this.resourcePoolsError = data.error
-          return
+        console.log('自运维资源池API响应:', commonRes)
+        console.log('全托管资源池API响应:', dedicatedRes)
+        
+        // 处理资源池数据
+        const processPools = (data, type) => {
+          if (data.resourcePools && Array.isArray(data.resourcePools)) {
+            return data.resourcePools.map(pool => ({ 
+              ...pool, 
+              resourcePoolType: type,
+              // 确保有正确的ID和名称字段
+              id: pool.resourcePoolId || pool.id,
+              name: pool.name || pool.resourcePoolName
+            }))
+          } else if (data?.result?.resourcePools) {
+            return data.result.resourcePools.map(pool => ({ 
+              ...pool, 
+              resourcePoolType: type,
+              id: pool.resourcePoolId || pool.id,
+              name: pool.name || pool.resourcePoolName
+            }))
+          } else if (data?.ResourcePools) {
+            return data.ResourcePools.map(pool => ({ 
+              ...pool, 
+              resourcePoolType: type,
+              id: pool.resourcePoolId || pool.id,
+              name: pool.name || pool.resourcePoolName
+            }))
+          } else if (data?.result?.ResourcePools) {
+            return data.result.ResourcePools.map(pool => ({ 
+              ...pool, 
+              resourcePoolType: type,
+              id: pool.resourcePoolId || pool.id,
+              name: pool.name || pool.resourcePoolName
+            }))
+          } else if (Array.isArray(data)) {
+            return data.map(pool => ({ 
+              ...pool, 
+              resourcePoolType: type,
+              id: pool.resourcePoolId || pool.id,
+              name: pool.name || pool.resourcePoolName
+            }))
+          }
+          return []
         }
         
-        this.resourcePools = data.resourcePools || data.ResourcePools || []
+        const commonPools = processPools(commonRes, 'common')
+        const dedicatedPools = processPools(dedicatedRes, 'dedicatedV2')
+        
+        // 合并所有资源池
+        this.resourcePools = [...commonPools, ...dedicatedPools]
+        
+        console.log('资源池加载完成:', this.resourcePools.length, '个资源池')
+        console.log('资源池列表:', this.resourcePools.map(p => ({ id: p.id, name: p.name, type: p.resourcePoolType })))
+        
+        // 标记资源池缓存已加载
+        this.resourcePoolCacheLoaded = true
+        this.resourcePoolLoadingStatus = '资源池缓存加载完成'
+        
       } catch (err) {
         console.error('获取资源池列表失败:', err)
         this.resourcePoolsError = '获取资源池列表失败: ' + err.message
+        this.resourcePoolLoadingStatus = '资源池缓存加载失败: ' + err.message
       } finally {
         this.resourcePoolsLoading = false
       }
@@ -1003,9 +1163,12 @@ export default {
     statusClass(status) {
       const statusMap = {
         'Running': 'running',
-        'Succeeded': 'success',
+        'Succeeded': 'succeeded',
         'Failed': 'failed',
-        'Pending': 'pending'
+        'Pending': 'pending',
+        'Cancelled': 'cancelled',
+        'ManualTermination': 'cancelled',
+        'Unknown': 'unknown'
       }
       return statusMap[status] || 'unknown'
     },
@@ -1024,7 +1187,15 @@ export default {
     viewImportJob(importJob) {
       if (importJob.jobId) {
         const resourcePoolId = importJob.resourcePoolId || 'aihc-serverless'
-        window.location.href = `/jobs/${importJob.jobId}?resourcePoolId=${resourcePoolId}&from=imports&datasetId=${this.id}`
+        this.$router.push({
+          name: 'JobDetail',
+          params: { id: importJob.jobId },
+          query: {
+            resourcePoolId: resourcePoolId,
+            from: 'imports',
+            datasetId: this.id
+          }
+        })
       }
     },
     
@@ -1453,6 +1624,7 @@ export default {
   },
   mounted() {
     this.loadDataset()
+    this.loadResourcePools()
   }
 }
 </script>
@@ -1575,6 +1747,71 @@ export default {
   border-radius: var(--radius);
   box-shadow: var(--shadow);
   border: 1px solid var(--border);
+}
+
+.jobs-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 20px;
+  background: white;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+  border: 1px solid #e9ecef;
+}
+
+.jobs-table th {
+  background: #f8f9fa;
+  padding: 16px 20px;
+  text-align: left;
+  font-weight: 600;
+  color: #333;
+  border-bottom: 2px solid #dee2e6;
+  cursor: pointer;
+  user-select: none;
+  transition: background 0.2s ease;
+  font-size: 14px;
+}
+
+.jobs-table th.status-column {
+  width: 100px;
+  min-width: 100px;
+  max-width: 100px;
+}
+
+.jobs-table th.time-column {
+  width: 150px;
+  min-width: 150px;
+  max-width: 150px;
+}
+
+.jobs-table th:hover {
+  background: #e9ecef;
+}
+
+.jobs-table td {
+  padding: 16px 20px;
+  border-bottom: 1px solid #f1f3f4;
+  vertical-align: top;
+  font-size: 14px;
+}
+
+.jobs-table td.status-column {
+  width: 100px;
+  min-width: 100px;
+  max-width: 100px;
+  text-align: center;
+}
+
+.jobs-table td.time-column {
+  width: 150px;
+  min-width: 150px;
+  max-width: 150px;
+}
+
+.jobs-table tr:hover {
+  background: #f8f9fa;
+  transition: background 0.2s ease;
 }
 
 .versions-table {
@@ -1702,6 +1939,62 @@ export default {
   background: #fff2f0;
   color: #dc3545;
   border: 1px solid #ffccc7;
+}
+
+.status.running { 
+  background: #f6ffed; 
+  color: #52c41a; 
+  border: 1px solid #b7eb8f; 
+}
+
+.status.pending { 
+  background: #fff7e6; 
+  color: #fa8c16; 
+  border: 1px solid #ffd591; 
+}
+
+.status.failed { 
+  background: #fff2f0; 
+  color: #dc3545; 
+  border: 1px solid #ffccc7; 
+}
+
+.status.succeeded { 
+  background: #e6fffb; 
+  color: #13c2c2; 
+  border: 1px solid #87e8de; 
+}
+
+.status.cancelled { 
+  background: #f5f5f5; 
+  color: #666; 
+  border: 1px solid #d9d9d9; 
+}
+
+.status.unknown { 
+  background: #f8f9fa; 
+  color: #6c757d; 
+  border: 1px solid #dee2e6; 
+}
+
+/* 任务信息样式 */
+.job-name {
+  color: #409eff;
+  cursor: pointer;
+  font-weight: 500;
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.job-name:hover {
+  text-decoration: underline;
+  color: #337ecc;
+}
+
+.job-id {
+  color: #666;
+  font-size: 12px;
+  font-weight: 500;
 }
 
 .storage-type-badge {

@@ -11,7 +11,7 @@
       <div class="content">
         <div class="page-container">
           <!-- 统计信息 -->
-          <div class="stats" v-if="!error">
+          <div class="stats">
             <div class="stat-item">
               <div class="stat-number">{{ totalCount }}</div>
               <div class="stat-label">总资源池</div>
@@ -85,7 +85,7 @@
           </div>
 
           <!-- 资源池表格 -->
-          <div v-if="!loading && !error && filteredResourcePools.length > 0">
+          <div v-if="!loading && !error && resourcePools && resourcePools.length > 0">
             <table class="resourcepools-table">
               <thead>
                 <tr>
@@ -160,7 +160,7 @@
           </div>
 
           <!-- 空状态 -->
-          <div class="empty-state" v-if="!loading && !error && resourcePools.length === 0">
+          <div class="empty-state" v-if="!loading && !error && resourcePools && resourcePools.length === 0">
             <h3>暂无资源池</h3>
             <p v-if="searchQuery">没有找到匹配"{{ searchQuery }}"的资源池</p>
             <p v-else>您还没有创建任何资源池</p>
@@ -237,17 +237,21 @@
 
 <script>
 import Navigation from '../components/Navigation.vue'
+import { useResourcePoolStore } from '../stores/resourcePoolStore'
 
 export default {
   name: 'ResourcePools',
   components: {
     Navigation
   },
+  setup() {
+    const resourcePoolStore = useResourcePoolStore()
+    return {
+      resourcePoolStore
+    }
+  },
   data() {
     return {
-      resourcePools: [],
-      loading: false,
-      error: null,
       searchQuery: '',
       sortKey: 'createdAt',
       sortOrder: 'desc',
@@ -255,27 +259,41 @@ export default {
       pageSize: 100,
       showDrawer: false,
       selectedPool: null,
-      apiTotalCount: 0,
-      apiCommonCount: 0, // API返回的自运维资源池数量
-      apiDedicatedCount: 0, // API返回的全托管资源池数量
       searchTimeout: null,
       activeTab: 'common', // 当前激活的tab
-      tabCounts: {
-        common: 0,
-        dedicatedV2: 0
-      }
+      tabCounts: {}, // 添加缺失的tabCounts属性
+      apiCommonCount: 0, // 添加缺失的apiCommonCount属性
+      apiDedicatedCount: 0, // 添加缺失的apiDedicatedCount属性
+      apiTotalCount: 0 // 添加缺失的apiTotalCount属性
     }
   },
   computed: {
+    // 使用store中的数据
+    resourcePools() {
+      return this.resourcePoolStore ? this.resourcePoolStore.allResourcePools || [] : []
+    },
+    loading() {
+      return this.resourcePoolStore ? this.resourcePoolStore.loading : false
+    },
+    error() {
+      return this.resourcePoolStore ? this.resourcePoolStore.error : null
+    },
+    
     filteredResourcePools() {
+      if (!this.resourcePools || !Array.isArray(this.resourcePools)) {
+        return [];
+      }
       if (!this.searchQuery) {
         return this.resourcePools;
       }
       const query = this.searchQuery.toLowerCase();
       return this.resourcePools.filter(pool => 
-        ((pool.name || pool.metadata?.name) && (pool.name || pool.metadata?.name).toLowerCase().includes(query)) ||
-        (pool.spec?.description && pool.spec.description.toLowerCase().includes(query)) ||
-        (pool.createdBy || pool.spec?.createdBy && (pool.createdBy || pool.spec.createdBy).toLowerCase().includes(query))
+        ((pool.name || pool.resourcePoolName || pool.metadata?.name) && 
+         (pool.name || pool.resourcePoolName || pool.metadata?.name).toLowerCase().includes(query)) ||
+        (pool.description || pool.spec?.description && 
+         (pool.description || pool.spec?.description).toLowerCase().includes(query)) ||
+        (pool.createdBy || pool.spec?.createdBy && 
+         (pool.createdBy || pool.spec?.createdBy).toLowerCase().includes(query))
       );
     },
     sortedResourcePools() {
@@ -332,24 +350,20 @@ export default {
       return this.resourcePools;
     },
     totalPages() {
-      // 使用API总数量计算总页数
-      return Math.ceil(this.apiTotalCount / this.pageSize);
+      // 使用资源池总数计算总页数
+      return Math.ceil(this.resourcePools.length / this.pageSize);
     },
     totalCount() {
-      // 总资源池数量是自运维和全托管资源池的数量之和
-      return this.commonCount + this.dedicatedCount;
+      return this.resourcePools.length;
     },
     commonCount() {
-      // 直接使用API返回的统计信息
-      return this.apiCommonCount;
+      return this.resourcePoolStore.commonPools.length;
     },
     dedicatedCount() {
-      // 直接使用API返回的统计信息
-      return this.apiDedicatedCount;
+      return this.resourcePoolStore.dedicatedPools.length;
     },
     hasApiStats() {
-      // 检查是否有API返回的统计信息
-      return this.apiCommonCount > 0 || this.apiDedicatedCount > 0;
+      return this.resourcePools.length > 0;
     }
   },
   methods: {
@@ -429,57 +443,13 @@ export default {
     
     async loadResourcePools() {
       console.log('loadResourcePools called');
-      this.loading = true;
-      this.error = null;
       
       try {
-        // 构建API请求参数
-        const params = new URLSearchParams({
-          action: 'DescribeResourcePools',
-          resourcePoolType: this.activeTab, // 根据当前tab使用不同的资源池类型
-          keywordType: 'resourcePoolName',
-          keyword: this.searchQuery || '',
-          orderBy: this.getOrderByField(),
-          order: this.sortOrder.toUpperCase(),
-          pageNumber: this.currentPage.toString(),
-          pageSize: this.pageSize.toString()
-        });
-        
-        console.log('Making API request with params:', params.toString());
-        
-        // 使用fetch发送请求
-        const response = await fetch(`/api?${params.toString()}`);
-        console.log('API response received:', response);
-        const data = await response.json();
-        
-        if (data.error) {
-          this.error = data.error;
-          this.loading = false;
-          return;
-        }
-        
-        // 处理新的API响应格式
-        // 新接口直接在根级别返回resourcePools数组
-        if (data.resourcePools && Array.isArray(data.resourcePools)) {
-          this.resourcePools = data.resourcePools;
-        } else {
-          console.warn('未识别的资源池API响应格式:', data);
-          this.resourcePools = [];
-        }
-        // 保存API返回的总数量
-        this.apiTotalCount = data.totalCount || 0;
-        
-        // 更新当前tab的计数
-        this.tabCounts[this.activeTab] = this.apiTotalCount;
-        
-        console.log('Resource pools loaded:', this.resourcePools.length);
-        console.log('API total count:', this.apiTotalCount);
-        this.currentPage = 1; // 重置到第一页
+        // 使用store加载资源池
+        await this.resourcePoolStore.loadResourcePools()
+        console.log('Resource pools loaded from store:', this.resourcePoolStore.allResourcePools.length)
       } catch (err) {
-        console.error('Error loading resource pools:', err);
-        this.error = '加载资源池列表失败: ' + err.message;
-      } finally {
-        this.loading = false;
+        console.error('Error loading resource pools:', err)
       }
     },
     sortBy(key) {
@@ -612,7 +582,6 @@ export default {
         z-index: 10000;
         font-size: 14px;
         box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-        animation: slideIn 0.3s ease;
       `;
       
       const style = document.createElement('style');
@@ -634,11 +603,20 @@ export default {
     }
   },
   async mounted() {
-    console.log('Vue app mounted, preloading tab counts and loading resource pools...');
-    // 预加载tab计数
-    await this.preloadTabCounts();
-    // 加载当前tab的资源池数据
+    console.log('ResourcePools component mounted');
+    console.log('Initial store state:', {
+      resourcePoolStore: this.resourcePoolStore,
+      allResourcePools: this.resourcePoolStore.allResourcePools,
+      loading: this.resourcePoolStore.loading,
+      error: this.resourcePoolStore.error
+    });
+    // 加载资源池数据
     await this.loadResourcePools();
+    console.log('After loading:', {
+      allResourcePools: this.resourcePoolStore.allResourcePools,
+      loading: this.resourcePoolStore.loading,
+      error: this.resourcePoolStore.error
+    });
   }
 }
 </script>
@@ -1142,5 +1120,4 @@ export default {
   border-radius: 4px;
   font-size: 12px;
   font-weight: 500;
-}
-</style>
+}</style>
