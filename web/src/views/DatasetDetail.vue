@@ -283,15 +283,18 @@
                             <span class="label">资源池ID:</span>
                             <span class="value">{{ pool.resourcePoolId }}</span>
                           </div>
-                          <div class="info-item" v-if="pool.description">
+                          <!-- <div class="info-item" v-if="pool.description">
                             <span class="label">描述:</span>
                             <span class="value">{{ pool.description }}</span>
-                          </div>
+                          </div> -->
                           <div class="info-item" v-if="pool.bindingStorages && pool.bindingStorages.length > 0">
                             <span class="label">绑定存储:</span>
                             <span class="value">
-                              <span v-for="storage in pool.bindingStorages" :key="storage.id" class="storage-tag">
+                              <span v-for="storage in pool.bindingStorages" :key="storage.id" class="storage-tag" 
+                                    :class="{ 'current-dataset-storage': isCurrentDatasetStorage(storage) }">
                                 {{ storage.id }}
+                                <!-- <span v-if="isCurrentDatasetStorage(storage)" class="current-dataset-indicator">(当前数据集)</span> -->
+                                <!-- <span class="storage-type-badge" :class="storage.type">{{ storage.type }}</span> -->
                               </span>
                             </span>
                           </div>
@@ -300,7 +303,8 @@
                     </div>
                     <div v-else class="empty-state">
                       <i class="fas fa-info-circle"></i>
-                      <span>暂无可用资源池</span>
+                      <span>暂无绑定当前数据集PFS实例的资源池</span>
+                      <p class="empty-hint">只有绑定了当前数据集PFS实例ID的资源池才会显示在这里</p>
                     </div>
                   </div>
                 </div>
@@ -784,9 +788,73 @@ export default {
       return this.resourcePoolStore.loading ? '资源池缓存加载中...' : '资源池缓存加载完成'
     },
     
-    // 可用资源池列表
+    // 自运维资源池（common类型）
+    commonResourcePools() {
+      if (!this.resourcePoolStore.allResourcePools || this.resourcePoolStore.allResourcePools.length === 0) {
+        return []
+      }
+
+      const targetStorageId = this.dataset?.storageInstance || this.dataset?.storageInstanceId
+      if (!targetStorageId) {
+        return []
+      }
+
+      return this.resourcePoolStore.allResourcePools.filter(pool => {
+        // 只显示common类型的资源池
+        if (pool.resourcePoolType !== 'common') {
+          return false
+        }
+
+        // 检查是否绑定了当前数据集的存储实例
+        if (!pool.bindingStorages || !Array.isArray(pool.bindingStorages)) {
+          return false
+        }
+
+        const boundStorageIds = pool.bindingStorages.map(storage => storage.id)
+        return boundStorageIds.includes(targetStorageId)
+      })
+    },
+
+    // 全托管资源池（dedicatedV2类型）
+    dedicatedV2ResourcePools() {
+      if (!this.resourcePoolStore.allResourcePools || this.resourcePoolStore.allResourcePools.length === 0) {
+        return []
+      }
+
+      const targetStorageId = this.dataset?.storageInstance || this.dataset?.storageInstanceId
+      if (!targetStorageId) {
+        return []
+      }
+
+      return this.resourcePoolStore.allResourcePools.filter(pool => {
+        // 只显示dedicatedV2类型的资源池
+        if (pool.resourcePoolType !== 'dedicatedV2') {
+          return false
+        }
+
+        // 检查是否绑定了当前数据集的存储实例
+        if (!pool.bindingStorages || !Array.isArray(pool.bindingStorages)) {
+          return false
+        }
+
+        const boundStorageIds = pool.bindingStorages.map(storage => storage.id)
+        return boundStorageIds.includes(targetStorageId)
+      })
+    },
+
+    // 所有可用资源池（合并自运维和全托管，自运维排在前面）
     availableResourcePools() {
-      return this.resourcePoolStore.allResourcePools || []
+      const allPools = [...this.commonResourcePools, ...this.dedicatedV2ResourcePools]
+      // 按类型排序：自运维(common)在前，全托管(dedicatedV2)在后
+      return allPools.sort((a, b) => {
+        if (a.resourcePoolType === 'common' && b.resourcePoolType === 'dedicatedV2') {
+          return -1
+        }
+        if (a.resourcePoolType === 'dedicatedV2' && b.resourcePoolType === 'common') {
+          return 1
+        }
+        return 0
+      })
     },
     
     // 资源池错误
@@ -1448,6 +1516,14 @@ export default {
       }
     },
     
+    // 检查是否为当前数据集的存储实例
+    isCurrentDatasetStorage(storage) {
+      if (!storage || !this.dataset) return false
+      
+      const targetStorageId = this.dataset?.storageInstance || this.dataset?.storageInstanceId
+      return storage.id === targetStorageId
+    },
+    
     // 复制数据集ID
     copyDatasetId(id) {
       if (!id) return
@@ -2076,6 +2152,44 @@ export default {
   border: 1px solid #e9ecef;
   margin-right: 4px;
   margin-bottom: 4px;
+}
+
+.storage-tag.current-dataset-storage {
+  background: #e6f7ff;
+  color: #1890ff;
+  border-color: #91d5ff;
+  font-weight: 500;
+}
+
+.current-dataset-indicator {
+  color: #1890ff;
+  font-weight: 600;
+  font-size: 10px;
+  margin-left: 4px;
+}
+
+.storage-type-badge {
+  display: inline-block;
+  background: #f8f9fa;
+  color: #6c757d;
+  padding: 1px 4px;
+  border-radius: 3px;
+  font-size: 10px;
+  font-weight: 500;
+  margin-left: 4px;
+  border: 1px solid #e9ecef;
+}
+
+.storage-type-badge.pfsMT {
+  background: #e3f2fd;
+  color: #1976d2;
+  border-color: #bbdefb;
+}
+
+.storage-type-badge.pfsL2 {
+  background: #f3e5f5;
+  color: #7b1fa2;
+  border-color: #ce93d8;
 }
 
 /* 状态样式 */
