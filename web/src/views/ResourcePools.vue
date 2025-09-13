@@ -66,7 +66,7 @@
             >
             <button 
               class="refresh-btn" 
-              @click="loadResourcePools" 
+              @click="loadResourcePools(true)" 
               :disabled="loading"
             >
               <span v-if="loading">🔄 加载中...</span>
@@ -105,6 +105,10 @@
                     类型
                     <span v-if="sortKey === 'type'">{{ sortOrder === 'asc' ? '↑' : '↓' }}</span>
                   </th>
+                  <th class="pfs-column" @click="sortBy('associatedPfsId')">
+                    PFS实例ID
+                    <span v-if="sortKey === 'associatedPfsId'">{{ sortOrder === 'asc' ? '↑' : '↓' }}</span>
+                  </th>
                   <th @click="sortBy('description')">
                     描述
                     <span v-if="sortKey === 'description'">{{ sortOrder === 'asc' ? '↑' : '↓' }}</span>
@@ -134,6 +138,10 @@
                     </span>
                   </td>
                   <td class="type-column" :title="pool.k8sVersion || pool.spec?.k8sVersion || 'N/A'">{{ pool.k8sVersion || pool.spec?.k8sVersion || 'N/A' }}</td>
+                  <td class="pfs-column" :title="getPfsId(pool) || 'N/A'">
+                    <span v-if="getPfsId(pool)" class="pfs-id">{{ getPfsId(pool) }}</span>
+                    <span v-else class="no-pfs">-</span>
+                  </td>
                   <td class="description-cell">{{ pool.description || pool.spec?.description || '暂无描述' }}</td>
                   <td>{{ formatDate(pool.createdAt) }}</td>
                   <td>{{ formatDate(pool.updatedAt) }}</td>
@@ -312,6 +320,9 @@ export default {
         } else if (this.sortKey === 'type') {
           aVal = a.k8sVersion || a.spec?.k8sVersion || '';
           bVal = b.k8sVersion || b.spec?.k8sVersion || '';
+        } else if (this.sortKey === 'associatedPfsId') {
+          aVal = this.getPfsId(a) || '';
+          bVal = this.getPfsId(b) || '';
         } else if (this.sortKey === 'description') {
           aVal = a.description || a.spec?.description || '';
           bVal = b.description || b.spec?.description || '';
@@ -374,6 +385,7 @@ export default {
         'createdBy': 'resourcePoolName', // API不支持按创建者排序，使用名称
         'status': 'resourcePoolName',    // API不支持按状态排序，使用名称
         'type': 'resourcePoolName',      // API不支持按类型排序，使用名称
+        'associatedPfsId': 'resourcePoolName', // API不支持按PFS实例ID排序，使用名称
         'description': 'resourcePoolName', // API不支持按描述排序，使用名称
         'createdAt': 'createdAt',
         'updatedAt': 'createdAt'         // API不支持按更新时间排序，使用创建时间
@@ -389,7 +401,7 @@ export default {
       this.currentPage = 1; // 重置到第一页
       this.searchQuery = ''; // 清空搜索
       
-      await this.loadResourcePools();
+      await this.loadResourcePools(false); // 切换tab时不强制刷新，使用缓存
     },
     
     // 获取tab计数
@@ -441,12 +453,12 @@ export default {
       console.log('资源池统计信息全部更新完成 - 自运维:', this.apiCommonCount, '全托管:', this.apiDedicatedCount);
     },
     
-    async loadResourcePools() {
-      console.log('loadResourcePools called');
+    async loadResourcePools(forceRefresh = false) {
+      console.log('loadResourcePools called, forceRefresh:', forceRefresh);
       
       try {
-        // 使用store加载资源池
-        await this.resourcePoolStore.loadResourcePools()
+        // 使用store加载资源池，传递forceRefresh参数
+        await this.resourcePoolStore.loadResourcePools(forceRefresh)
         console.log('Resource pools loaded from store:', this.resourcePoolStore.allResourcePools.length)
       } catch (err) {
         console.error('Error loading resource pools:', err)
@@ -460,13 +472,13 @@ export default {
         this.sortOrder = 'asc';
       }
       this.currentPage = 1; // 重置到第一页
-      this.loadResourcePools(); // 重新加载数据
+      this.loadResourcePools(false); // 排序时不强制刷新，使用缓存
     },
     
     // 搜索方法
     search() {
       this.currentPage = 1; // 重置到第一页
-      this.loadResourcePools(); // 重新加载数据
+      this.loadResourcePools(false); // 搜索时不强制刷新，使用缓存
     },
     
     // 搜索输入处理（防抖）
@@ -484,13 +496,13 @@ export default {
     prevPage() {
       if (this.currentPage > 1) {
         this.currentPage--;
-        this.loadResourcePools(); // 重新加载数据
+        this.loadResourcePools(false); // 分页时不强制刷新，使用缓存
       }
     },
     nextPage() {
       if (this.currentPage < this.totalPages) {
         this.currentPage++;
-        this.loadResourcePools(); // 重新加载数据
+        this.loadResourcePools(false); // 分页时不强制刷新，使用缓存
       }
     },
     formatDate(dateStr) {
@@ -600,6 +612,15 @@ export default {
           toast.parentNode.removeChild(toast);
         }
       }, 3000);
+    },
+    getPfsId(pool) {
+      // 从bindingStorages数组中获取PFS实例ID
+      if (pool.bindingStorages && Array.isArray(pool.bindingStorages) && pool.bindingStorages.length > 0) {
+        const pfsStorage = pool.bindingStorages.find(storage => storage.provider === 'bce');
+        return pfsStorage ? pfsStorage.id : null;
+      }
+      // 兼容旧的数据结构
+      return pool.spec?.associatedPfsId || null;
     }
   },
   async mounted() {
@@ -611,7 +632,7 @@ export default {
       error: this.resourcePoolStore.error
     });
     // 加载资源池数据
-    await this.loadResourcePools();
+    await this.loadResourcePools(false); // 初始加载时不强制刷新，使用缓存
     console.log('After loading:', {
       allResourcePools: this.resourcePoolStore.allResourcePools,
       loading: this.resourcePoolStore.loading,
@@ -681,6 +702,12 @@ export default {
   max-width: 120px;
 }
 
+.resourcepools-table th.pfs-column {
+  width: 150px;
+  min-width: 150px;
+  max-width: 150px;
+}
+
 .resourcepools-table th:hover {
   background: #e9ecef;
 }
@@ -712,6 +739,15 @@ export default {
   width: 120px;
   min-width: 120px;
   max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.resourcepools-table td.pfs-column {
+  width: 150px;
+  min-width: 150px;
+  max-width: 150px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -982,6 +1018,18 @@ export default {
   color: #3076c9;
   opacity: 1;
   transform: scale(1.1);
+}
+
+.pfs-id {
+  color: #409eff;
+  font-weight: 500;
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  font-size: 12px;
+}
+
+.no-pfs {
+  color: #999;
+  font-style: italic;
 }
 
 @keyframes slideIn {
