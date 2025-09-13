@@ -270,13 +270,13 @@ export default {
   computed: {
     // 使用store中的数据
     resourcePools() {
-      return this.resourcePoolStore ? this.resourcePoolStore.allResourcePools || [] : []
+      return this.resourcePoolStore?.allResourcePools || []
     },
     loading() {
-      return this.resourcePoolStore ? this.resourcePoolStore.loading : false
+      return this.resourcePoolStore?.loading || false
     },
     error() {
-      return this.resourcePoolStore ? this.resourcePoolStore.error : null
+      return this.resourcePoolStore?.error || null
     },
     
     filteredResourcePools() {
@@ -357,10 +357,10 @@ export default {
       return this.resourcePools.length;
     },
     commonCount() {
-      return this.resourcePoolStore.commonPools.length;
+      return this.resourcePoolStore?.commonPools?.length || 0;
     },
     dedicatedCount() {
-      return this.resourcePoolStore.dedicatedPools.length;
+      return this.resourcePoolStore?.dedicatedPools?.length || 0;
     },
     hasApiStats() {
       return this.resourcePools.length > 0;

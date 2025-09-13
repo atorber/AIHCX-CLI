@@ -677,11 +677,18 @@
 <script>
 import Navigation from '../components/Navigation.vue'
 import datasetService from '../services/datasetService'
+import { useResourcePoolStore } from '../stores/resourcePoolStore'
 
 export default {
   name: 'DatasetDetail',
   components: {
     Navigation
+  },
+  setup() {
+    const resourcePoolStore = useResourcePoolStore()
+    return {
+      resourcePoolStore
+    }
   },
   props: {
     id: {
@@ -713,6 +720,8 @@ export default {
       resourcePools: [],
       resourcePoolsLoading: false,
       resourcePoolsError: null,
+      resourcePoolCacheLoaded: false,
+      resourcePoolLoadingStatus: '资源池缓存加载中...',
       
       // 导入数据相关
       importMethod: 'existing',
@@ -767,22 +776,22 @@ export default {
     
     // 资源池缓存是否已加载
     resourcePoolCacheLoaded() {
-      return true // 简化处理，实际项目中应该有真实的缓存状态
+      return this.resourcePoolStore.allResourcePools && this.resourcePoolStore.allResourcePools.length > 0
     },
     
     // 资源池加载状态文本
     resourcePoolLoadingStatus() {
-      return '资源池缓存加载中...'
+      return this.resourcePoolStore.loading ? '资源池缓存加载中...' : '资源池缓存加载完成'
     },
     
     // 可用资源池列表
     availableResourcePools() {
-      return this.resourcePools || []
+      return this.resourcePoolStore.allResourcePools || []
     },
     
     // 资源池错误
     resourcePoolError() {
-      return this.resourcePoolsError
+      return this.resourcePoolStore.error
     },
     
     // 当前页码（用于版本分页）
@@ -895,14 +904,22 @@ export default {
       }
     },
     
-    switchTab(tab) {
+    async switchTab(tab) {
       this.activeTab = tab
       if (tab === 'versions' && this.versions.length === 0) {
+        // 确保资源池已加载
+        if (!this.resourcePoolStore.allResourcePools || this.resourcePoolStore.allResourcePools.length === 0) {
+          await this.resourcePoolStore.loadResourcePools()
+        }
         this.loadVersions()
       } else if (tab === 'imports' && this.imports.length === 0) {
+        // 确保资源池已加载
+        if (!this.resourcePoolStore.allResourcePools || this.resourcePoolStore.allResourcePools.length === 0) {
+          await this.resourcePoolStore.loadResourcePools()
+        }
         this.loadImports()
-      } else if (tab === 'resourcepools' && this.resourcePools.length === 0) {
-        this.loadResourcePools()
+      } else if (tab === 'resourcePools' && this.resourcePools.length === 0) {
+        await this.resourcePoolStore.loadResourcePools()
       }
     },
     
@@ -951,10 +968,12 @@ export default {
         const sanitizedDatasetId = this.id.toLowerCase().replace(/[^a-z0-9.-]/g, '-')
         const searchPrefix = `${sanitizedDatasetId}-`
 
-        // 等待页面资源池列表加载完成
-        console.log('等待页面资源池列表加载完成...')
-        const allResourcePools = await this.waitForResourcePools()
+        // 确保资源池已加载
+        if (!this.resourcePoolStore.allResourcePools || this.resourcePoolStore.allResourcePools.length === 0) {
+          await this.resourcePoolStore.loadResourcePools()
+        }
 
+        const allResourcePools = this.resourcePoolStore.allResourcePools
         if (allResourcePools.length === 0) {
           throw new Error('无法获取资源池列表，请稍后重试')
         }
@@ -1029,135 +1048,7 @@ export default {
       }
     },
     
-    async waitForResourcePools() {
-      // 如果资源池已经加载完成，直接返回
-      if (this.resourcePoolCacheLoaded && this.resourcePools && this.resourcePools.length > 0) {
-        console.log('资源池已加载完成，直接使用现有数据')
-        return this.resourcePools
-      }
-
-      // 如果正在加载中，等待加载完成
-      if (this.resourcePoolLoadingStatus && this.resourcePoolLoadingStatus.includes('正在')) {
-        console.log('资源池正在加载中，等待加载完成...')
-        return new Promise((resolve) => {
-          const checkInterval = setInterval(() => {
-            if (this.resourcePoolCacheLoaded && this.resourcePools && this.resourcePools.length > 0) {
-              clearInterval(checkInterval)
-              console.log('资源池加载完成，继续执行导入记录查询')
-              resolve(this.resourcePools)
-            }
-          }, 500)
-
-          // 设置超时，避免无限等待
-          setTimeout(() => {
-            clearInterval(checkInterval)
-            console.warn('等待资源池加载超时，使用空列表')
-            resolve([])
-          }, 30000) // 30秒超时
-        })
-      }
-
-      // 如果既没有加载完成也没有在加载，尝试重新加载资源池
-      console.warn('资源池未加载且未在加载中，尝试重新加载资源池')
-      try {
-        await this.loadResourcePools()
-        return this.resourcePools || []
-      } catch (error) {
-        console.error('重新加载资源池失败:', error)
-        return []
-      }
-    },
     
-    // 资源池相关方法
-    async loadResourcePools() {
-      console.log('loadResourcePools called')
-      this.resourcePoolsLoading = true
-      this.resourcePoolsError = null
-      
-      try {
-        // 并行加载两种类型的资源池
-        const [commonRes, dedicatedRes] = await Promise.all([
-          // 加载自运维资源池
-          fetch('/api?action=DescribeResourcePools&resourcePoolType=common&keywordType=resourcePoolName&keyword=&orderBy=createdAt&order=DESC&pageNumber=1&pageSize=100').then(r => r.json()),
-          // 加载全托管资源池
-          fetch('/api?action=DescribeResourcePools&resourcePoolType=dedicatedV2&keywordType=resourcePoolName&keyword=&orderBy=createdAt&order=DESC&pageNumber=1&pageSize=100').then(r => r.json())
-        ])
-        
-        console.log('自运维资源池API响应:', commonRes)
-        console.log('全托管资源池API响应:', dedicatedRes)
-        
-        // 检查API响应是否有错误
-        if (commonRes.error) {
-          throw new Error('自运维资源池API错误: ' + commonRes.error)
-        }
-        if (dedicatedRes.error) {
-          throw new Error('全托管资源池API错误: ' + dedicatedRes.error)
-        }
-        
-        // 处理资源池数据
-        const processPools = (data, type) => {
-          if (data.resourcePools && Array.isArray(data.resourcePools)) {
-            return data.resourcePools.map(pool => ({ 
-              ...pool, 
-              resourcePoolType: type,
-              // 确保有正确的ID和名称字段
-              id: pool.resourcePoolId || pool.id,
-              name: pool.name || pool.resourcePoolName
-            }))
-          } else if (data?.result?.resourcePools) {
-            return data.result.resourcePools.map(pool => ({ 
-              ...pool, 
-              resourcePoolType: type,
-              id: pool.resourcePoolId || pool.id,
-              name: pool.name || pool.resourcePoolName
-            }))
-          } else if (data?.ResourcePools) {
-            return data.ResourcePools.map(pool => ({ 
-              ...pool, 
-              resourcePoolType: type,
-              id: pool.resourcePoolId || pool.id,
-              name: pool.name || pool.resourcePoolName
-            }))
-          } else if (data?.result?.ResourcePools) {
-            return data.result.ResourcePools.map(pool => ({ 
-              ...pool, 
-              resourcePoolType: type,
-              id: pool.resourcePoolId || pool.id,
-              name: pool.name || pool.resourcePoolName
-            }))
-          } else if (Array.isArray(data)) {
-            return data.map(pool => ({ 
-              ...pool, 
-              resourcePoolType: type,
-              id: pool.resourcePoolId || pool.id,
-              name: pool.name || pool.resourcePoolName
-            }))
-          }
-          return []
-        }
-        
-        const commonPools = processPools(commonRes, 'common')
-        const dedicatedPools = processPools(dedicatedRes, 'dedicatedV2')
-        
-        // 合并所有资源池
-        this.resourcePools = [...commonPools, ...dedicatedPools]
-        
-        console.log('资源池加载完成:', this.resourcePools.length, '个资源池')
-        console.log('资源池列表:', this.resourcePools.map(p => ({ id: p.id, name: p.name, type: p.resourcePoolType })))
-        
-        // 标记资源池缓存已加载
-        this.resourcePoolCacheLoaded = true
-        this.resourcePoolLoadingStatus = '资源池缓存加载完成'
-        
-      } catch (err) {
-        console.error('获取资源池列表失败:', err)
-        this.resourcePoolsError = '获取资源池列表失败: ' + err.message
-        this.resourcePoolLoadingStatus = '资源池缓存加载失败: ' + err.message
-        throw err // 重新抛出错误，让调用者知道加载失败
-      } finally {
-        this.resourcePoolsLoading = false
-      }
-    },
     
     // 分页方法
     prevPage() {
@@ -1637,9 +1528,9 @@ export default {
       }, 3000)
     }
   },
-  mounted() {
+  async mounted() {
     this.loadDataset()
-    this.loadResourcePools()
+    await this.resourcePoolStore.loadResourcePools()
   }
 }
 </script>

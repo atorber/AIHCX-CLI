@@ -33,25 +33,25 @@
           <!-- 搜索和筛选 -->
           <div class="search-filters">
             <div class="search-box">
-              <select class="select" v-model="selectedPoolType" @change="onPoolTypeChange">
-                <option value="common">自运维资源池</option>
-                <option value="dedicatedV2">全托管资源池</option>
-              </select>
+            <select class="select" v-model="selectedPoolType" @change="onPoolTypeChange">
+              <option value="common">自运维资源池</option>
+              <option value="dedicatedV2">全托管资源池</option>
+            </select>
               <select class="select" v-model="selectedPoolId" @change="loadJobs">
-                <option value="" disabled>请选择资源池</option>
+              <option value="" disabled>请选择资源池</option>
                 <option v-if="resourcePoolStore.loading" value="" disabled>资源池列表加载中...</option>
-                <option v-if="selectedPoolType === 'dedicatedV2'" value="aihc-serverless">全托管资源池 (aihc-serverless)</option>
-                <option v-else v-for="pool in filteredPools" :key="pool.id" :value="pool.id">
-                  {{ pool.name }} ({{ pool.id }})
-                </option>
-              </select>
-              <input class="search-input" v-model="searchQuery" @input="onSearchInput" placeholder="搜索任务名称或ID..." />
+              <option v-if="selectedPoolType === 'dedicatedV2'" value="aihc-serverless">全托管资源池 (aihc-serverless)</option>
+              <option v-else v-for="pool in filteredPools" :key="pool.id" :value="pool.id">
+                {{ pool.name }} ({{ pool.id }})
+              </option>
+            </select>
+            <input class="search-input" v-model="searchQuery" @input="onSearchInput" placeholder="搜索任务名称或ID..." />
               <button class="refresh-btn" @click="refreshJobs" :disabled="jobStore.loading || resourcePoolStore.loading">
                 <span v-if="jobStore.loading">🔄 加载中...</span>
                 <span v-else>🔄 刷新列表</span>
               </button>
-            </div>
-            
+          </div>
+
             <!-- 筛选条件 -->
             <div class="filters-row">
               <div class="filter-group">
@@ -79,7 +79,7 @@
 
           <div class="loading" v-if="jobStore.loading">正在加载任务列表...</div>
           <div class="error" v-if="jobStore.error">{{ jobStore.error }}</div>
-          
+
           <!-- 任务表格 -->
           <div v-if="!jobStore.loading && !jobStore.error && jobStore.jobs && jobStore.jobs.length > 0">
             <table class="jobs-table">
@@ -217,7 +217,7 @@ export default {
   computed: {
     filteredPools() {
       // 确保resourcePoolStore存在且有数据
-      if (!this.resourcePoolStore || !this.resourcePoolStore.allResourcePools) {
+      if (!this.resourcePoolStore?.allResourcePools) {
         return [];
       }
       
@@ -268,7 +268,7 @@ export default {
         document.body.removeChild(textArea)
       }
     },
-
+    
     // 显示消息提示
     showMessage(message, type = 'info') {
       const messageEl = document.createElement('div')
@@ -376,7 +376,7 @@ export default {
     // 搜索
     search() {
       this.currentPage = 1;
-      this.loadJobs();
+        this.loadJobs();
     },
 
     // 清空筛选
@@ -384,7 +384,7 @@ export default {
       this.statusFilter = '';
       this.searchQuery = '';
       this.currentPage = 1;
-      this.loadJobs();
+          this.loadJobs();
     },
 
     // 排序
@@ -687,7 +687,7 @@ export default {
   background: #f8f9fa;
   border: 1px solid #ddd;
   border-radius: 6px;
-  color: #666;
+  color: #666; 
   font-size: 14px;
   cursor: pointer;
   transition: all 0.2s ease;
@@ -833,7 +833,7 @@ export default {
 }
 
 .job-info {
-  display: flex;
+  display: flex; 
   flex-direction: column;
   gap: 0.25rem;
 }
@@ -1016,10 +1016,10 @@ export default {
   }
   
   .stats {
-    flex-direction: column;
-    gap: 16px;
-  }
-  
+  flex-direction: column;
+  gap: 16px;
+}
+
   .filters-row {
     flex-direction: column;
     align-items: stretch;
