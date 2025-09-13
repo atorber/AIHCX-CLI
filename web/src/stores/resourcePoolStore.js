@@ -66,6 +66,14 @@ export const useResourcePoolStore = defineStore('resourcePool', {
         console.log('自运维资源池API响应:', commonRes)
         console.log('全托管资源池API响应:', dedicatedRes)
         
+        // 检查API响应是否有错误
+        if (commonRes.error) {
+          throw new Error('自运维资源池API错误: ' + commonRes.error)
+        }
+        if (dedicatedRes.error) {
+          throw new Error('全托管资源池API错误: ' + dedicatedRes.error)
+        }
+        
         // 处理资源池数据
         const processPools = (data, type) => {
           // 检查多种可能的数据结构
@@ -73,7 +81,7 @@ export const useResourcePoolStore = defineStore('resourcePool', {
           
           if (data.resourcePools && Array.isArray(data.resourcePools)) {
             pools = data.resourcePools;
-          } else if (data.result?.resourcePools && Array.isArray(data.result.resourcePools)) {
+          } else if (data.result?.resourcePools && Array.isArray(data.result?.resourcePools)) {
             pools = data.result.resourcePools;
           } else if (data.result && Array.isArray(data.result)) {
             pools = data.result;

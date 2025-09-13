@@ -1057,9 +1057,15 @@ export default {
         })
       }
 
-      // 如果既没有加载完成也没有在加载，返回空列表
-      console.warn('资源池未加载且未在加载中，返回空列表')
-      return []
+      // 如果既没有加载完成也没有在加载，尝试重新加载资源池
+      console.warn('资源池未加载且未在加载中，尝试重新加载资源池')
+      try {
+        await this.loadResourcePools()
+        return this.resourcePools || []
+      } catch (error) {
+        console.error('重新加载资源池失败:', error)
+        return []
+      }
     },
     
     // 资源池相关方法
@@ -1079,6 +1085,14 @@ export default {
         
         console.log('自运维资源池API响应:', commonRes)
         console.log('全托管资源池API响应:', dedicatedRes)
+        
+        // 检查API响应是否有错误
+        if (commonRes.error) {
+          throw new Error('自运维资源池API错误: ' + commonRes.error)
+        }
+        if (dedicatedRes.error) {
+          throw new Error('全托管资源池API错误: ' + dedicatedRes.error)
+        }
         
         // 处理资源池数据
         const processPools = (data, type) => {
@@ -1139,6 +1153,7 @@ export default {
         console.error('获取资源池列表失败:', err)
         this.resourcePoolsError = '获取资源池列表失败: ' + err.message
         this.resourcePoolLoadingStatus = '资源池缓存加载失败: ' + err.message
+        throw err // 重新抛出错误，让调用者知道加载失败
       } finally {
         this.resourcePoolsLoading = false
       }
