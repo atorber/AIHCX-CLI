@@ -568,48 +568,26 @@ export default {
 </script>
 
 <style scoped>
-.container {
-  display: flex;
-  flex-direction: column;
-  min-height: 100vh;
-  background: var(--bg-color);
-}
-
-.header {
-  background: var(--header-bg);
-  padding: 2rem;
-  text-align: center;
-  border-bottom: 1px solid var(--border);
-}
-
-.header h1 {
-  margin: 0 0 0.5rem 0;
-  color: var(--text);
-  font-size: 2rem;
-}
-
-.header p {
-  margin: 0;
-  color: var(--muted);
-  font-size: 1rem;
-}
-
 .main {
   display: flex;
   flex: 1;
 }
 
 .sidebar {
-  width: 250px;
-  background: var(--sidebar-bg);
+  position: sticky;
+  top: var(--header-h);
+  height: calc(100vh - var(--header-h));
+  overflow: hidden auto;
+  z-index: 900;
+  width: var(--sidebar-w);
+  background: var(--panel-bg);
   border-right: 1px solid var(--border);
-  padding: 1rem 0;
+  padding: 20px 14px;
 }
 
 .content {
   flex: 1;
   padding: 2rem;
-  overflow-y: auto;
 }
 
 .page-container {
