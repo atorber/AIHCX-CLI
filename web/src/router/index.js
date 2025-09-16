@@ -8,6 +8,8 @@ import ResourcePools from '../views/ResourcePools.vue'
 import ResourcePoolsTest from '../views/ResourcePoolsTest.vue'
 import Jobs from '../views/Jobs.vue'
 import JobDetail from '../views/JobDetail.vue'
+import Services from '../views/Services.vue'
+import ServiceDetail from '../views/ServiceDetail.vue'
 
 const routes = [
   {
@@ -55,6 +57,17 @@ const routes = [
     path: '/jobs/:id',
     name: 'JobDetail',
     component: JobDetail,
+    props: true
+  },
+  {
+    path: '/services',
+    name: 'Services',
+    component: Services
+  },
+  {
+    path: '/services/:id',
+    name: 'ServiceDetail',
+    component: ServiceDetail,
     props: true
   }
 ]
