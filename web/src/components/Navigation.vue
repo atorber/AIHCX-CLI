@@ -6,6 +6,7 @@
     <router-link to="/models">🤖 模型列表</router-link>
     <router-link to="/resourcepools">🏊 资源池列表</router-link>
     <router-link to="/jobs">📋 任务列表</router-link>
+    <router-link to="/templates">📝 任务模板</router-link>
     <router-link to="/services">🌐 在线服务</router-link>
   </div>
 </template>
