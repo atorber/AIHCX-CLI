@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>任务模板管理 - AIHCX CLI</title>
+    <link rel="stylesheet" href="/aihcx/static/css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script src="https://unpkg.com/vue-router@4/dist/vue-router.global.js"></script>
+    <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+</head>
+<body>
+    <div id="app"></div>
+    
+    <script type="module">
+        import { createApp } from 'vue'
+        import { createRouter, createWebHistory } from 'vue-router'
+        import Templates from '/src/views/Templates.vue'
+        import Navigation from '/src/components/Navigation.vue'
+        
+        const routes = [
+            { path: '/', component: () => import('/src/views/Welcome.vue') },
+            { path: '/config', component: () => import('/src/views/Config.vue') },
+            { path: '/datasets', component: () => import('/src/views/Datasets.vue') },
+            { path: '/datasets/:id', component: () => import('/src/views/DatasetDetail.vue'), props: true },
+            { path: '/models', component: () => import('/src/views/Models.vue') },
+            { path: '/resourcepools', component: () => import('/src/views/ResourcePools.vue') },
+            { path: '/jobs', component: () => import('/src/views/Jobs.vue') },
+            { path: '/jobs/:id', component: () => import('/src/views/JobDetail.vue'), props: true },
+            { path: '/templates', component: Templates },
+            { path: '/services', component: () => import('/src/views/Services.vue') },
+            { path: '/services/:id', component: () => import('/src/views/ServiceDetail.vue'), props: true }
+        ]
+        
+        const router = createRouter({
+            history: createWebHistory(),
+            routes
+        })
+        
+        const app = createApp({
+            template: '<router-view />'
+        })
+        
+        app.use(router)
+        app.mount('#app')
+    </script>
+</body>
+</html>

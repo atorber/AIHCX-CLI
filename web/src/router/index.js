@@ -10,6 +10,7 @@ import Jobs from '../views/Jobs.vue'
 import JobDetail from '../views/JobDetail.vue'
 import Services from '../views/Services.vue'
 import ServiceDetail from '../views/ServiceDetail.vue'
+import Templates from '../views/Templates.vue'
 
 const routes = [
   {
@@ -69,6 +70,11 @@ const routes = [
     name: 'ServiceDetail',
     component: ServiceDetail,
     props: true
+  },
+  {
+    path: '/templates',
+    name: 'Templates',
+    component: Templates
   }
 ]
 

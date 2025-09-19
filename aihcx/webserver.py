@@ -2,6 +2,7 @@ from flask import Flask, render_template, request, redirect, url_for
 from flask_cors import CORS
 import os
 import sys
+import time
 
 from requests import delete
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -85,6 +86,115 @@ def config_json():
     cfg = AIJobConfig()
     config_data = {k: cfg.get(k) or '' for k in ['host', 'access_key', 'secret_key', 'pool', 'queue', 'path']}
     return jsonify(config_data)
+
+@app.route('/templates', methods=['GET'])
+def templates():
+    return render_template('templates.html')
+
+@app.route('/api/templates', methods=['GET', 'POST'])
+def api_templates():
+    """模板管理API"""
+    try:
+        cfg = AIJobConfig()
+        config_path = cfg.get('path') or ''
+        
+        if not config_path:
+            return jsonify({'error': '配置路径未设置'}), 400
+        
+        templates_dir = os.path.join(config_path, 'templates')
+        
+        # 确保templates目录存在
+        os.makedirs(templates_dir, exist_ok=True)
+        
+        if request.method == 'GET':
+            # 获取模板列表
+            templates = []
+            if os.path.exists(templates_dir):
+                for filename in os.listdir(templates_dir):
+                    if filename.endswith('.json'):
+                        filepath = os.path.join(templates_dir, filename)
+                        try:
+                            with open(filepath, 'r', encoding='utf-8') as f:
+                                template_data = json.load(f)
+                                templates.append(template_data)
+                        except Exception as e:
+                            print(f'读取模板文件失败 {filename}: {e}')
+                            continue
+            
+            # 按创建时间排序
+            templates.sort(key=lambda x: x.get('createdAt', ''), reverse=True)
+            return jsonify({'templates': templates})
+        
+        elif request.method == 'POST':
+            # 创建新模板
+            template_data = request.get_json()
+            if not template_data or 'name' not in template_data:
+                return jsonify({'error': '模板数据无效'}), 400
+            
+            # 生成文件名
+            template_id = template_data.get('id', str(int(time.time() * 1000)))
+            filename = f"{template_id}.json"
+            filepath = os.path.join(templates_dir, filename)
+            
+            # 保存模板文件
+            with open(filepath, 'w', encoding='utf-8') as f:
+                json.dump(template_data, f, ensure_ascii=False, indent=2)
+            
+            return jsonify({'template': template_data})
+    
+    except Exception as e:
+        print(f'模板API错误: {e}')
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/templates/<template_id>', methods=['GET', 'PUT', 'DELETE'])
+def api_template_detail(template_id):
+    """单个模板的获取、更新和删除API"""
+    try:
+        cfg = AIJobConfig()
+        config_path = cfg.get('path') or ''
+        
+        if not config_path:
+            return jsonify({'error': '配置路径未设置'}), 400
+        
+        templates_dir = os.path.join(config_path, 'templates')
+        filepath = os.path.join(templates_dir, f"{template_id}.json")
+        
+        if request.method == 'GET':
+            # 获取模板详情
+            if not os.path.exists(filepath):
+                return jsonify({'error': '模板不存在'}), 404
+            
+            try:
+                with open(filepath, 'r', encoding='utf-8') as f:
+                    template_data = json.load(f)
+                return jsonify({'template': template_data})
+            except Exception as e:
+                print(f'读取模板文件失败 {template_id}: {e}')
+                return jsonify({'error': '读取模板文件失败'}), 500
+        
+        elif request.method == 'PUT':
+            # 更新模板
+            template_data = request.get_json()
+            if not template_data:
+                return jsonify({'error': '模板数据无效'}), 400
+            
+            template_data['id'] = template_id
+            with open(filepath, 'w', encoding='utf-8') as f:
+                json.dump(template_data, f, ensure_ascii=False, indent=2)
+            
+            return jsonify({'template': template_data})
+        
+        elif request.method == 'DELETE':
+            # 删除模板
+            if os.path.exists(filepath):
+                os.remove(filepath)
+                return jsonify({'success': True})
+            else:
+                return jsonify({'error': '模板不存在'}), 404
+    
+    except Exception as e:
+        print(f'模板详情API错误: {e}')
+        return jsonify({'error': str(e)}), 500
 
 @app.route('/datasets', methods=['GET'])
 def datasets():

@@ -120,9 +120,16 @@
                   <td class="time-column">{{ formatDate(job.createdAt) }}</td>
                   <td class="time-column">{{ formatDate(job.finishedAt) }}</td>
                   <td>
-                    <button class="btn-primary" @click="showJobDetail(job)">
-                      查看详情
-                    </button>
+                    <div class="action-buttons">
+                      <button 
+                        class="btn-primary" 
+                        @click="saveJobAsTemplate(job)" 
+                        :disabled="!canSaveAsTemplate(job)"
+                        :title="canSaveAsTemplate(job) ? '保存为模板' : '只有成功完成的任务才能保存为模板'"
+                      >
+                        保存为模板
+                      </button>
+                    </div>
                   </td>
                 </tr>
               </tbody>
@@ -167,6 +174,7 @@
 import Navigation from '../components/Navigation.vue'
 import { useJobStore } from '../stores/jobStore'
 import { useResourcePoolStore } from '../stores/resourcePoolStore'
+import templateService from '../services/templateService'
 
 export default {
   name: 'Jobs',
@@ -530,6 +538,79 @@ export default {
         return date.toLocaleString('zh-CN')
       } catch (e) {
         return dateStr
+      }
+    },
+
+    // 检查任务是否可以保存为模板
+    canSaveAsTemplate(job) {
+      // 只有成功完成的任务才能保存为模板，且需要有镜像信息
+      return job.status === 'Succeeded'
+    },
+
+    // 保存任务为模板
+    async saveJobAsTemplate(job) {
+      if (!this.canSaveAsTemplate(job)) {
+        this.showMessage('只有成功完成的任务才能保存为模板', 'error')
+        return
+      }
+
+      try {
+        // 先获取任务详情
+        this.showMessage('正在获取任务详情...', 'info')
+        const actualPoolId = this.selectedPoolType === 'dedicatedV2' ? 'aihc-serverless' : this.selectedPoolId
+        await this.jobStore.loadJobDetail(job.jobId, actualPoolId)
+        
+        const jobDetail = this.jobStore.currentJob
+        if (!jobDetail) {
+          throw new Error('无法获取任务详情')
+        }
+
+        console.log('获取到的任务详情:', jobDetail)
+
+        // 从任务详情中提取模板信息
+        const jobSpec = jobDetail.jobSpec || {}
+        const templateData = {
+          id: Date.now().toString(),
+          name: `${jobDetail.name} - 模板`,
+          createdAt: new Date().toLocaleString('zh-CN'),
+          // 保存完整的任务详情作为模板数据
+          data: {
+            // 任务基本信息
+            jobId: jobDetail.jobId,
+            name: jobDetail.name,
+            status: jobDetail.status,
+            createdAt: jobDetail.createdAt,
+            finishedAt: jobDetail.finishedAt,
+            
+            // 任务配置信息
+            jobSpec: jobDetail.jobSpec,
+            command: jobDetail.command,
+            dataSources: jobDetail.dataSources,
+            enableBccl: jobDetail.enableBccl,
+            enableFaultTolerance: jobDetail.enableFaultTolerance,
+            faultToleranceArgs: jobDetail.faultToleranceArgs,
+            jobType: jobDetail.jobType,
+            labels: jobDetail.labels,
+            priority: jobDetail.priority,
+            queue: jobDetail.queue,
+            resourcePoolId: jobDetail.resourcePoolId,
+            userId: jobDetail.userId,
+            
+            // 用于导入的配置
+            importMethod: 'custom',
+            customDownloadImageUrl: jobSpec.image || '',
+            customDownloadStartCommand: jobDetail.command || '',
+            resourcePoolType: this.selectedPoolType,
+            cleanData: false,
+            nameStrategy: 'target'
+          }
+        }
+
+        await templateService.saveTemplate(templateData)
+        this.showMessage('任务已保存为模板', 'success')
+      } catch (error) {
+        console.error('保存模板失败:', error)
+        this.showMessage('保存模板失败: ' + error.message, 'error')
       }
     }
   },
@@ -922,11 +1003,18 @@ export default {
   border-radius: 4px;
   cursor: pointer;
   font-size: 0.875rem;
-  transition: background-color 0.2s;
+  transition: all 0.2s ease;
 }
 
-.btn-primary:hover {
+.btn-primary:hover:not(:disabled) {
   background: var(--primary-hover);
+  transform: translateY(-1px);
+}
+
+.btn-primary:disabled {
+  background: #adb5bd;
+  cursor: not-allowed;
+  opacity: 0.6;
 }
 
 .pagination {
@@ -1063,5 +1151,35 @@ export default {
   color: #3076c9;
   opacity: 1;
   transform: scale(1.1);
+}
+
+/* 操作按钮样式 */
+.action-buttons {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.btn-secondary {
+  background: #6c757d;
+  color: white;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.btn-secondary:hover:not(:disabled) {
+  background: #5a6268;
+  transform: translateY(-1px);
+}
+
+.btn-secondary:disabled {
+  background: #adb5bd;
+  cursor: not-allowed;
+  transform: none;
 }
 </style>

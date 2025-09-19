@@ -377,6 +377,10 @@
               <input type="radio" v-model="importMethod" value="custom" name="importMethod">
               <span class="radio-label">自定义下载</span>
             </label>
+            <label class="radio-item">
+              <input type="radio" v-model="importMethod" value="template" name="importMethod">
+              <span class="radio-label">使用任务模板</span>
+            </label>
             <label class="radio-item" v-if="canShowToolUpload">
               <input type="radio" v-model="importMethod" value="tool" name="importMethod">
               <span class="radio-label">工具上传</span>
@@ -474,6 +478,43 @@
         <div v-if="importMethod === 'custom'" class="form-group">
           <label class="form-label required">启动命令</label>
           <textarea v-model="formData.customDownloadStartCommand" class="form-control" rows="4" placeholder="请输入启动命令，如：pip install datasets && python download_data.py"></textarea>
+          <p class="form-hint">支持多行命令，每行一个命令；目标数据集挂载路径为/mnt/target，也可以使用环境变量$TARGET_PATH</p>
+        </div>
+
+
+        <!-- 使用任务模板配置 -->
+        <div v-if="importMethod === 'template'" class="form-group">
+          <label class="form-label required">
+            选择模板
+            <span class="count-badge" :class="{ 'zero-count': availableTemplates.length === 0 }">
+              ({{ availableTemplates.length }})
+            </span>
+          </label>
+          <div class="template-group">
+            <select v-model="formData.selectedTemplate" @change="onTemplateChange" class="form-control">
+              <option value="">请选择模板</option>
+              <option v-for="template in availableTemplates" :key="template.id" :value="template.id">
+                {{ template.name }} ({{ template.createdAt }})
+              </option>
+            </select>
+            <button type="button" @click="refreshTemplates" class="btn-refresh" title="刷新模板列表" :disabled="templatesLoading">
+              <span>🔄</span>
+            </button>
+          </div>
+          <div v-if="templatesError" class="error">
+            <i class="fas fa-exclamation-circle"></i> {{ templatesError }}
+          </div>
+        </div>
+
+        <!-- 模板填充的表单项（与自定义下载相同） -->
+        <div v-if="importMethod === 'template'" class="form-group">
+          <label class="form-label required">镜像地址</label>
+          <input type="text" v-model="formData.customDownloadImageUrl" class="form-control" placeholder="请先选择模板，或手动输入Docker镜像地址">
+        </div>
+
+        <div v-if="importMethod === 'template'" class="form-group">
+          <label class="form-label required">启动命令</label>
+          <textarea v-model="formData.customDownloadStartCommand" class="form-control" rows="4" placeholder="请先选择模板，或手动输入启动命令"></textarea>
           <p class="form-hint">支持多行命令，每行一个命令；目标数据集挂载路径为/mnt/target，也可以使用环境变量$TARGET_PATH</p>
         </div>
 
@@ -681,6 +722,7 @@
 <script>
 import Navigation from '../components/Navigation.vue'
 import datasetService from '../services/datasetService'
+import templateService from '../services/templateService'
 import { useResourcePoolStore } from '../stores/resourcePoolStore'
 
 export default {
@@ -762,14 +804,20 @@ export default {
         modelscopeAccessToken: '',
         // 自定义下载配置
         customDownloadImageUrl: '',
-        customDownloadStartCommand: ''
+        customDownloadStartCommand: '',
+        // 模板相关配置
+        selectedTemplate: ''
       },
       // 命令行步骤（用于工具上传）
       commandSteps: [
         {
           command: 'bcecmd sync <local_dir> bos://your-bucket/dataset-path/ --recursive'
         }
-      ]
+      ],
+      // 模板相关数据
+      availableTemplates: [],
+      templatesLoading: false,
+      templatesError: null
     }
   },
   computed: {
@@ -909,12 +957,28 @@ export default {
         return this.formData.sourceDataset && this.formData.datasetVersion && 
                this.formData.resourcePoolType && this.formData.resourcePool && this.formData.queue
       }
+      if (this.importMethod === 'custom') {
+        return this.formData.customDownloadImageUrl && this.formData.customDownloadStartCommand && 
+               this.formData.resourcePoolType && this.formData.resourcePool && this.formData.queue
+      }
+      if (this.importMethod === 'template') {
+        return this.formData.customDownloadImageUrl && this.formData.customDownloadStartCommand && 
+               this.formData.resourcePoolType && this.formData.resourcePool && this.formData.queue
+      }
       return this.formData.resourcePoolType && this.formData.resourcePool && this.formData.queue
     },
     getImportButtonDisabledReason() {
       if (this.importMethod === 'existing') {
         if (!this.formData.sourceDataset) return '请选择源数据集'
         if (!this.formData.datasetVersion) return '请选择数据版本'
+      }
+      if (this.importMethod === 'custom') {
+        if (!this.formData.customDownloadImageUrl) return '请输入镜像地址'
+        if (!this.formData.customDownloadStartCommand) return '请输入启动命令'
+      }
+      if (this.importMethod === 'template') {
+        if (!this.formData.customDownloadImageUrl) return '请选择模板或输入镜像地址'
+        if (!this.formData.customDownloadStartCommand) return '请选择模板或输入启动命令'
       }
       if (!this.formData.resourcePoolType) return '请选择资源池类型'
       if (!this.formData.resourcePool) return '请选择资源池'
@@ -1214,6 +1278,7 @@ export default {
       this.showImportDrawerFlag = true
       document.body.style.overflow = 'hidden'
       this.loadAvailableDatasets()
+      this.loadTemplates()
     },
     
     closeImportDrawer() {
@@ -1230,7 +1295,26 @@ export default {
         nameStrategy: 'target',
         resourcePoolType: 'common',
         resourcePool: '',
-        queue: ''
+        queue: '',
+        // 对象存储配置
+        objectStorageEndpoint: '',
+        objectStorageAccessKey: '',
+        objectStorageSecretKey: '',
+        objectStorageBucket: '',
+        objectStoragePath: '',
+        // HuggingFace配置
+        huggingfaceDataType: 'dataset',
+        huggingfaceName: '',
+        huggingfaceAccessToken: '',
+        // ModelScope配置
+        modelscopeDataType: 'dataset',
+        modelscopeName: '',
+        modelscopeAccessToken: '',
+        // 自定义下载配置
+        customDownloadImageUrl: '',
+        customDownloadStartCommand: '',
+        // 模板相关配置
+        selectedTemplate: ''
       }
     },
     
@@ -1294,6 +1378,108 @@ export default {
       }
     },
     
+    // 模板相关方法
+    async loadTemplates() {
+      this.templatesLoading = true
+      this.templatesError = null
+      
+      try {
+        this.availableTemplates = await templateService.getTemplates()
+      } catch (err) {
+        console.error('获取模板列表失败:', err)
+        this.templatesError = '获取模板列表失败: ' + err.message
+        this.availableTemplates = []
+      } finally {
+        this.templatesLoading = false
+      }
+    },
+    
+    async getTemplatesFromStorage() {
+      // 从localStorage获取模板列表
+      const templates = JSON.parse(localStorage.getItem('importTemplates') || '[]')
+      return templates.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+    },
+    
+    async saveTemplate(templateData) {
+      try {
+        const newTemplate = {
+          id: Date.now().toString(),
+          name: templateData.templateName,
+          createdAt: new Date().toLocaleString('zh-CN'),
+          data: {
+            importMethod: templateData.importMethod,
+            customDownloadImageUrl: templateData.customDownloadImageUrl,
+            customDownloadStartCommand: templateData.customDownloadStartCommand,
+            resourcePoolType: templateData.resourcePoolType,
+            resourcePool: templateData.resourcePool,
+            queue: templateData.queue,
+            cleanData: templateData.cleanData,
+            nameStrategy: templateData.nameStrategy
+          }
+        }
+        
+        const savedTemplate = await templateService.saveTemplate(newTemplate)
+        console.log('模板保存成功:', savedTemplate)
+        return savedTemplate
+      } catch (err) {
+        console.error('保存模板失败:', err)
+        throw err
+      }
+    },
+    
+    async loadTemplateData(templateId) {
+      try {
+        console.log('开始加载模板数据，模板ID:', templateId)
+        let template = await templateService.getTemplate(templateId)
+        console.log('获取到的模板详情:', template)
+        
+        // 如果通过API获取失败，尝试从模板列表中查找
+        if (!template) {
+          console.log('API获取失败，尝试从模板列表中查找')
+          const templates = await templateService.getTemplates()
+          template = templates.find(t => t.id === templateId)
+          console.log('从模板列表中找到的模板:', template)
+        }
+        
+        if (!template) {
+          throw new Error('模板不存在')
+        }
+        
+        console.log('模板数据:', template.data)
+        
+        // 填充表单数据
+        this.formData.importMethod = template.data.importMethod
+        this.formData.customDownloadImageUrl = template.data.customDownloadImageUrl || ''
+        this.formData.customDownloadStartCommand = template.data.customDownloadStartCommand || ''
+        this.formData.resourcePoolType = template.data.resourcePoolType || ''
+        this.formData.resourcePool = template.data.resourcePool || ''
+        this.formData.queue = template.data.queue || ''
+        this.formData.cleanData = template.data.cleanData || false
+        this.formData.nameStrategy = template.data.nameStrategy || 'target'
+        
+        console.log('填充后的表单数据:', {
+          customDownloadImageUrl: this.formData.customDownloadImageUrl,
+          customDownloadStartCommand: this.formData.customDownloadStartCommand,
+          resourcePoolType: this.formData.resourcePoolType
+        })
+        
+        // 如果资源池类型改变，需要重新加载资源池
+        if (this.formData.resourcePoolType) {
+          await this.loadResourcePoolsForImport()
+        }
+        
+        // 如果资源池改变，需要重新加载队列
+        if (this.formData.resourcePool) {
+          await this.loadQueues()
+        }
+        
+        console.log('模板数据加载成功:', template)
+      } catch (err) {
+        console.error('加载模板数据失败:', err)
+        throw err
+      }
+    },
+    
     // 事件处理方法
     onDatasetTypeFilterChange() {
       // 当筛选类型改变时，清空已选择的数据集和版本
@@ -1333,6 +1519,29 @@ export default {
       this.formData.queue = ''
       this.queues = []
       this.loadQueues()
+    },
+    
+    // 模板相关事件处理
+    async onTemplateChange() {
+      console.log('模板选择变化:', this.formData.selectedTemplate)
+      if (this.formData.selectedTemplate) {
+        try {
+          await this.loadTemplateData(this.formData.selectedTemplate)
+          console.log('模板加载完成')
+        } catch (err) {
+          console.error('加载模板失败:', err)
+          alert('加载模板失败: ' + err.message)
+        }
+      } else {
+        console.log('清空模板选择，重置表单数据')
+        // 清空模板相关的表单数据
+        this.formData.customDownloadImageUrl = ''
+        this.formData.customDownloadStartCommand = ''
+      }
+    },
+    
+    async refreshTemplates() {
+      await this.loadTemplates()
     },
     
     // 刷新方法
@@ -1486,6 +1695,7 @@ export default {
           datasetId: this.id,
           ...this.formData
         }
+        
         
         const result = await datasetService.createImport(importData)
         
@@ -3048,5 +3258,19 @@ export default {
 
 .resource-pool-group .form-control {
   flex: 1;
+}
+
+/* 模板组样式 */
+.template-group {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  width: 100%;
+}
+
+.template-group .form-control {
+  flex: 1;
+  min-width: 0;
+  max-width: calc(100% - 48px);
 }
 </style>
